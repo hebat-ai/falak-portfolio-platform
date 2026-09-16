@@ -130,6 +130,21 @@ export interface Dictionary {
     investorsTitle: string;
     noInvestorsLinked: string;
   };
+  submitReport: {
+    prototypeNotice: string;
+    openFormLinkLabel: string;
+    backToCompanyReport: string;
+    revenueHint: string;
+    saveDraftButton: string;
+    submitButton: string;
+    draftSavedMessage: string;
+    submitSuccessMessage: string;
+    validationRequired: string;
+    validationNegative: string;
+    validationInvalid: string;
+    lockedMessage: string;
+    unsavedChangesConfirm: string;
+  };
   notFound: {
     title: string;
     description: string;
@@ -301,6 +316,22 @@ export const en = {
     investorsTitle: "Investors",
     noInvestorsLinked: "No investor currently linked",
   },
+  submitReport: {
+    prototypeNotice:
+      "Prototype only — this form has no real authentication or authorization, and nothing entered here is saved to a server. Status-based locking shown in this UI is a design preview, not a security boundary.",
+    openFormLinkLabel: "Open Reporting Form",
+    backToCompanyReport: "Back to Company Report",
+    revenueHint: "Enter 0 if there was no revenue this period. Leave blank only if the figure isn't known yet.",
+    saveDraftButton: "Save Draft",
+    submitButton: "Submit Report",
+    draftSavedMessage: "Draft saved in this preview only. It will reset on reload.",
+    submitSuccessMessage: "Submission simulated for this preview. Nothing was sent or saved to a server.",
+    validationRequired: "Revenue is required to submit.",
+    validationNegative: "Revenue cannot be negative.",
+    validationInvalid: "Enter a valid number.",
+    lockedMessage: "This report can no longer be edited here.",
+    unsavedChangesConfirm: "You have unsaved changes. Discard them?",
+  },
   notFound: {
     title: "Page Not Found",
     description: "The page you're looking for doesn't exist or may have moved.",
@@ -471,6 +502,22 @@ export const ar = {
     noCompaniesLinked: "لا توجد شركات مرتبطة بهذه الأداة الاستثمارية حالياً.",
     investorsTitle: "المستثمرون",
     noInvestorsLinked: "لا يوجد مستثمر مرتبط حالياً",
+  },
+  submitReport: {
+    prototypeNotice:
+      "نموذج أولي فقط — لا يتضمن هذا النموذج مصادقة أو تفويضاً حقيقياً، ولا يتم حفظ أي بيانات تُدخل هنا على خادم. القفل المعروض حسب الحالة هو معاينة تصميمية وليس حاجزاً أمنياً.",
+    openFormLinkLabel: "فتح نموذج التقرير",
+    backToCompanyReport: "العودة إلى تقرير الشركة",
+    revenueHint: "أدخل 0 في حال عدم وجود إيرادات لهذه الفترة. اترك الحقل فارغاً فقط إذا كان الرقم غير معروف بعد.",
+    saveDraftButton: "حفظ كمسودة",
+    submitButton: "إرسال التقرير",
+    draftSavedMessage: "تم حفظ المسودة داخل هذه المعاينة فقط، وستُلغى عند إعادة تحميل الصفحة.",
+    submitSuccessMessage: "تمت محاكاة إرسال التقرير في هذه المعاينة فقط، ولم يتم إرسال أو حفظ أي بيانات على خادم.",
+    validationRequired: "الإيرادات مطلوبة للإرسال.",
+    validationNegative: "لا يمكن أن تكون الإيرادات سالبة.",
+    validationInvalid: "أدخل رقمًا صالحًا.",
+    lockedMessage: "لا يمكن تعديل هذا التقرير هنا بعد الآن.",
+    unsavedChangesConfirm: "لديك تغييرات غير محفوظة. هل تريد تجاهلها؟",
   },
   notFound: {
     title: "الصفحة غير موجودة",

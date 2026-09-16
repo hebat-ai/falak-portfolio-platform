@@ -65,6 +65,15 @@ export function CompanyReportView({ company, linkedVehicles }: CompanyReportView
             </select>
           </div>
           <StatusBadge status={periodData.status} />
+          {/* Label says "Open" rather than "Edit" because some statuses
+              (submitted/under_review/approved/published) open the form in a
+              locked, read-only state -- see StartupReportForm. */}
+          <Link
+            href={`/submit/${company.slug}?period=${selectedPeriod}`}
+            className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:ms-auto"
+          >
+            {t.submitReport.openFormLinkLabel}
+          </Link>
         </div>
 
         <CompanyKpis
