@@ -108,6 +108,18 @@ export interface Dictionary {
     comingInBatch: string;
     backToOverview: string;
   };
+  companyReport: {
+    profileTitle: string;
+    revenueModelsLabel: string;
+    linkedVehiclesTitle: string;
+    noVehiclesLinked: string;
+    historyTitle: string;
+    revenueLabel: string;
+    revenueGrowthLabel: string;
+    revenueGrowthVsPrefix: string;
+    revenueGrowthNoPriorPeriod: string;
+    revenueGrowthInsufficientData: string;
+  };
   notFound: {
     title: string;
     description: string;
@@ -254,6 +266,18 @@ export const en = {
     comingInBatch: "Full detail view coming in a later prototype batch.",
     backToOverview: "Back to Portfolio Overview",
   },
+  companyReport: {
+    profileTitle: "Company Profile",
+    revenueModelsLabel: "Revenue Models",
+    linkedVehiclesTitle: "Linked Investment Vehicles",
+    noVehiclesLinked: "No investment vehicle linked",
+    historyTitle: "Reporting History",
+    revenueLabel: "Revenue",
+    revenueGrowthLabel: "Revenue Growth",
+    revenueGrowthVsPrefix: "vs.",
+    revenueGrowthNoPriorPeriod: "No prior period to compare",
+    revenueGrowthInsufficientData: "Insufficient comparable revenue data",
+  },
   notFound: {
     title: "Page Not Found",
     description: "The page you're looking for doesn't exist or may have moved.",
@@ -399,6 +423,18 @@ export const ar = {
     companyTitle: "تقرير أداء الشركة",
     comingInBatch: "العرض التفصيلي الكامل سيتوفر في دفعة لاحقة من النموذج الأولي.",
     backToOverview: "العودة إلى نظرة عامة على المحفظة",
+  },
+  companyReport: {
+    profileTitle: "الملف التعريفي للشركة",
+    revenueModelsLabel: "نماذج الإيرادات",
+    linkedVehiclesTitle: "الأدوات الاستثمارية المرتبطة",
+    noVehiclesLinked: "لا توجد أداة استثمارية مرتبطة",
+    historyTitle: "سجل التقارير",
+    revenueLabel: "الإيرادات",
+    revenueGrowthLabel: "نمو الإيرادات",
+    revenueGrowthVsPrefix: "مقارنة بـ",
+    revenueGrowthNoPriorPeriod: "لا توجد فترة سابقة للمقارنة",
+    revenueGrowthInsufficientData: "بيانات إيرادات غير كافية للمقارنة",
   },
   notFound: {
     title: "الصفحة غير موجودة",

@@ -18,6 +18,14 @@ export const REPORTING_CYCLES: Record<ReportingPeriod, ReportingCycleInfo> = {
 };
 
 /**
+ * Chronological order of reporting periods, oldest first -- the single
+ * source of truth for "previous period" lookups (revenue growth) and
+ * "newest first" display ordering (reporting history), so a future
+ * period is never hand-ordered in more than one place.
+ */
+export const REPORTING_PERIODS_ORDER = ["Q1_2026", "Q2_2026"] as const satisfies readonly ReportingPeriod[];
+
+/**
  * Reporting status (draft / overdue / etc.) reflects submission compliance
  * only -- it is never used in this app as a signal of company performance.
  * Zahra Health's overdue Q2 submission, for example, says nothing about

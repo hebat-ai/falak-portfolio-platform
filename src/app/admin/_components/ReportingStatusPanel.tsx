@@ -3,7 +3,8 @@
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { formatDate, daysBetween, DASHBOARD_SNAPSHOT_DATE } from "@/lib/format";
+import { formatDate, DASHBOARD_SNAPSHOT_DATE } from "@/lib/format";
+import { getOverdueDays } from "@/lib/reportingStatus";
 import { REPORTING_CYCLES } from "@/lib/mock/companies";
 import type { Company, ReportingPeriod } from "@/lib/mock/types";
 
@@ -28,9 +29,8 @@ export function ReportingStatusPanel({ companies, period }: ReportingStatusPanel
       <ul className="divide-y divide-border-subtle">
         {companies.map((company) => {
           const periodData = company.periods[period];
-          const isDraftOverdue = periodData.status === "draft" && DASHBOARD_SNAPSHOT_DATE > deadline;
+          const overdueDays = getOverdueDays(periodData.status, cycle.deadline);
           const isWithinDeadline = DASHBOARD_SNAPSHOT_DATE <= deadline;
-          const overdueDays = isDraftOverdue ? daysBetween(DASHBOARD_SNAPSHOT_DATE, deadline) : 0;
 
           return (
             <li key={company.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -51,7 +51,7 @@ export function ReportingStatusPanel({ companies, period }: ReportingStatusPanel
                   {t.admin.reportingStatusPanel.deadlineColumn}:{" "}
                   <time dateTime={cycle.deadline}>{formatDate(cycle.deadline, lang)}</time>
                 </span>
-                {isDraftOverdue ? (
+                {overdueDays !== null ? (
                   <span className="text-xs font-medium text-foreground">
                     <Num>{overdueDays}</Num> {t.admin.reportingStatusPanel.daysOverdueSuffix}
                   </span>
