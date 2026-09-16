@@ -12,7 +12,7 @@ import { companies, REPORTING_CYCLES } from "@/lib/mock/companies";
 import { vehicles, vehicleCompanyLinks } from "@/lib/mock/vehicles";
 import { investors } from "@/lib/mock/investors";
 import { DASHBOARD_SNAPSHOT_DATE } from "@/lib/format";
-import type { Currency } from "@/lib/mock/types";
+import { computeRevenueByCurrency } from "@/lib/revenue";
 
 export default function AdminOverviewPage() {
   const { t } = useLanguage();
@@ -42,18 +42,9 @@ export default function AdminOverviewPage() {
     // Revenue is summed separately per currency and NEVER combined; a
     // company with revenue === null (no data submitted this period) is
     // excluded from the sum and counted in excludedCount -- never
-    // silently treated as a submitted zero.
-    const currencies: Currency[] = ["SAR", "USD"];
-    const revenueByCurrency = currencies.map((currency) => {
-      const companiesInCurrency = companies.filter((c) => c.currency === currency);
-      const withRevenue = companiesInCurrency.filter((c) => c.periods[period].revenue !== null);
-      const total = withRevenue.reduce((sum, c) => sum + (c.periods[period].revenue as number), 0);
-      return {
-        currency,
-        total,
-        excludedCount: companiesInCurrency.length - withRevenue.length,
-      };
-    });
+    // silently treated as a submitted zero. Shared with the Vehicle
+    // Dashboard so the two can never disagree on this rule.
+    const revenueByCurrency = computeRevenueByCurrency(companies, period);
 
     return {
       companiesCount: companies.length,

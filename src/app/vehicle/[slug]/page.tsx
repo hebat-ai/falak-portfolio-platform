@@ -1,33 +1,32 @@
-"use client";
+import { notFound } from "next/navigation";
+import { VehicleDashboardView } from "../_components/VehicleDashboardView";
+import { companies } from "@/lib/mock/companies";
+import { vehicles, vehicleCompanyLinks } from "@/lib/mock/vehicles";
+import { investors, investorVehicleExposures } from "@/lib/mock/investors";
 
-import { use } from "react";
-import Link from "next/link";
-import { ArrowRight, ArrowLeft } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
-import { Card } from "@/components/ui/Card";
-import { useLanguage } from "@/lib/i18n/LanguageProvider";
-
-export default function VehicleStubPage({
+export default async function VehicleDashboardPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = use(params);
-  const { t, lang } = useLanguage();
-  const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
+  const { slug } = await params;
+  const vehicle = vehicles.find((v) => v.slug === slug);
+
+  if (!vehicle) {
+    notFound();
+  }
+
+  const linkedCompanies = vehicleCompanyLinks
+    .filter((link) => link.vehicleId === vehicle.id)
+    .map((link) => companies.find((c) => c.id === link.companyId))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c));
+
+  const linkedInvestors = investorVehicleExposures
+    .filter((exposure) => exposure.vehicleId === vehicle.id)
+    .map((exposure) => investors.find((inv) => inv.id === exposure.investorId))
+    .filter((inv): inv is NonNullable<typeof inv> => Boolean(inv));
 
   return (
-    <AppShell title={t.stub.vehicleTitle} subtitle={slug}>
-      <Card className="max-w-xl">
-        <p className="text-sm text-muted-foreground">{t.stub.comingInBatch}</p>
-        <Link
-          href="/admin"
-          className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-        >
-          <BackIcon aria-hidden="true" className="h-4 w-4" />
-          {t.stub.backToOverview}
-        </Link>
-      </Card>
-    </AppShell>
+    <VehicleDashboardView vehicle={vehicle} linkedCompanies={linkedCompanies} linkedInvestors={linkedInvestors} />
   );
 }

@@ -13,14 +13,33 @@ import type { Company, ReportingPeriod } from "@/lib/mock/types";
 interface CompanyTableProps {
   companies: Company[];
   period: ReportingPeriod;
+  // Hides the "Vehicle" column -- used on the Vehicle Dashboard, where
+  // every row already belongs to the vehicle being viewed, so repeating
+  // it would show the current vehicle again, not "other vehicles."
+  showVehicleColumn?: boolean;
+  // Overrides the default "no companies match the selected filters" text
+  // for contexts where there's no filter to adjust (e.g. a vehicle with
+  // zero linked companies).
+  emptyStateText?: string;
+  // Overrides the table's accessible <caption> -- defaults to the
+  // portfolio-wide wording, which is inaccurate when this table is
+  // reused to list one vehicle's companies.
+  caption?: string;
 }
 
-export function CompanyTable({ companies, period }: CompanyTableProps) {
+export function CompanyTable({
+  companies,
+  period,
+  showVehicleColumn = true,
+  emptyStateText,
+  caption,
+}: CompanyTableProps) {
   const { t, lang } = useLanguage();
   const ChevronIcon = lang === "ar" ? ChevronLeft : ChevronRight;
+  const columnCount = showVehicleColumn ? 10 : 9;
 
   return (
-    <Table caption={t.admin.table.caption}>
+    <Table caption={caption ?? t.admin.table.caption}>
       <THead>
         <Tr>
           <Th>{t.admin.table.companyColumn}</Th>
@@ -28,7 +47,7 @@ export function CompanyTable({ companies, period }: CompanyTableProps) {
           <Th>{t.admin.table.customerModelColumn}</Th>
           <Th>{t.admin.table.entryStageColumn}</Th>
           <Th>{t.admin.table.currentStageColumn}</Th>
-          <Th>{t.admin.table.vehicleColumn}</Th>
+          {showVehicleColumn ? <Th>{t.admin.table.vehicleColumn}</Th> : null}
           <Th>{t.admin.table.revenueColumn}</Th>
           <Th>{t.admin.table.statusColumn}</Th>
           <Th>{t.admin.table.lastUpdatedColumn}</Th>
@@ -40,17 +59,19 @@ export function CompanyTable({ companies, period }: CompanyTableProps) {
       <TBody>
         {companies.length === 0 ? (
           <Tr>
-            <Td colSpan={10} className="py-8 text-center text-muted-foreground">
-              {t.admin.emptyState}
+            <Td colSpan={columnCount} className="py-8 text-center text-muted-foreground">
+              {emptyStateText ?? t.admin.emptyState}
             </Td>
           </Tr>
         ) : (
           companies.map((company) => {
             const periodData = company.periods[period];
-            const links = vehicleCompanyLinks.filter((l) => l.companyId === company.id);
-            const companyVehicles = links
-              .map((l) => vehicles.find((v) => v.id === l.vehicleId))
-              .filter((v): v is NonNullable<typeof v> => Boolean(v));
+            const companyVehicles = showVehicleColumn
+              ? vehicleCompanyLinks
+                  .filter((l) => l.companyId === company.id)
+                  .map((l) => vehicles.find((v) => v.id === l.vehicleId))
+                  .filter((v): v is NonNullable<typeof v> => Boolean(v))
+              : [];
 
             return (
               <Tr key={company.id} className="hover:bg-surface-muted/60">
@@ -59,29 +80,31 @@ export function CompanyTable({ companies, period }: CompanyTableProps) {
                 <Td>{t.customerModels[company.customerModel]}</Td>
                 <Td>{t.stages[company.entryStage]}</Td>
                 <Td>{t.stages[company.currentStage]}</Td>
-                <Td>
-                  <div className="flex flex-wrap items-center gap-1">
-                    {companyVehicles.length === 0 ? (
-                      <span>—</span>
-                    ) : (
-                      companyVehicles.map((v, i) => (
-                        <span key={v.id} className="inline-flex items-center gap-1">
-                          <Link
-                            href={`/vehicle/${v.slug}`}
-                            className="rounded text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                          >
-                            {lang === "ar" ? v.nameAr : v.nameEn}
-                          </Link>
-                          {i < companyVehicles.length - 1 ? (
-                            <span aria-hidden="true" className="text-muted-foreground">
-                              {lang === "ar" ? "،" : ","}
-                            </span>
-                          ) : null}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </Td>
+                {showVehicleColumn ? (
+                  <Td>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {companyVehicles.length === 0 ? (
+                        <span>—</span>
+                      ) : (
+                        companyVehicles.map((v, i) => (
+                          <span key={v.id} className="inline-flex items-center gap-1">
+                            <Link
+                              href={`/vehicle/${v.slug}`}
+                              className="rounded text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                            >
+                              {lang === "ar" ? v.nameAr : v.nameEn}
+                            </Link>
+                            {i < companyVehicles.length - 1 ? (
+                              <span aria-hidden="true" className="text-muted-foreground">
+                                {lang === "ar" ? "،" : ","}
+                              </span>
+                            ) : null}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </Td>
+                ) : null}
                 <Td>
                   {periodData.revenue === null ? (
                     <span className="text-muted-foreground">{t.admin.table.noDataValue}</span>

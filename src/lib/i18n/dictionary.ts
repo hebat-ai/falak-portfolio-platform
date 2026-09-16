@@ -5,6 +5,7 @@ import type {
   RevenueModel,
   Currency,
   VehicleType,
+  InvestorType,
 } from "../mock/types";
 
 export interface Dictionary {
@@ -43,6 +44,7 @@ export interface Dictionary {
   revenueModels: Record<RevenueModel, string>;
   currencyNames: Record<Currency, string>;
   vehicleTypes: Record<VehicleType, string>;
+  investorTypes: Record<InvestorType, string>;
   admin: {
     title: string;
     subtitle: string;
@@ -119,6 +121,14 @@ export interface Dictionary {
     revenueGrowthVsPrefix: string;
     revenueGrowthNoPriorPeriod: string;
     revenueGrowthInsufficientData: string;
+  };
+  vehicleReport: {
+    profileTitle: string;
+    companiesLabel: string;
+    companiesTableTitle: string;
+    noCompaniesLinked: string;
+    investorsTitle: string;
+    noInvestorsLinked: string;
   };
   notFound: {
     title: string;
@@ -201,6 +211,11 @@ export const en = {
     Fund: "Fund",
     SPV: "SPV",
   },
+  investorTypes: {
+    Institutional: "Institutional",
+    FamilyOffice: "Family Office",
+    Individual: "Individual",
+  },
   admin: {
     title: "Falak Admin — Portfolio Overview",
     subtitle: "Org-wide visibility across all portfolio companies, vehicles, and reporting cycles.",
@@ -277,6 +292,14 @@ export const en = {
     revenueGrowthVsPrefix: "vs.",
     revenueGrowthNoPriorPeriod: "No prior period to compare",
     revenueGrowthInsufficientData: "Insufficient comparable revenue data",
+  },
+  vehicleReport: {
+    profileTitle: "Vehicle Profile",
+    companiesLabel: "Companies",
+    companiesTableTitle: "Companies in this Vehicle",
+    noCompaniesLinked: "No companies currently linked to this vehicle.",
+    investorsTitle: "Investors",
+    noInvestorsLinked: "No investor currently linked",
   },
   notFound: {
     title: "Page Not Found",
@@ -359,6 +382,11 @@ export const ar = {
     Fund: "صندوق",
     SPV: "كيان استثماري خاص (SPV)",
   },
+  investorTypes: {
+    Institutional: "مستثمر مؤسسي",
+    FamilyOffice: "مكتب عائلي",
+    Individual: "مستثمر فردي",
+  },
   admin: {
     title: "إدارة فلك — نظرة عامة على المحفظة",
     subtitle: "رؤية شاملة على مستوى المؤسسة لجميع شركات المحفظة والأدوات الاستثمارية ودورات التقارير.",
@@ -435,6 +463,14 @@ export const ar = {
     revenueGrowthVsPrefix: "مقارنة بـ",
     revenueGrowthNoPriorPeriod: "لا توجد فترة سابقة للمقارنة",
     revenueGrowthInsufficientData: "بيانات إيرادات غير كافية للمقارنة",
+  },
+  vehicleReport: {
+    profileTitle: "الملف التعريفي للأداة الاستثمارية",
+    companiesLabel: "الشركات",
+    companiesTableTitle: "الشركات ضمن هذه الأداة الاستثمارية",
+    noCompaniesLinked: "لا توجد شركات مرتبطة بهذه الأداة الاستثمارية حالياً.",
+    investorsTitle: "المستثمرون",
+    noInvestorsLinked: "لا يوجد مستثمر مرتبط حالياً",
   },
   notFound: {
     title: "الصفحة غير موجودة",
