@@ -39,7 +39,7 @@ const NAV_ITEMS: NavItemConfig[] = [
   { key: "vehicleDashboard", href: "/vehicle", Icon: Landmark, enabled: false },
   { key: "companyReports", href: "/company", Icon: Building2, enabled: false },
   { key: "startupForm", href: "/submit", Icon: ClipboardList, enabled: false },
-  { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck, enabled: false },
+  { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck, enabled: true },
 ];
 
 export function SidebarNavList({ onNavigate }: { onNavigate?: () => void }) {

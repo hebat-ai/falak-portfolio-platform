@@ -145,6 +145,24 @@ export interface Dictionary {
     lockedMessage: string;
     unsavedChangesConfirm: string;
   };
+  reviewWorkspace: {
+    subtitle: string;
+    statusActionableOption: string;
+    searchPlaceholder: string;
+    reviewAction: string;
+    actionPanelTitle: string;
+    selectPrompt: string;
+    startReviewAction: string;
+    requestChangesAction: string;
+    approveAction: string;
+    publishAction: string;
+    noActionAvailable: string;
+    statusUpdatedPrefix: string;
+    removedFromFilterSuffix: string;
+    prototypeNotice: string;
+    emptyQueueMessage: string;
+    queueCaption: string;
+  };
   notFound: {
     title: string;
     description: string;
@@ -332,6 +350,25 @@ export const en = {
     lockedMessage: "This report can no longer be edited here.",
     unsavedChangesConfirm: "You have unsaved changes. Discard them?",
   },
+  reviewWorkspace: {
+    subtitle: "Review submitted reports and manage their approval status.",
+    statusActionableOption: "Actionable (Submitted + Under Review)",
+    searchPlaceholder: "Search company or sector",
+    reviewAction: "Review",
+    actionPanelTitle: "Review Action",
+    selectPrompt: "Select a report from the queue below to review it.",
+    startReviewAction: "Start Review",
+    requestChangesAction: "Request Changes",
+    approveAction: "Approve",
+    publishAction: "Publish",
+    noActionAvailable: "No review action is available for this status.",
+    statusUpdatedPrefix: "Status updated to",
+    removedFromFilterSuffix: "This item no longer matches the current filter and has been removed from view.",
+    prototypeNotice:
+      "Prototype only — actions taken here are simulated in memory for this session and are not sent to or saved on any server, and there is no real authentication or authorization behind them. Reloading this page resets every change, and nothing here affects Company Report, Portfolio Overview, or any other page.",
+    emptyQueueMessage: "No reports match the current filters.",
+    queueCaption: "Reports in the review workspace, filtered by status and period.",
+  },
   notFound: {
     title: "Page Not Found",
     description: "The page you're looking for doesn't exist or may have moved.",
@@ -518,6 +555,25 @@ export const ar = {
     validationInvalid: "أدخل رقمًا صالحًا.",
     lockedMessage: "لا يمكن تعديل هذا التقرير هنا بعد الآن.",
     unsavedChangesConfirm: "لديك تغييرات غير محفوظة. هل تريد تجاهلها؟",
+  },
+  reviewWorkspace: {
+    subtitle: "مراجعة التقارير المُقدَّمة وإدارة حالة اعتمادها.",
+    statusActionableOption: "قابلة للإجراء (تم التقديم + قيد المراجعة)",
+    searchPlaceholder: "ابحث عن شركة أو قطاع",
+    reviewAction: "مراجعة",
+    actionPanelTitle: "إجراء المراجعة",
+    selectPrompt: "اختر تقريراً من القائمة أدناه لمراجعته.",
+    startReviewAction: "بدء المراجعة",
+    requestChangesAction: "طلب إجراء تعديلات",
+    approveAction: "اعتماد",
+    publishAction: "نشر",
+    noActionAvailable: "لا يوجد إجراء مراجعة متاح لهذه الحالة.",
+    statusUpdatedPrefix: "تم تحديث الحالة إلى",
+    removedFromFilterSuffix: "لم يعد هذا العنصر مطابقاً لعامل التصفية الحالي وتمت إزالته من القائمة المعروضة.",
+    prototypeNotice:
+      "نموذج أولي فقط — الإجراءات المُتخذة هنا محاكاة داخل الذاكرة لهذه الجلسة فقط، ولا تُرسل أو تُحفظ على أي خادم، ولا تتضمن أي مصادقة أو تفويض حقيقي. تؤدي إعادة تحميل الصفحة إلى إلغاء جميع التغييرات، ولا يؤثر أي شيء هنا على تقرير الشركة أو نظرة عامة على المحفظة أو أي صفحة أخرى.",
+    emptyQueueMessage: "لا توجد تقارير مطابقة لعوامل التصفية الحالية.",
+    queueCaption: "التقارير في مساحة المراجعة، مُصفّاة حسب الحالة والفترة.",
   },
   notFound: {
     title: "الصفحة غير موجودة",

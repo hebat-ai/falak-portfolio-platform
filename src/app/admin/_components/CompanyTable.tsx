@@ -25,6 +25,10 @@ interface CompanyTableProps {
   // portfolio-wide wording, which is inaccurate when this table is
   // reused to list one vehicle's companies.
   caption?: string;
+  // Adds a second per-row action that selects this company for review
+  // (Review & Approval workspace) -- omitted at /admin, so its rendering
+  // there is unchanged.
+  onSelectForReview?: (company: Company) => void;
 }
 
 export function CompanyTable({
@@ -33,6 +37,7 @@ export function CompanyTable({
   showVehicleColumn = true,
   emptyStateText,
   caption,
+  onSelectForReview,
 }: CompanyTableProps) {
   const { t, lang } = useLanguage();
   const ChevronIcon = lang === "ar" ? ChevronLeft : ChevronRight;
@@ -123,13 +128,33 @@ export function CompanyTable({
                   )}
                 </Td>
                 <Td>
-                  <Link
-                    href={`/company/${company.slug}`}
-                    className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                  >
-                    {t.admin.table.viewCompanyAction}
-                    <ChevronIcon aria-hidden="true" className="h-4 w-4" />
-                  </Link>
+                  {onSelectForReview ? (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <Link
+                        href={`/company/${company.slug}`}
+                        className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                      >
+                        {t.admin.table.viewCompanyAction}
+                        <ChevronIcon aria-hidden="true" className="h-4 w-4" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => onSelectForReview(company)}
+                        aria-label={`${t.reviewWorkspace.reviewAction} — ${lang === "ar" ? company.nameAr : company.nameEn}`}
+                        className="inline-flex items-center gap-1 rounded border border-control-border px-2 py-1 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                      >
+                        {t.reviewWorkspace.reviewAction}
+                      </button>
+                    </div>
+                  ) : (
+                    <Link
+                      href={`/company/${company.slug}`}
+                      className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                    >
+                      {t.admin.table.viewCompanyAction}
+                      <ChevronIcon aria-hidden="true" className="h-4 w-4" />
+                    </Link>
+                  )}
                 </Td>
               </Tr>
             );
