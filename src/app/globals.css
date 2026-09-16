@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+
+  /* Falak Ventures brand palette (confirmed from the brand book) --
+     raw brand tokens, kept distinct from the Tailwind --color-* names
+     mapped to them below to avoid a circular var() reference. */
+  --brand-dark-nebula: #123338;
+  --brand-nebula-aqua: #00a86b;
+  --brand-nebula-mint: #6de9c3;
+  --brand-lime-green: #e3fd72;
+  --brand-dark-green: #001410;
+  --brand-starlight: #efefef;
+
+  /* semantic surface/text tokens built from the palette above */
+  --background: var(--brand-starlight);
+  --foreground: var(--brand-dark-nebula);
+  --muted-foreground: color-mix(in srgb, var(--brand-dark-nebula) 75%, var(--brand-starlight) 25%);
+  --link-foreground: color-mix(in srgb, var(--brand-nebula-aqua) 60%, var(--brand-dark-nebula) 40%);
+  --surface: #ffffff;
+  --surface-muted: #f3f6f5;
+
+  /* border-subtle: decorative separation only (cards, table dividers) --
+     intentionally NOT tuned to any contrast target, so it stays visually
+     light regardless of theme. control-border: a separate, stronger
+     token for interactive-control outlines that must reach >=3:1. */
+  --border-subtle: #d9e1df;
+  --control-border: color-mix(in srgb, var(--brand-dark-nebula) 60%, var(--brand-starlight) 40%);
+
+  --nav-bg: var(--brand-dark-green);
+  --nav-fg: #f3f6f5;
+  --nav-fg-muted: #8fa6a1;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-link-foreground: var(--link-foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-control-border: var(--control-border);
+  --color-nav-bg: var(--nav-bg);
+  --color-nav-fg: var(--nav-fg);
+  --color-nav-fg-muted: var(--nav-fg-muted);
+
+  --color-dark-nebula: var(--brand-dark-nebula);
+  --color-nebula-aqua: var(--brand-nebula-aqua);
+  --color-nebula-mint: var(--brand-nebula-mint);
+  --color-lime-green: var(--brand-lime-green);
+  --color-dark-green: var(--brand-dark-green);
+  --color-starlight: var(--brand-starlight);
+
+  /* Fallback lives inside var() itself, so the custom property never
+     becomes invalid at computed-value time if a next/font variable is
+     ever undefined. Jost/Inter are temporary placeholders for Century
+     Gothic. Cairo is a temporary heading substitute for TS Zunburk VF3
+     OS while its web-font licensing remains pending -- see
+     PROTOTYPE_NOTES.md. Alexandria is Falak's actual approved and
+     embeddable Arabic body font (SIL OFL, verified), not a placeholder. */
+  --font-heading-en: var(--font-jost, ui-sans-serif, system-ui, sans-serif);
+  --font-body-en: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+  --font-heading-ar: var(--font-cairo, "Segoe UI", Tahoma, sans-serif);
+  --font-body-ar: var(--font-alexandria, "Segoe UI", Tahoma, sans-serif);
+}
+
+/* Dark theme -- semantic surface/text tokens invert; the raw Falak brand
+   colors (--brand-*) and the always-dark nav are left unchanged. Every
+   value below was chosen by calculating actual WCAG contrast ratios
+   against the surfaces where they are used, not by eyeballing it. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: var(--brand-dark-nebula);
+  --foreground: var(--brand-starlight);
+  --muted-foreground: color-mix(in srgb, var(--brand-starlight) 85%, var(--brand-dark-nebula) 15%);
+  --link-foreground: color-mix(in srgb, var(--brand-nebula-aqua) 30%, var(--brand-starlight) 70%);
+  --surface-muted: color-mix(in srgb, var(--brand-dark-nebula) 88%, var(--brand-starlight) 12%);
+  --surface: color-mix(in srgb, var(--brand-dark-nebula) 78%, var(--brand-starlight) 22%);
+
+  /* Restrained -- deliberately NOT >=3:1, matching border-subtle's
+     decorative-only role in light mode. */
+  --border-subtle: color-mix(in srgb, var(--brand-starlight) 25%, var(--brand-dark-nebula) 75%);
+  /* control-border: >=3:1 against the lightest dark-mode surface. */
+  --control-border: color-mix(in srgb, var(--brand-starlight) 70%, var(--brand-dark-nebula) 30%);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+[dir="ltr"] body {
+  font-family: var(--font-body-en);
+}
+[dir="ltr"] .font-heading {
+  font-family: var(--font-heading-en);
+}
+
+[dir="rtl"] body {
+  font-family: var(--font-body-ar);
+}
+[dir="rtl"] .font-heading {
+  font-family: var(--font-heading-ar);
+}
+
+::selection {
+  background: var(--brand-nebula-mint);
+  color: var(--brand-dark-nebula);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
