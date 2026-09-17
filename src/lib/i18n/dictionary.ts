@@ -187,6 +187,15 @@ export interface Dictionary {
     subtitle: string;
     emptyMessage: string;
   };
+  submitPortal: {
+    subtitle: string;
+    prototypeNotice: string;
+    viewerRoleLabel: string;
+    companySelectLabel: string;
+    willOpenEditableMessage: string;
+    willOpenLockedMessage: string;
+    noCompaniesMessage: string;
+  };
   notFound: {
     title: string;
     description: string;
@@ -418,6 +427,16 @@ export const en = {
     subtitle: "Browse every Falak investment vehicle and open its dashboard.",
     emptyMessage: "No investment vehicles are available yet.",
   },
+  submitPortal: {
+    subtitle: "Select a demo company to open its reporting form.",
+    prototypeNotice:
+      "Prototype only — there are no real startup accounts or authentication. This selector simulates viewing as one of the synthetic companies, and your selections are not saved. In production, a startup would arrive here already signed in as itself.",
+    viewerRoleLabel: "Startup (demo)",
+    companySelectLabel: "Company",
+    willOpenEditableMessage: "This form will open ready to edit.",
+    willOpenLockedMessage: "This form will open locked, read-only.",
+    noCompaniesMessage: "No companies are available yet.",
+  },
   notFound: {
     title: "Page Not Found",
     description: "The page you're looking for doesn't exist or may have moved.",
@@ -648,6 +667,16 @@ export const ar = {
   vehicleDirectory: {
     subtitle: "تصفح كل أداة استثمارية لدى فلك وافتح لوحتها.",
     emptyMessage: "لا توجد أدوات استثمارية متاحة حالياً.",
+  },
+  submitPortal: {
+    subtitle: "اختر شركة تجريبية لفتح نموذج تقريرها.",
+    prototypeNotice:
+      "نموذج أولي فقط — لا توجد حسابات أو مصادقة حقيقية للشركات الناشئة. يحاكي هذا المحدد العرض كإحدى الشركات الاصطناعية، ولا يتم حفظ اختياراتك. في الإنتاج، تصل الشركة الناشئة إلى هنا وهي مسجّلة الدخول بالفعل.",
+    viewerRoleLabel: "شركة ناشئة (تجريبية)",
+    companySelectLabel: "الشركة",
+    willOpenEditableMessage: "سيتم فتح هذا النموذج جاهزاً للتعديل.",
+    willOpenLockedMessage: "سيتم فتح هذا النموذج مقفلاً للقراءة فقط.",
+    noCompaniesMessage: "لا توجد شركات متاحة حالياً.",
   },
   notFound: {
     title: "الصفحة غير موجودة",

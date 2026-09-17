@@ -1,25 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardList, ArrowRight, ArrowLeft, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import type { Dictionary } from "@/lib/i18n/dictionary";
-
-interface ComingSoonItem {
-  key: keyof Pick<Dictionary["nav"], "startupForm">;
-  Icon: LucideIcon;
-}
-
-// Mirrors Sidebar's still-disabled nav items -- kept as a small local list
-// here rather than importing Sidebar's internal array, since that array
-// isn't exported and duplicating one {key, Icon} pair is simpler than
-// adding a new shared file to the (already agreed) file count. Vehicle
-// Dashboard is live now and no longer belongs in this list.
-const COMING_SOON_ITEMS: ComingSoonItem[] = [
-  { key: "startupForm", Icon: ClipboardList },
-];
 
 export default function HomePage() {
   const { t, lang } = useLanguage();
@@ -27,7 +12,7 @@ export default function HomePage() {
 
   return (
     <AppShell title={t.home.title} subtitle={t.home.subtitle}>
-      <div className="space-y-8">
+      <div>
         <Card className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-2 rounded-full bg-nebula-aqua/10 px-3 py-1 text-xs font-medium text-link-foreground">
@@ -48,21 +33,6 @@ export default function HomePage() {
             <ArrowIcon aria-hidden="true" className="h-4 w-4" />
           </Link>
         </Card>
-
-        <div>
-          <h2 className="font-heading mb-3 text-sm font-semibold text-foreground">{t.home.comingLater}</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {COMING_SOON_ITEMS.map((item) => (
-              <Card key={item.key} padding="sm" className="flex items-center gap-3 opacity-70">
-                <item.Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{t.nav[item.key]}</span>
-                <span className="ms-auto rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {t.nav.comingSoonBadge}
-                </span>
-              </Card>
-            ))}
-          </div>
-        </div>
       </div>
     </AppShell>
   );

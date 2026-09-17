@@ -15,3 +15,14 @@ export function getOverdueDays(status: ReportingStatus, deadlineIso: string): nu
   if (DASHBOARD_SNAPSHOT_DATE <= deadline) return null;
   return daysBetween(DASHBOARD_SNAPSHOT_DATE, deadline);
 }
+
+/**
+ * Whether a report in this status can still be edited by the startup --
+ * shared by StartupReportForm (which enforces it) and the Startup Portal
+ * (which previews it before linking to the form), so the two can never
+ * disagree about which statuses are locked. UI-only, per PROTOTYPE_NOTES.md
+ * -- not a server-enforced permission.
+ */
+export function isReportEditable(status: ReportingStatus): boolean {
+  return status === "draft" || status === "changes_requested";
+}

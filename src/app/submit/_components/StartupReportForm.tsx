@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { DASHBOARD_SNAPSHOT_DATE, formatDate } from "@/lib/format";
-import { getOverdueDays } from "@/lib/reportingStatus";
+import { getOverdueDays, isReportEditable } from "@/lib/reportingStatus";
 import { REPORTING_CYCLES, REPORTING_PERIODS_ORDER } from "@/lib/mock/companies";
 import type { Company, CyclePeriodData, ReportingPeriod } from "@/lib/mock/types";
 
@@ -60,7 +60,7 @@ export function StartupReportForm({ company, initialPeriod }: StartupReportFormP
   const [justSubmittedPeriod, setJustSubmittedPeriod] = useState<ReportingPeriod | null>(null);
 
   const effective = drafts[selectedPeriod] ?? company.periods[selectedPeriod];
-  const isEditable = effective.status === "draft" || effective.status === "changes_requested";
+  const isEditable = isReportEditable(effective.status);
   const isDirty = revenueInput !== revenueToInput(effective.revenue);
   const cycle = REPORTING_CYCLES[selectedPeriod];
   const overdueDays = getOverdueDays(effective.status, cycle.deadline);
@@ -154,7 +154,11 @@ export function StartupReportForm({ company, initialPeriod }: StartupReportFormP
           : null;
 
   return (
-    <AppShell title={lang === "ar" ? company.nameAr : company.nameEn} subtitle={t.nav.startupForm}>
+    <AppShell
+      title={lang === "ar" ? company.nameAr : company.nameEn}
+      subtitle={t.nav.startupForm}
+      viewerRoleLabel={t.submitPortal.viewerRoleLabel}
+    >
       <div className="space-y-6">
         <Link
           href={`/company/${company.slug}`}

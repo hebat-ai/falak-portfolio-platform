@@ -38,7 +38,7 @@ const NAV_ITEMS: NavItemConfig[] = [
   { key: "investorDashboard", href: "/investor", Icon: PieChart, enabled: true },
   { key: "vehicleDashboard", href: "/vehicle", Icon: Landmark, enabled: true },
   { key: "companyReports", href: "/company", Icon: Building2, enabled: true },
-  { key: "startupForm", href: "/submit", Icon: ClipboardList, enabled: false },
+  { key: "startupForm", href: "/submit", Icon: ClipboardList, enabled: true },
   { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck, enabled: true },
 ];
 
