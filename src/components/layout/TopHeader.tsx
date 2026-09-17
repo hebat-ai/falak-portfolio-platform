@@ -9,12 +9,13 @@ import { formatDate, DASHBOARD_SNAPSHOT_DATE } from "@/lib/format";
 interface TopHeaderProps {
   title: string;
   subtitle?: string;
+  viewerRoleLabel?: string;
   menuOpen: boolean;
   onOpenMenu: () => void;
   drawerId: string;
 }
 
-export function TopHeader({ title, subtitle, menuOpen, onOpenMenu, drawerId }: TopHeaderProps) {
+export function TopHeader({ title, subtitle, viewerRoleLabel, menuOpen, onOpenMenu, drawerId }: TopHeaderProps) {
   const { t, lang } = useLanguage();
   const snapshotIso = DASHBOARD_SNAPSHOT_DATE.toISOString().slice(0, 10);
 
@@ -40,7 +41,7 @@ export function TopHeader({ title, subtitle, menuOpen, onOpenMenu, drawerId }: T
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1 text-xs text-muted-foreground">
           <User aria-hidden="true" className="h-3.5 w-3.5" />
-          {t.common.viewingAsLabel}: {t.common.falakAdminRole}
+          {t.common.viewingAsLabel}: {viewerRoleLabel ?? t.common.falakAdminRole}
         </span>
         <span className="text-xs text-muted-foreground">
           {t.common.dataAsOfLabel} <time dateTime={snapshotIso}>{formatDate(snapshotIso, lang)}</time>

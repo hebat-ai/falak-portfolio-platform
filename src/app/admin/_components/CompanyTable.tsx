@@ -29,6 +29,10 @@ interface CompanyTableProps {
   // (Review & Approval workspace) -- omitted at /admin, so its rendering
   // there is unchanged.
   onSelectForReview?: (company: Company) => void;
+  // Omits the entire "View report" action column (not just its link) --
+  // used on the Investor Dashboard, where the internal Company Report
+  // page must not be reachable from this read-only view.
+  showCompanyAction?: boolean;
 }
 
 export function CompanyTable({
@@ -38,10 +42,11 @@ export function CompanyTable({
   emptyStateText,
   caption,
   onSelectForReview,
+  showCompanyAction = true,
 }: CompanyTableProps) {
   const { t, lang } = useLanguage();
   const ChevronIcon = lang === "ar" ? ChevronLeft : ChevronRight;
-  const columnCount = showVehicleColumn ? 10 : 9;
+  const columnCount = 8 + (showVehicleColumn ? 1 : 0) + (showCompanyAction ? 1 : 0);
 
   return (
     <Table caption={caption ?? t.admin.table.caption}>
@@ -56,9 +61,11 @@ export function CompanyTable({
           <Th>{t.admin.table.revenueColumn}</Th>
           <Th>{t.admin.table.statusColumn}</Th>
           <Th>{t.admin.table.lastUpdatedColumn}</Th>
-          <Th>
-            <span className="sr-only">{t.admin.table.viewCompanyAction}</span>
-          </Th>
+          {showCompanyAction ? (
+            <Th>
+              <span className="sr-only">{t.admin.table.viewCompanyAction}</span>
+            </Th>
+          ) : null}
         </Tr>
       </THead>
       <TBody>
@@ -127,9 +134,27 @@ export function CompanyTable({
                     <span className="text-muted-foreground">{t.admin.reportingStatusPanel.neverSubmitted}</span>
                   )}
                 </Td>
-                <Td>
-                  {onSelectForReview ? (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                {showCompanyAction ? (
+                  <Td>
+                    {onSelectForReview ? (
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <Link
+                          href={`/company/${company.slug}`}
+                          className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                        >
+                          {t.admin.table.viewCompanyAction}
+                          <ChevronIcon aria-hidden="true" className="h-4 w-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => onSelectForReview(company)}
+                          aria-label={`${t.reviewWorkspace.reviewAction} — ${lang === "ar" ? company.nameAr : company.nameEn}`}
+                          className="inline-flex items-center gap-1 rounded border border-control-border px-2 py-1 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                        >
+                          {t.reviewWorkspace.reviewAction}
+                        </button>
+                      </div>
+                    ) : (
                       <Link
                         href={`/company/${company.slug}`}
                         className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
@@ -137,25 +162,9 @@ export function CompanyTable({
                         {t.admin.table.viewCompanyAction}
                         <ChevronIcon aria-hidden="true" className="h-4 w-4" />
                       </Link>
-                      <button
-                        type="button"
-                        onClick={() => onSelectForReview(company)}
-                        aria-label={`${t.reviewWorkspace.reviewAction} — ${lang === "ar" ? company.nameAr : company.nameEn}`}
-                        className="inline-flex items-center gap-1 rounded border border-control-border px-2 py-1 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                      >
-                        {t.reviewWorkspace.reviewAction}
-                      </button>
-                    </div>
-                  ) : (
-                    <Link
-                      href={`/company/${company.slug}`}
-                      className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                    >
-                      {t.admin.table.viewCompanyAction}
-                      <ChevronIcon aria-hidden="true" className="h-4 w-4" />
-                    </Link>
-                  )}
-                </Td>
+                    )}
+                  </Td>
+                ) : null}
               </Tr>
             );
           })

@@ -163,6 +163,18 @@ export interface Dictionary {
     emptyQueueMessage: string;
     queueCaption: string;
   };
+  investorDashboard: {
+    subtitle: string;
+    prototypeNotice: string;
+    viewerRoleLabel: string;
+    investorSelectLabel: string;
+    companiesInScopeLabel: string;
+    vehicleExposureTitle: string;
+    visibleCompaniesLabel: string;
+    companiesTableTitle: string;
+    companiesTableCaption: string;
+    noApprovedReports: string;
+  };
   notFound: {
     title: string;
     description: string;
@@ -369,6 +381,19 @@ export const en = {
     emptyQueueMessage: "No reports match the current filters.",
     queueCaption: "Reports in the review workspace, filtered by status and period.",
   },
+  investorDashboard: {
+    subtitle: "A read-only, simulated view of one investor's vehicle exposure.",
+    prototypeNotice:
+      "Prototype only — there are no real investor accounts. This selector simulates viewing as one of the synthetic investors; it is not a login, and nothing selected here is saved anywhere.",
+    viewerRoleLabel: "Investor (demo)",
+    investorSelectLabel: "Investor",
+    companiesInScopeLabel: "Companies (Approved or Published)",
+    vehicleExposureTitle: "Vehicle Exposure",
+    visibleCompaniesLabel: "Visible companies this period",
+    companiesTableTitle: "Companies",
+    companiesTableCaption: "Companies visible to this investor for the selected period, approved or published only",
+    noApprovedReports: "No approved or published reports for this period yet.",
+  },
   notFound: {
     title: "Page Not Found",
     description: "The page you're looking for doesn't exist or may have moved.",
@@ -574,6 +599,19 @@ export const ar = {
       "نموذج أولي فقط — الإجراءات المُتخذة هنا محاكاة داخل الذاكرة لهذه الجلسة فقط، ولا تُرسل أو تُحفظ على أي خادم، ولا تتضمن أي مصادقة أو تفويض حقيقي. تؤدي إعادة تحميل الصفحة إلى إلغاء جميع التغييرات، ولا يؤثر أي شيء هنا على تقرير الشركة أو نظرة عامة على المحفظة أو أي صفحة أخرى.",
     emptyQueueMessage: "لا توجد تقارير مطابقة لعوامل التصفية الحالية.",
     queueCaption: "التقارير في مساحة المراجعة، مُصفّاة حسب الحالة والفترة.",
+  },
+  investorDashboard: {
+    subtitle: "عرض للقراءة فقط يحاكي نطاق اطلاع مستثمر واحد على أدواته الاستثمارية.",
+    prototypeNotice:
+      "نموذج أولي فقط — لا توجد حسابات مستثمرين حقيقية. يحاكي هذا المحدد العرض كأحد المستثمرين الاصطناعيين، وهو ليس تسجيل دخول، ولا يُحفظ أي اختيار هنا في أي مكان.",
+    viewerRoleLabel: "مستثمر (تجريبي)",
+    investorSelectLabel: "المستثمر",
+    companiesInScopeLabel: "الشركات (المعتمدة أو المنشورة)",
+    vehicleExposureTitle: "الأدوات الاستثمارية المرتبطة",
+    visibleCompaniesLabel: "الشركات المرئية لهذه الفترة",
+    companiesTableTitle: "الشركات",
+    companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة أو المنشورة فقط",
+    noApprovedReports: "لا توجد تقارير معتمدة أو منشورة لهذه الفترة بعد.",
   },
   notFound: {
     title: "الصفحة غير موجودة",

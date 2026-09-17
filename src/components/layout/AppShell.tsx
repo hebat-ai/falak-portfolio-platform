@@ -11,10 +11,11 @@ const MOBILE_DRAWER_ID = "mobile-navigation-drawer";
 interface AppShellProps {
   title: string;
   subtitle?: string;
+  viewerRoleLabel?: string;
   children: ReactNode;
 }
 
-export function AppShell({ title, subtitle, children }: AppShellProps) {
+export function AppShell({ title, subtitle, viewerRoleLabel, children }: AppShellProps) {
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const titleId = useId();
@@ -38,6 +39,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
         <TopHeader
           title={title}
           subtitle={subtitle}
+          viewerRoleLabel={viewerRoleLabel}
           menuOpen={menuOpen}
           onOpenMenu={() => setMenuOpen(true)}
           drawerId={MOBILE_DRAWER_ID}
