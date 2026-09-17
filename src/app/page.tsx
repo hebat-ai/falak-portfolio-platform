@@ -1,25 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { Landmark, ClipboardList, ArrowRight, ArrowLeft, type LucideIcon } from "lucide-react";
+import { ClipboardList, ArrowRight, ArrowLeft, type LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 interface ComingSoonItem {
-  key: keyof Pick<Dictionary["nav"], "vehicleDashboard" | "startupForm">;
+  key: keyof Pick<Dictionary["nav"], "startupForm">;
   Icon: LucideIcon;
 }
 
 // Mirrors Sidebar's still-disabled nav items -- kept as a small local list
 // here rather than importing Sidebar's internal array, since that array
-// isn't exported and duplicating two {key, Icon} pairs is simpler than
-// adding a new shared file to the (already agreed) file count. Investor
-// Dashboard, Company Reports, and Review & Approval are all live now and
-// no longer belong in this list.
+// isn't exported and duplicating one {key, Icon} pair is simpler than
+// adding a new shared file to the (already agreed) file count. Vehicle
+// Dashboard is live now and no longer belongs in this list.
 const COMING_SOON_ITEMS: ComingSoonItem[] = [
-  { key: "vehicleDashboard", Icon: Landmark },
   { key: "startupForm", Icon: ClipboardList },
 ];
 

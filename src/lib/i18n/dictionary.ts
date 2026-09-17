@@ -183,6 +183,10 @@ export interface Dictionary {
     emptyRegisterMessage: string;
     searchPlaceholder: string;
   };
+  vehicleDirectory: {
+    subtitle: string;
+    emptyMessage: string;
+  };
   notFound: {
     title: string;
     description: string;
@@ -410,6 +414,10 @@ export const en = {
     emptyRegisterMessage: "No reporting records match the current filters.",
     searchPlaceholder: "Search company or sector",
   },
+  vehicleDirectory: {
+    subtitle: "Browse every Falak investment vehicle and open its dashboard.",
+    emptyMessage: "No investment vehicles are available yet.",
+  },
   notFound: {
     title: "Page Not Found",
     description: "The page you're looking for doesn't exist or may have moved.",
@@ -636,6 +644,10 @@ export const ar = {
     registerCaption: "صف واحد لكل شركة وفترة تقرير، مرتب حسب الفترة مع تقديم الأحدث أولاً.",
     emptyRegisterMessage: "لا توجد سجلات تقارير مطابقة لعوامل التصفية الحالية.",
     searchPlaceholder: "ابحث عن شركة أو قطاع",
+  },
+  vehicleDirectory: {
+    subtitle: "تصفح كل أداة استثمارية لدى فلك وافتح لوحتها.",
+    emptyMessage: "لا توجد أدوات استثمارية متاحة حالياً.",
   },
   notFound: {
     title: "الصفحة غير موجودة",
