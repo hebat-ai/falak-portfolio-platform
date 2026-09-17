@@ -1,11 +1,7 @@
 import { notFound } from "next/navigation";
 import { StartupReportForm } from "../_components/StartupReportForm";
-import { companies, REPORTING_PERIODS_ORDER } from "@/lib/mock/companies";
+import { companies, REPORTING_PERIODS_ORDER, isReportingPeriod } from "@/lib/mock/companies";
 import type { ReportingPeriod } from "@/lib/mock/types";
-
-function isReportingPeriod(value: string | undefined): value is ReportingPeriod {
-  return value !== undefined && (REPORTING_PERIODS_ORDER as readonly string[]).includes(value);
-}
 
 // Prototype only: any valid company slug resolves here with no authentication
 // or authorization check at all. A real implementation would validate a

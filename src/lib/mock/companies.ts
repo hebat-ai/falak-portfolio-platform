@@ -25,6 +25,13 @@ export const REPORTING_CYCLES: Record<ReportingPeriod, ReportingCycleInfo> = {
  */
 export const REPORTING_PERIODS_ORDER = ["Q1_2026", "Q2_2026"] as const satisfies readonly ReportingPeriod[];
 
+// Shared with /submit/[slug] and /company/[slug] -- both resolve a
+// `?period=` query string and need the exact same validation, so it's
+// defined once here rather than duplicated per route.
+export function isReportingPeriod(value: string | undefined): value is ReportingPeriod {
+  return value !== undefined && (REPORTING_PERIODS_ORDER as readonly string[]).includes(value);
+}
+
 /**
  * Reporting status (draft / overdue / etc.) reflects submission compliance
  * only -- it is never used in this app as a signal of company performance.

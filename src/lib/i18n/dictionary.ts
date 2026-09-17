@@ -175,6 +175,14 @@ export interface Dictionary {
     companiesTableCaption: string;
     noApprovedReports: string;
   };
+  companyRegister: {
+    subtitle: string;
+    periodColumnLabel: string;
+    overdueColumnLabel: string;
+    registerCaption: string;
+    emptyRegisterMessage: string;
+    searchPlaceholder: string;
+  };
   notFound: {
     title: string;
     description: string;
@@ -394,6 +402,14 @@ export const en = {
     companiesTableCaption: "Companies visible to this investor for the selected period, approved or published only",
     noApprovedReports: "No approved or published reports for this period yet.",
   },
+  companyRegister: {
+    subtitle: "Every company's reporting record across all periods, browsable and filterable.",
+    periodColumnLabel: "Period",
+    overdueColumnLabel: "Overdue",
+    registerCaption: "One row per company and reporting period, ordered by period with the newest first.",
+    emptyRegisterMessage: "No reporting records match the current filters.",
+    searchPlaceholder: "Search company or sector",
+  },
   notFound: {
     title: "Page Not Found",
     description: "The page you're looking for doesn't exist or may have moved.",
@@ -612,6 +628,14 @@ export const ar = {
     companiesTableTitle: "الشركات",
     companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة أو المنشورة فقط",
     noApprovedReports: "لا توجد تقارير معتمدة أو منشورة لهذه الفترة بعد.",
+  },
+  companyRegister: {
+    subtitle: "سجل تقارير كل شركة عبر جميع الفترات، قابل للتصفح والتصفية.",
+    periodColumnLabel: "الفترة",
+    overdueColumnLabel: "التأخير",
+    registerCaption: "صف واحد لكل شركة وفترة تقرير، مرتب حسب الفترة مع تقديم الأحدث أولاً.",
+    emptyRegisterMessage: "لا توجد سجلات تقارير مطابقة لعوامل التصفية الحالية.",
+    searchPlaceholder: "ابحث عن شركة أو قطاع",
   },
   notFound: {
     title: "الصفحة غير موجودة",

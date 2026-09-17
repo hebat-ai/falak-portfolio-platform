@@ -18,13 +18,12 @@ const selectClass =
 interface CompanyReportViewProps {
   company: Company;
   linkedVehicles: Vehicle[];
+  initialPeriod: ReportingPeriod;
 }
 
-export function CompanyReportView({ company, linkedVehicles }: CompanyReportViewProps) {
+export function CompanyReportView({ company, linkedVehicles, initialPeriod }: CompanyReportViewProps) {
   const { t, lang } = useLanguage();
-  const [selectedPeriod, setSelectedPeriod] = useState<ReportingPeriod>(
-    REPORTING_PERIODS_ORDER[REPORTING_PERIODS_ORDER.length - 1]
-  );
+  const [selectedPeriod, setSelectedPeriod] = useState<ReportingPeriod>(initialPeriod);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
   const periodData = company.periods[selectedPeriod];

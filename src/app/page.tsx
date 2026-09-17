@@ -1,39 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import {
-  PieChart,
-  Landmark,
-  Building2,
-  ClipboardList,
-  ShieldCheck,
-  ArrowRight,
-  ArrowLeft,
-  type LucideIcon,
-} from "lucide-react";
+import { Landmark, ClipboardList, ArrowRight, ArrowLeft, type LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 interface ComingSoonItem {
-  key: keyof Pick<
-    Dictionary["nav"],
-    "investorDashboard" | "vehicleDashboard" | "companyReports" | "startupForm" | "reviewWorkspace"
-  >;
+  key: keyof Pick<Dictionary["nav"], "vehicleDashboard" | "startupForm">;
   Icon: LucideIcon;
 }
 
-// Mirrors Sidebar's disabled nav items -- kept as a small local list here
-// rather than importing Sidebar's internal array, since that array isn't
-// exported and duplicating five {key, Icon} pairs is simpler than adding
-// a new shared file to the (already agreed) file count.
+// Mirrors Sidebar's still-disabled nav items -- kept as a small local list
+// here rather than importing Sidebar's internal array, since that array
+// isn't exported and duplicating two {key, Icon} pairs is simpler than
+// adding a new shared file to the (already agreed) file count. Investor
+// Dashboard, Company Reports, and Review & Approval are all live now and
+// no longer belong in this list.
 const COMING_SOON_ITEMS: ComingSoonItem[] = [
-  { key: "investorDashboard", Icon: PieChart },
   { key: "vehicleDashboard", Icon: Landmark },
-  { key: "companyReports", Icon: Building2 },
   { key: "startupForm", Icon: ClipboardList },
-  { key: "reviewWorkspace", Icon: ShieldCheck },
 ];
 
 export default function HomePage() {
