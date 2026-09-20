@@ -17,4 +17,23 @@
 - Placeholder in use until approved: **Cairo**, via next/font/google, OFL-licensed
 
 ## Logos & patterns
-- Not yet copied into the app; placeholder brand mark in use pending approval (see relevant section when built)
+- Not copied into the app. A placeholder brand mark (`src/components/brand/BrandMark.tsx`) is in use pending approval; the original logo artwork remains only in `references/`.
+
+## Prototype scope and limitations
+- Frontend-only MVP prototype. All data is synthetic mock data in `src/lib/mock`. The project owner confirms that `references/` was not used to seed it.
+- No real authentication or authorization, and no backend, API or database. "Falak Admin (demo)", "Investor (demo)" and "Startup (demo)" are simulated viewpoints, not access controls.
+- Startup submissions and review/approval actions are simulated in component state, reset on reload, and never modify the shared mock data or any other page.
+
+## Language and theme restore
+The server always renders English, LTR and light. A saved language or theme preference (browser `localStorage`, keys `falak-prototype-lang` and `falak-prototype-theme`) is applied after hydration, so a returning Arabic-preferring or dark-theme user may see a brief English/LTR/light flash first. Accepted to avoid hydration mismatches.
+
+## Reporting status is not performance
+Reporting status (draft, overdue, etc.) reflects submission compliance only. It is never a signal of company performance.
+
+## Editability is UI-only
+Which statuses open the startup form editable (`draft`, `changes_requested`) versus locked is a shared UI rule (`isReportEditable` in `src/lib/reportingStatus.ts`). It is a design preview, not a server-enforced permission.
+
+## Data and display conventions
+- A fixed snapshot date (`DASHBOARD_SNAPSHOT_DATE`, 2026-09-09) drives all overdue and "last updated" logic, never the live clock.
+- Western digits are used in both languages (a configurable choice in `src/lib/format.ts`).
+- Revenue is shown per currency and never summed across currencies; missing revenue is `null`, never coerced to 0.

@@ -45,6 +45,10 @@ export function AppShell({ title, subtitle, viewerRoleLabel, children }: AppShel
           drawerId={MOBILE_DRAWER_ID}
         />
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">{children}</main>
+        {/* Sidebar's footer carries this notice at xl+; it is hidden below that. */}
+        <footer className="border-t border-border-subtle px-4 py-3 text-xs text-muted-foreground sm:px-6 xl:hidden">
+          {t.common.syntheticDataNotice}
+        </footer>
       </div>
     </div>
   );

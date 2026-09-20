@@ -27,19 +27,15 @@ interface NavItemConfig {
   >;
   href: string;
   Icon: LucideIcon;
-  enabled: boolean;
 }
 
-// Only Portfolio Overview is real in Batch 1. The rest are visible (so the
-// prototype's full intended IA is legible during review) but intentionally
-// non-interactive -- rendered as <span aria-disabled>, not dead links.
 const NAV_ITEMS: NavItemConfig[] = [
-  { key: "portfolioOverview", href: "/admin", Icon: LayoutDashboard, enabled: true },
-  { key: "investorDashboard", href: "/investor", Icon: PieChart, enabled: true },
-  { key: "vehicleDashboard", href: "/vehicle", Icon: Landmark, enabled: true },
-  { key: "companyReports", href: "/company", Icon: Building2, enabled: true },
-  { key: "startupForm", href: "/submit", Icon: ClipboardList, enabled: true },
-  { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck, enabled: true },
+  { key: "portfolioOverview", href: "/admin", Icon: LayoutDashboard },
+  { key: "investorDashboard", href: "/investor", Icon: PieChart },
+  { key: "vehicleDashboard", href: "/vehicle", Icon: Landmark },
+  { key: "companyReports", href: "/company", Icon: Building2 },
+  { key: "startupForm", href: "/submit", Icon: ClipboardList },
+  { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck },
 ];
 
 export function SidebarNavList({ onNavigate }: { onNavigate?: () => void }) {
@@ -49,26 +45,8 @@ export function SidebarNavList({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav aria-label={t.common.appName} className="flex flex-col gap-1 p-3">
       {NAV_ITEMS.map((item) => {
-        const isActive = item.enabled && pathname?.startsWith(item.href);
+        const isActive = pathname?.startsWith(item.href);
         const label = t.nav[item.key];
-
-        if (!item.enabled) {
-          return (
-            <span
-              key={item.key}
-              aria-disabled="true"
-              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-nav-fg-muted"
-            >
-              <span className="flex items-center gap-3">
-                <item.Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
-                {label}
-              </span>
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px]">
-                {t.nav.comingSoonBadge}
-              </span>
-            </span>
-          );
-        }
 
         return (
           <Link

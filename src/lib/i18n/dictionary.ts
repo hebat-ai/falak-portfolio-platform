@@ -24,7 +24,6 @@ export interface Dictionary {
     companyReports: string;
     startupForm: string;
     reviewWorkspace: string;
-    comingSoonBadge: string;
     openMenu: string;
     closeMenu: string;
   };
@@ -206,7 +205,6 @@ export interface Dictionary {
     subtitle: string;
     batch1Label: string;
     availableNow: string;
-    comingLater: string;
     openAdmin: string;
   };
 }
@@ -227,7 +225,6 @@ export const en = {
     companyReports: "Company Reports",
     startupForm: "Startup Reporting Form",
     reviewWorkspace: "Review & Approval",
-    comingSoonBadge: "Coming soon",
     openMenu: "Open menu",
     closeMenu: "Close menu",
   },
@@ -444,10 +441,9 @@ export const en = {
   },
   home: {
     title: "Falak Portfolio Platform — Prototype",
-    subtitle: "Phase 1 frontend visual prototype, built with synthetic demo data for design review.",
-    batch1Label: "Batch 1",
+    subtitle: "Frontend-only MVP prototype with synthetic demo data, for design review.",
+    batch1Label: "MVP prototype",
     availableNow: "Available now",
-    comingLater: "Coming in later batches",
     openAdmin: "Open Portfolio Overview",
   },
 } satisfies Dictionary;
@@ -468,7 +464,6 @@ export const ar = {
     companyReports: "تقارير الشركات",
     startupForm: "نموذج تقرير الشركة الناشئة",
     reviewWorkspace: "المراجعة والاعتماد",
-    comingSoonBadge: "قريباً",
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",
   },
@@ -685,10 +680,9 @@ export const ar = {
   },
   home: {
     title: "منصة فلك لإدارة المحفظة — نموذج أولي",
-    subtitle: "نموذج أولي مرئي للواجهة الأمامية (المرحلة الأولى)، مبني ببيانات تجريبية اصطناعية لمراجعة التصميم.",
-    batch1Label: "الدفعة الأولى",
+    subtitle: "نموذج أولي (MVP) للواجهة الأمامية فقط ببيانات تجريبية اصطناعية، لمراجعة التصميم.",
+    batch1Label: "نموذج أولي",
     availableNow: "متاح الآن",
-    comingLater: "قادم في دفعات لاحقة",
     openAdmin: "فتح نظرة عامة على المحفظة",
   },
 } satisfies Dictionary;

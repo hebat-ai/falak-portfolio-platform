@@ -7,7 +7,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Falak Portfolio Platform",
   description:
-    "Falak Ventures portfolio monitoring & investor reporting -- Phase 1 visual prototype",
+    "Falak Ventures portfolio monitoring & investor reporting -- frontend-only MVP prototype with synthetic data",
+  // Defense in depth only: Deployment Protection is the real access control.
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nosnippet: true,
+    noimageindex: true,
+    nocache: true,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

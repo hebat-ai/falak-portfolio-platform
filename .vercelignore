@@ -1,1 +1,6 @@
 /references/
+.env*
+.claude/
+AGENTS.md
+CLAUDE.md
+*.pem
