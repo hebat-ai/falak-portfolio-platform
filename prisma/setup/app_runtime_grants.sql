@@ -22,7 +22,12 @@ CREATE ROLE app_runtime LOGIN;
 -- Set the password out-of-band (see header). Do not add a PASSWORD
 -- clause here or in any committed file.
 
-ALTER ROLE app_runtime NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+-- No ALTER ROLE follows intentionally. PostgreSQL documents the defaults
+-- for CREATE ROLE as NOSUPERUSER, NOCREATEDB, NOCREATEROLE,
+-- NOREPLICATION, NOBYPASSRLS, and a null password. A non-superuser
+-- cannot alter the SUPERUSER property, even when restating NOSUPERUSER,
+-- so the redundant ALTER ROLE would fail. Deployment and preflight
+-- verify these safe defaults immediately after role creation.
 
 GRANT USAGE ON SCHEMA public TO app_runtime;
 -- No sequence grants needed: every id uses Prisma's cuid() default,
