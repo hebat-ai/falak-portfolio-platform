@@ -1,0 +1,1063 @@
+// Falak Portfolio Platform -- database schema.
+// See the accompanying migration-plan writeup for the custom SQL (CHECK
+// constraints, the cycle/obligation compatibility trigger, the investor
+// capital-transaction consistency trigger, partial unique indexes, and
+// least-privilege role grants) that Prisma cannot express here.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// Platform roles & accounts
+// ============================================================
+
+enum PlatformRole {
+  FALAK_ADMIN
+  FALAK_OPERATIONS
+  INVESTOR
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  deactivatedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  roles                      UserRoleAssignment[]
+  companyMemberships         CompanyMembership[]
+  investorMemberships        InvestorMembership[]
+  companyInvitesSent         CompanyInvite[]                   @relation("CompanyInviteInvitedBy")
+  auditEvents                AuditEvent[]
+  narrativeSections          NarrativeSection[]
+  workflowEventsActed        SubmissionWorkflowEvent[]
+  submissionsSubmitted       CompanySubmission[]
+  reportVersionsMade         ReportVersion[]
+  attachmentsUploaded        Attachment[]
+  cashFlowsRecorded          AgreementCashFlow[]
+  capitalTxRecorded          InvestorCapitalTransaction[]
+  valuationsRecorded         CompanyValuationSnapshot[]
+  navSnapshotsRecorded       VehicleNavSnapshot[]
+  ownershipSnapshotsRecorded OwnershipSnapshot[]
+  distributionsSent          ReportDistribution[]              @relation("ReportDistributionSentBy")
+  distributionsReceived      ReportDistribution[]              @relation("ReportDistributionRecipient")
+  reviewCommentsAuthored     ReviewComment[]                   @relation("ReviewCommentAuthor")
+  reviewCommentsResolved     ReviewComment[]                   @relation("ReviewCommentResolvedBy")
+  deadlineExtensionsMade     ReportingCycleDeadlineExtension[]
+
+  @@map("users")
+}
+
+model UserRoleAssignment {
+  id        String       @id @default(cuid())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      PlatformRole
+  createdAt DateTime     @default(now())
+  // Revoke via this field, never DELETE -- keeps the runtime role's grant
+  // set uniform (no DELETE anywhere) and preserves who held which role
+  // when, including re-granting the same role after a prior revocation.
+  // A flat @@unique([userId, role]) would have made that re-grant
+  // impossible (the old revoked row would collide with the new one), so
+  // "at most one ACTIVE assignment per (userId, role)" is enforced
+  // instead by a partial unique index in the migration plan, not here.
+  revokedAt DateTime?
+
+  @@index([userId, role])
+  @@map("user_roles")
+}
+
+// ============================================================
+// Startups
+// ============================================================
+
+enum ReportingFrequency {
+  Quarterly
+  Semiannual
+}
+
+enum CustomerModel {
+  B2B
+  B2C
+  B2B_B2C
+}
+
+enum RevenueModel {
+  SaaS
+  Marketplace
+  ECommerce
+  TransactionBased
+  Subscription
+  Other
+}
+
+enum FundingStage {
+  PreSeed
+  Seed
+  SeriesA
+  SeriesB
+  Later
+}
+
+model Company {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  nameEn        String
+  nameAr        String
+  sectorEn      String
+  sectorAr      String
+  customerModel CustomerModel
+  revenueModels RevenueModel[]
+  currency      Currency
+  entryStage    FundingStage
+  currentStage  FundingStage
+  archivedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  ownershipPositions OwnershipPosition[]
+  invites            CompanyInvite[]
+  memberships        CompanyMembership[]
+  cycles             ReportingCycle[]
+  reports            Report[]
+  valuations         CompanyValuationSnapshot[]
+
+  @@map("companies")
+}
+
+model CompanyInvite {
+  id          String    @id @default(cuid())
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  companyId   String
+  email       String
+  tokenHash   String    @unique
+  invitedBy   User?     @relation("CompanyInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedById String?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([companyId])
+  @@map("company_invites")
+}
+
+enum CompanyMembershipRole {
+  ADMIN
+  MEMBER
+}
+
+model CompanyMembership {
+  id        String                @id @default(cuid())
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  company   Company               @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  companyId String
+  role      CompanyMembershipRole @default(MEMBER)
+  joinedAt  DateTime              @default(now())
+  revokedAt DateTime?
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@map("company_memberships")
+}
+
+// ============================================================
+// Vehicles & investors
+// ============================================================
+
+enum Currency {
+  SAR
+  USD
+}
+
+enum VehicleType {
+  Fund
+  SPV
+}
+
+model Vehicle {
+  id         String      @id @default(cuid())
+  slug       String      @unique
+  nameEn     String
+  nameAr     String
+  type       VehicleType
+  currency   Currency
+  archivedAt DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  ownershipPositions OwnershipPosition[]
+  positions          InvestorVehiclePosition[]
+  reports            Report[]
+  navSnapshots       VehicleNavSnapshot[]
+  capitalTx          InvestorCapitalTransaction[]
+
+  @@map("vehicles")
+}
+
+enum InvestorType {
+  Institutional
+  FamilyOffice
+  Individual
+}
+
+model Investor {
+  id         String       @id @default(cuid())
+  nameEn     String
+  nameAr     String
+  type       InvestorType
+  archivedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  memberships        InvestorMembership[]
+  positions          InvestorVehiclePosition[]
+  ownershipPositions OwnershipPosition[]
+  reports            Report[]
+  accessGrants       ReportAccessGrant[]
+  distributions      ReportDistribution[]
+  capitalTx          InvestorCapitalTransaction[]
+
+  @@map("investors")
+}
+
+enum InvestorMembershipRole {
+  ADMIN
+  MEMBER
+}
+
+// Replaces the old 1:1 User<->Investor link. An investor organization can
+// have several user accounts; each membership carries its own role and
+// can be revoked without deleting the user or the investor.
+model InvestorMembership {
+  id         String                 @id @default(cuid())
+  investor   Investor               @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId String
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  role       InvestorMembershipRole @default(MEMBER)
+  joinedAt   DateTime               @default(now())
+  revokedAt  DateTime?
+
+  @@unique([investorId, userId])
+  @@index([investorId])
+  @@map("investor_memberships")
+}
+
+enum PositionStatus {
+  Active
+  Exited
+  WrittenOff
+}
+
+// An investor's stake IN A VEHICLE (fund/SPV level), independent of any
+// one company the vehicle holds -- effective-dated, so a commitment
+// increase is a new row, not an edit to an old one.
+//
+// A DIRECT investor position (no vehicle) is represented differently: see
+// OwnershipPosition.holderType = DIRECT_INVESTOR below, whose linked
+// InvestmentAgreement(s) carry investedAmount/ownershipPct for that case.
+// This table only covers the vehicle-mediated relationship.
+model InvestorVehiclePosition {
+  id               String         @id @default(cuid())
+  investor         Investor       @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId       String
+  vehicle          Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicleId        String
+  commitmentAmount Decimal?       @db.Decimal(18, 4)
+  calledAmount     Decimal?       @db.Decimal(18, 4)
+  ownershipPct     Decimal?       @db.Decimal(7, 4)
+  currency         Currency
+  effectiveFrom    DateTime       @db.Date
+  effectiveTo      DateTime?      @db.Date
+  status           PositionStatus @default(Active)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([investorId, vehicleId, effectiveFrom])
+  @@index([investorId])
+  @@index([vehicleId])
+  @@map("investor_vehicle_positions")
+}
+
+// ============================================================
+// Investment agreements & reporting obligations
+// ============================================================
+
+enum OwnershipHolderType {
+  VEHICLE
+  DIRECT_INVESTOR
+  DIRECT_FALAK
+}
+
+// The holder/company-level relationship -- exactly one row per (company,
+// holder), regardless of how many InvestmentAgreement tranches that
+// holder has signed with that company over time. This is what makes
+// "current total ownership for this holder in this company" unambiguous:
+// it is always this position's latest OwnershipSnapshot, never a sum
+// across the holder's several agreements (see InvestmentAgreement.
+// ownershipPct's own comment for why that field is NOT the source for
+// current ownership).
+model OwnershipPosition {
+  id         String              @id @default(cuid())
+  company    Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  companyId  String
+  holderType OwnershipHolderType
+  vehicle    Vehicle?            @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicleId  String?
+  investor   Investor?           @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId String?
+  createdAt  DateTime            @default(now())
+
+  agreements InvestmentAgreement[]
+  snapshots  OwnershipSnapshot[]
+
+  @@map("ownership_positions")
+}
+
+enum AgreementStatus {
+  Draft
+  Active
+  Superseded
+  Terminated
+}
+
+// One row per investment TRANCHE (round). Several agreements can belong
+// to the same OwnershipPosition (a seed round and a follow-on are two
+// agreements, one position). holderType/company/vehicle/investor are no
+// longer duplicated here -- they live once on OwnershipPosition and are
+// reached via ownershipPositionId, so there is no risk of an agreement's
+// holder ever disagreeing with its position's holder.
+model InvestmentAgreement {
+  id                     String               @id @default(cuid())
+  agreementNumber        String               @unique
+  ownershipPosition      OwnershipPosition    @relation(fields: [ownershipPositionId], references: [id], onDelete: Restrict)
+  ownershipPositionId    String
+  roundLabel             String?
+  signedDate             DateTime             @db.Date
+  effectiveFrom          DateTime             @db.Date
+  effectiveTo            DateTime?            @db.Date
+  investedAmount         Decimal?             @db.Decimal(18, 4)
+  currency               Currency?
+  // Ownership granted BY THIS TRANCHE, as struck at signing -- a static
+  // historical fact about this one round, never updated. It is NOT
+  // current/diluted total ownership: a later round (by this holder or
+  // any other) dilutes the position's real stake without changing this
+  // field. Current ownership always comes from this agreement's
+  // OwnershipPosition.snapshots (latest asOfDate), never from summing
+  // ownershipPct across a holder's several agreements.
+  ownershipPct           Decimal?             @db.Decimal(7, 4)
+  informationRightsNotes String?
+  status                 AgreementStatus      @default(Draft)
+  supersedesAgreement    InvestmentAgreement? @relation("AgreementSupersession", fields: [supersedesAgreementId], references: [id], onDelete: Restrict)
+  supersedesAgreementId  String?              @unique
+  supersededByAgreement  InvestmentAgreement? @relation("AgreementSupersession")
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  obligations ReportingObligation[]
+  cashFlows   AgreementCashFlow[]
+  capitalTx   InvestorCapitalTransaction[]
+
+  @@index([ownershipPositionId])
+  @@map("investment_agreements")
+}
+
+// Effective-dated current-ownership fact for one OwnershipPosition (a
+// holder's TOTAL stake in a company, already netting out dilution across
+// every agreement/round that holder has). Current company value
+// attributable to a holder = latest CompanyValuationSnapshot × the
+// holder's latest OwnershipSnapshot for that company. Falak/Operations
+// records a new snapshot whenever the cap table changes for ANY holder of
+// the company, since that dilutes every other holder's position too.
+model OwnershipSnapshot {
+  id                  String            @id @default(cuid())
+  ownershipPosition   OwnershipPosition @relation(fields: [ownershipPositionId], references: [id], onDelete: Restrict)
+  ownershipPositionId String
+  asOfDate            DateTime          @db.Date
+  ownershipPct        Decimal           @db.Decimal(7, 4)
+  isFullyDiluted      Boolean           @default(false)
+  source              String?
+  createdAt           DateTime          @default(now())
+  createdBy           User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById         String?
+
+  @@unique([ownershipPositionId, asOfDate])
+  @@index([ownershipPositionId, asOfDate])
+  @@map("ownership_snapshots")
+}
+
+// Once any ReportingObligation references this template, its semantic
+// fields (nameEn, nameAr, version) become immutable -- only isActive may
+// still change (retiring a template from future use). A real content
+// change is a new ReportingTemplate row with an incremented version, not
+// an in-place edit (both trigger-enforced, see migration plan). The same
+// lock extends to this template's MetricDefinition rows once referenced:
+// no MetricDefinition may be inserted, updated, or deleted under an
+// in-use template -- a changed metric set is a new template/version too.
+model ReportingTemplate {
+  id        String   @id @default(cuid())
+  nameEn    String
+  nameAr    String
+  version   Int      @default(1)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  metrics     MetricDefinition[]
+  obligations ReportingObligation[]
+  cycles      ReportingCycle[]
+
+  @@map("reporting_templates")
+}
+
+enum MetricDataType {
+  Currency
+  Percent
+  Number
+  Text
+  Boolean
+}
+
+// Insert/update/delete-locked once the owning ReportingTemplate is
+// referenced by any ReportingObligation -- see ReportingTemplate's own
+// comment. A metric-set change under an in-use template requires a new
+// ReportingTemplate row, never a row added to or edited on this table.
+model MetricDefinition {
+  id         String            @id @default(cuid())
+  template   ReportingTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateId String
+  key        String
+  labelEn    String
+  labelAr    String
+  dataType   MetricDataType
+  required   Boolean           @default(true)
+  sortOrder  Int               @default(0)
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  currentValues  SubmissionMetricValue[]
+  snapshotValues SubmissionVersionMetricValue[]
+
+  @@unique([templateId, key])
+  @@map("metric_definitions")
+}
+
+// Cadence + which exact template VERSION applies (templateId points at one
+// specific ReportingTemplate row, i.e. one specific version -- not a
+// template "family"). Two obligations only ever share a cycle when this
+// templateId, this frequency, and the covered period all match exactly;
+// enforced by the cycle-opening service AND by a database trigger (see
+// migration plan) that rejects attaching an incompatible obligation to a
+// cycle another obligation already occupies. Once any obligation is
+// attached to a cycle, its templateId/frequency/effective dates become
+// immutable (also trigger-enforced) -- a change requires a new
+// ReportingObligation row, never an in-place edit.
+model ReportingObligation {
+  id            String              @id @default(cuid())
+  agreement     InvestmentAgreement @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  agreementId   String
+  template      ReportingTemplate   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateId    String
+  frequency     ReportingFrequency
+  effectiveFrom DateTime            @db.Date
+  effectiveTo   DateTime?           @db.Date
+  createdAt     DateTime            @default(now())
+
+  cycleCoverage ReportingCycleObligation[]
+
+  @@index([agreementId])
+  @@map("reporting_obligations")
+}
+
+// ============================================================
+// Reporting cycles & submissions
+// ============================================================
+
+enum CycleStatus {
+  Open
+  Due
+  Closed
+  Cancelled
+  Extended
+}
+
+// One row per COMPANY per (template, period) -- not per obligation, and
+// not keyed on the display-oriented periodLabel. templateId is the
+// cycle's own committed identity: every obligation attached via
+// ReportingCycleObligation must match it exactly (DB-trigger-enforced,
+// see migration plan), which is also how two obligations requiring
+// different template versions for the same nominal period correctly get
+// two separate cycles instead of colliding. periodLabel remains a display
+// string only (e.g. "Q2 2026"), never part of any uniqueness rule.
+model ReportingCycle {
+  id               String            @id @default(cuid())
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  companyId        String
+  template         ReportingTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateId       String
+  periodLabel      String
+  periodStart      DateTime          @db.Date
+  periodEnd        DateTime          @db.Date
+  originalDeadline DateTime          @db.Date
+  currentDeadline  DateTime          @db.Date
+  status           CycleStatus       @default(Open)
+  openedAt         DateTime          @default(now())
+  closedAt         DateTime?
+  createdAt        DateTime          @default(now())
+
+  obligationCoverage ReportingCycleObligation[]
+  deadlineExtensions ReportingCycleDeadlineExtension[]
+  submission         CompanySubmission?
+
+  @@unique([companyId, templateId, periodStart, periodEnd])
+  @@map("reporting_cycles")
+}
+
+model ReportingCycleDeadlineExtension {
+  id               String         @id @default(cuid())
+  cycle            ReportingCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  cycleId          String
+  previousDeadline DateTime       @db.Date
+  newDeadline      DateTime       @db.Date
+  reason           String?
+  extendedBy       User?          @relation(fields: [extendedById], references: [id], onDelete: SetNull)
+  extendedById     String?
+  createdAt        DateTime       @default(now())
+
+  @@index([cycleId])
+  @@map("reporting_cycle_deadline_extensions")
+}
+
+// Which obligation(s) a given cycle's submission satisfies.
+model ReportingCycleObligation {
+  id           String              @id @default(cuid())
+  cycle        ReportingCycle      @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  cycleId      String
+  obligation   ReportingObligation @relation(fields: [obligationId], references: [id], onDelete: Restrict)
+  obligationId String
+
+  @@unique([cycleId, obligationId])
+  @@map("reporting_cycle_obligations")
+}
+
+enum SubmissionStatus {
+  draft
+  submitted
+  under_review
+  changes_requested
+  approved
+}
+
+model CompanySubmission {
+  id            String           @id @default(cuid())
+  cycle         ReportingCycle   @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  cycleId       String           @unique
+  status        SubmissionStatus @default(draft)
+  submittedBy   User?            @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+  submittedById String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  metricValues     SubmissionMetricValue[]
+  workflowEvents   SubmissionWorkflowEvent[]
+  attachments      Attachment[]
+  reportInclusions ReportVersionSubmission[]
+  reviewComments   ReviewComment[]
+
+  @@map("company_submissions")
+}
+
+// Current, editable values. currencyCode is populated whenever the
+// governing metric's dataType is Currency, and is independent of the
+// company's own base currency -- a template can ask for a figure in a
+// currency other than the company's default.
+model SubmissionMetricValue {
+  id                 String            @id @default(cuid())
+  submission         CompanySubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  submissionId       String
+  metricDefinition   MetricDefinition  @relation(fields: [metricDefinitionId], references: [id], onDelete: Restrict)
+  metricDefinitionId String
+  numericValue       Decimal?          @db.Decimal(18, 4)
+  currencyCode       Currency?
+  textValue          String?
+  isNa               Boolean           @default(false)
+  naReason           String?
+  updatedAt          DateTime          @updatedAt
+
+  reviewComments ReviewComment[]
+
+  @@unique([submissionId, metricDefinitionId])
+  @@map("submission_metric_values")
+}
+
+model SubmissionWorkflowEvent {
+  id           String            @id @default(cuid())
+  submission   CompanySubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  submissionId String
+  versionNo    Int
+  actor        User?             @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorId      String?
+  fromStatus   SubmissionStatus?
+  toStatus     SubmissionStatus
+  comment      String?
+  createdAt    DateTime          @default(now())
+
+  metricSnapshots SubmissionVersionMetricValue[]
+
+  @@unique([submissionId, versionNo])
+  @@index([submissionId])
+  @@map("submission_workflow_events")
+}
+
+// Immutable snapshot of every metric value exactly as it stood at this
+// workflow event -- never updated after insert.
+model SubmissionVersionMetricValue {
+  id                 String                  @id @default(cuid())
+  workflowEvent      SubmissionWorkflowEvent @relation(fields: [workflowEventId], references: [id], onDelete: Restrict)
+  workflowEventId    String
+  metricDefinition   MetricDefinition        @relation(fields: [metricDefinitionId], references: [id], onDelete: Restrict)
+  metricDefinitionId String
+  numericValue       Decimal?                @db.Decimal(18, 4)
+  currencyCode       Currency?
+  textValue          String?
+  isNa               Boolean                 @default(false)
+  naReason           String?
+
+  @@unique([workflowEventId, metricDefinitionId])
+  @@map("submission_version_metric_values")
+}
+
+// A single workflow comment isn't enough for line-item change requests --
+// this can target the submission generally, one specific metric value,
+// one narrative section, or one attachment. Exactly the FK matching
+// targetType is populated (CHECK-enforced, see migration plan).
+enum ReviewCommentTargetType {
+  SUBMISSION
+  METRIC_VALUE
+  NARRATIVE_SECTION
+  ATTACHMENT
+}
+
+enum ReviewCommentStatus {
+  Open
+  Resolved
+}
+
+model ReviewComment {
+  id                      String                  @id @default(cuid())
+  targetType              ReviewCommentTargetType
+  submission              CompanySubmission?      @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  submissionId            String?
+  submissionMetricValue   SubmissionMetricValue?  @relation(fields: [submissionMetricValueId], references: [id], onDelete: Restrict)
+  submissionMetricValueId String?
+  narrativeSection        NarrativeSection?       @relation(fields: [narrativeSectionId], references: [id], onDelete: Restrict)
+  narrativeSectionId      String?
+  attachment              Attachment?             @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+  attachmentId            String?
+  body                    String
+  status                  ReviewCommentStatus     @default(Open)
+  author                  User?                   @relation("ReviewCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  authorId                String?
+  resolvedAt              DateTime?
+  resolvedBy              User?                   @relation("ReviewCommentResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedById            String?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+
+  @@index([submissionId])
+  @@map("review_comments")
+}
+
+// ============================================================
+// Compiled reports, narrative, access, distribution
+// ============================================================
+
+enum ReportScope {
+  COMPANY
+  VEHICLE
+  INVESTOR_PORTFOLIO
+  FALAK_PORTFOLIO
+}
+
+enum ReportStatus {
+  draft
+  published
+  distributed
+}
+
+// periodStart/periodEnd are the real identity of which period this report
+// covers; periodLabel is display-only. Duplicate-report prevention (one
+// report per scope+entity+period) is enforced by four partial unique
+// indexes in the migration plan, since Postgres unique constraints treat
+// NULL as distinct from NULL and a single flat constraint across the
+// three nullable scope FKs would not actually catch duplicates within the
+// FALAK_PORTFOLIO scope (where all three are null on every row).
+model Report {
+  id          String       @id @default(cuid())
+  scope       ReportScope
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  companyId   String?
+  vehicle     Vehicle?     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicleId   String?
+  investor    Investor?    @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId  String?
+  periodLabel String
+  periodStart DateTime     @db.Date
+  periodEnd   DateTime     @db.Date
+  // The point-in-time this compiled report actually reflects -- normally
+  // equal to periodEnd but stored explicitly and independently, since a
+  // portfolio-scope report can be compiled "as of" a date that differs
+  // from the underlying period's own end (e.g. a mid-quarter snapshot).
+  asOfDate    DateTime     @db.Date
+  status      ReportStatus @default(draft)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  versions ReportVersion[]
+
+  @@index([scope, periodStart, periodEnd])
+  @@map("reports")
+}
+
+model ReportVersion {
+  id            String    @id @default(cuid())
+  report        Report    @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  reportId      String
+  versionNo     Int
+  isSuperseded  Boolean   @default(false)
+  publishedAt   DateTime?
+  distributedAt DateTime?
+  createdBy     User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdAt     DateTime  @default(now())
+
+  submissions   ReportVersionSubmission[]
+  narratives    NarrativeSection[]
+  accessGrants  ReportAccessGrant[]
+  distributions ReportDistribution[]
+  attachments   Attachment[]
+
+  @@unique([reportId, versionNo])
+  @@map("report_versions")
+}
+
+// Many-to-many: a vehicle/investor-portfolio/Falak-portfolio report
+// version compiles several approved company submissions; a company
+// report version compiles exactly one.
+model ReportVersionSubmission {
+  id              String            @id @default(cuid())
+  reportVersion   ReportVersion     @relation(fields: [reportVersionId], references: [id], onDelete: Restrict)
+  reportVersionId String
+  submission      CompanySubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  submissionId    String
+
+  @@unique([reportVersionId, submissionId])
+  @@index([submissionId])
+  @@map("report_version_submissions")
+}
+
+enum NarrativeKind {
+  operational_update
+  quarter_highlights
+  investment_review_notes
+  management_commentary
+}
+
+model NarrativeSection {
+  id              String        @id @default(cuid())
+  reportVersion   ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Restrict)
+  reportVersionId String
+  kind            NarrativeKind
+  textEn          String
+  textAr          String
+  author          User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId        String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  reviewComments ReviewComment[]
+
+  @@unique([reportVersionId, kind])
+  @@map("narrative_sections")
+}
+
+// Authorization only -- whether an investor is ALLOWED to see a version.
+// Separate from ReportDistribution below, which is whether it was
+// actually SENT. A grant can exist with no distribution ever attempted
+// (e.g. the investor views it on-platform without an email being sent).
+model ReportAccessGrant {
+  id              String        @id @default(cuid())
+  reportVersion   ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Restrict)
+  reportVersionId String
+  investor        Investor      @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId      String
+  grantedAt       DateTime      @default(now())
+  revokedAt       DateTime?
+
+  @@unique([reportVersionId, investorId])
+  @@index([investorId, revokedAt])
+  @@map("report_access_grants")
+}
+
+enum DistributionChannel {
+  Email
+  Platform
+  Manual
+}
+
+enum DistributionStatus {
+  Pending
+  Sent
+  Delivered
+  Failed
+  Bounced
+}
+
+// The actual delivery event -- distinct from ReportAccessGrant, which is
+// only authorization. Multiple distribution attempts can exist for one
+// grant (retry after a bounce, a manual resend, etc.).
+model ReportDistribution {
+  id              String              @id @default(cuid())
+  reportVersion   ReportVersion       @relation(fields: [reportVersionId], references: [id], onDelete: Restrict)
+  reportVersionId String
+  investor        Investor            @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId      String
+  recipientUser   User?               @relation("ReportDistributionRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  recipientUserId String?
+  recipientEmail  String?
+  channel         DistributionChannel
+  sentBy          User?               @relation("ReportDistributionSentBy", fields: [sentById], references: [id], onDelete: SetNull)
+  sentById        String?
+  sentAt          DateTime?
+  status          DistributionStatus  @default(Pending)
+  failureReason   String?
+  openedAt        DateTime?
+  downloadedAt    DateTime?
+  createdAt       DateTime            @default(now())
+
+  @@index([reportVersionId])
+  @@index([investorId])
+  @@map("report_distributions")
+}
+
+// ============================================================
+// Attachments
+// ============================================================
+
+enum AttachmentOwnerType {
+  SUBMISSION
+  REPORT_VERSION
+}
+
+model Attachment {
+  id              String              @id @default(cuid())
+  ownerType       AttachmentOwnerType
+  submission      CompanySubmission?  @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  submissionId    String?
+  reportVersion   ReportVersion?      @relation(fields: [reportVersionId], references: [id], onDelete: Restrict)
+  reportVersionId String?
+  fileName        String
+  mimeType        String
+  sizeBytes       Int
+  storageProvider String
+  storageKey      String
+  checksum        String?
+  uploadedBy      User?               @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedById    String?
+  createdAt       DateTime            @default(now())
+
+  reviewComments ReviewComment[]
+
+  @@index([submissionId])
+  @@index([reportVersionId])
+  @@map("attachments")
+}
+
+// ============================================================
+// Investment performance: transactions, valuations, NAV
+// ============================================================
+
+// Cash flow at the INVESTMENT level (vehicle-or-direct holder <-> the
+// company): capital deployed into the company, and proceeds/dividends/
+// exit value received back from it. This is the source data for a single
+// investment's MOIC / DPI / RVPI / TVPI / IRR.
+//
+// A write-off is deliberately NOT a value here. It is a non-cash
+// valuation impairment, not a cash movement -- including it in this
+// ledger would risk it being summed into realized/paid-in totals by a
+// query that doesn't explicitly exclude it, double-counting or
+// misrepresenting IRR. A write-off is instead recorded as a
+// CompanyValuationSnapshot with valuationType = WrittenOff (see below),
+// which correctly flows into residual-value calculations as zero without
+// needing any special-case exclusion logic.
+enum AgreementCashFlowType {
+  Drawdown
+  Distribution
+}
+
+model AgreementCashFlow {
+  id              String                @id @default(cuid())
+  agreement       InvestmentAgreement   @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  agreementId     String
+  type            AgreementCashFlowType
+  amount          Decimal               @db.Decimal(18, 4)
+  currency        Currency
+  transactionDate DateTime              @db.Date
+  description     String?
+  createdAt       DateTime              @default(now())
+  createdBy       User?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById     String?
+
+  @@index([agreementId, transactionDate])
+  @@map("agreement_cash_flows")
+}
+
+// Cash flow at the INVESTOR level: capital called from / contributed by
+// an LP, and distributions paid back to them. vehicleId is set for
+// vehicle-mediated flows; for a direct deal (no vehicle), agreementId is
+// required instead (CHECK-enforced, see migration plan). This is the
+// source data for an investor's own MOIC / DPI / RVPI / TVPI / IRR and
+// their cash-flow history.
+enum InvestorCapitalTransactionType {
+  CapitalCall
+  Contribution
+  Distribution
+  ManagementFee
+}
+
+model InvestorCapitalTransaction {
+  id              String                         @id @default(cuid())
+  investor        Investor                       @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId      String
+  vehicle         Vehicle?                       @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicleId       String?
+  agreement       InvestmentAgreement?           @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  agreementId     String?
+  type            InvestorCapitalTransactionType
+  amount          Decimal                        @db.Decimal(18, 4)
+  currency        Currency
+  transactionDate DateTime                       @db.Date
+  description     String?
+  createdAt       DateTime                       @default(now())
+  createdBy       User?                          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById     String?
+
+  @@index([investorId, transactionDate])
+  @@index([vehicleId, transactionDate])
+  @@map("investor_capital_transactions")
+}
+
+// Company-level valuation marks -- source for a company's "current value"
+// and, pro-rated by a holder's latest OwnershipSnapshot (never an
+// agreement's own round-time ownershipPct), for that holder's
+// unrealized/residual value (RVPI numerator, IRR terminal value).
+enum CompanyValuationType {
+  LastRound
+  InternalMark
+  ThirdPartyMark
+  Exit
+  // A non-cash impairment event -- see the note on AgreementCashFlowType
+  // above for why this lives here rather than in the cash-flow ledger.
+  // valuationAmount is typically 0 (or a small recovered scrap value).
+  WrittenOff
+}
+
+model CompanyValuationSnapshot {
+  id              String               @id @default(cuid())
+  company         Company              @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  companyId       String
+  asOfDate        DateTime             @db.Date
+  valuationAmount Decimal              @db.Decimal(18, 4)
+  currency        Currency
+  valuationType   CompanyValuationType
+  source          String?
+  createdAt       DateTime             @default(now())
+  createdBy       User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById     String?
+
+  @@unique([companyId, asOfDate, valuationType])
+  @@index([companyId, asOfDate])
+  @@map("company_valuation_snapshots")
+}
+
+// Fund-level NAV marks -- source for a vehicle's residual value and, pro-
+// rated by an investor's position, for that investor's RVPI/TVPI/IRR from
+// the vehicle side.
+model VehicleNavSnapshot {
+  id          String   @id @default(cuid())
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicleId   String
+  asOfDate    DateTime @db.Date
+  navAmount   Decimal  @db.Decimal(18, 4)
+  currency    Currency
+  source      String?
+  createdAt   DateTime @default(now())
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+
+  @@unique([vehicleId, asOfDate])
+  @@index([vehicleId, asOfDate])
+  @@map("vehicle_nav_snapshots")
+}
+
+// ============================================================
+// Multi-currency policy
+// ============================================================
+
+// Current enforced policy: every KPI (MOIC, IRR, NAV, portfolio totals)
+// is calculated and displayed SEPARATELY per currency -- SAR figures and
+// USD figures are never summed into one number anywhere in this schema
+// or its calculation layer. This table exists so that policy can later
+// upgrade to real conversion without a schema change, but it is NOT yet
+// wired into any calculation; no Falak-wide single-currency consolidated
+// figure is produced until that is built and separately approved -- the
+// same "ships Pending, never silently guessed" discipline this project
+// has used for every other unapproved formula since its first plan.
+//
+// Planned conversion-date policy (for when this is wired in): a
+// transaction or snapshot dated D converts to the reporting currency
+// using the FxRate row with the latest rateDate <= D for that
+// (sourceCurrency, targetCurrency) pair -- never a future rate, never
+// interpolated between two rates. Reporting/target currency is assumed to
+// be SAR (Falak's home currency); confirm before this is implemented.
+model FxRate {
+  id             String   @id @default(cuid())
+  rateDate       DateTime @db.Date
+  sourceCurrency Currency
+  targetCurrency Currency
+  rate           Decimal  @db.Decimal(18, 8)
+  source         String?
+  createdAt      DateTime @default(now())
+
+  @@unique([rateDate, sourceCurrency, targetCurrency])
+  @@map("fx_rates")
+}
+
+// ============================================================
+// Audit
+// ============================================================
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorId    String?
+  action     String
+  targetType String
+  targetId   String
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_events")
+}
