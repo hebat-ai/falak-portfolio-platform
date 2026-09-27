@@ -143,6 +143,9 @@ export interface Dictionary {
     validationInvalid: string;
     lockedMessage: string;
     unsavedChangesConfirm: string;
+    noActiveCycleMessage: string;
+    metricsNotConfiguredMessage: string;
+    metricsIncompleteMessage: string;
   };
   reviewWorkspace: {
     subtitle: string;
@@ -379,6 +382,10 @@ export const en = {
     validationInvalid: "Enter a valid number.",
     lockedMessage: "This report can no longer be edited here.",
     unsavedChangesConfirm: "You have unsaved changes. Discard them?",
+    noActiveCycleMessage: "There is no active reporting cycle for this company right now.",
+    metricsNotConfiguredMessage:
+      "Report data entry is not yet connected — it depends on Falak's reporting template, which has not been defined yet.",
+    metricsIncompleteMessage: "This report is missing required information and cannot be submitted yet.",
   },
   reviewWorkspace: {
     subtitle: "Review submitted reports and manage their approval status.",
@@ -618,6 +625,10 @@ export const ar = {
     validationInvalid: "أدخل رقمًا صالحًا.",
     lockedMessage: "لا يمكن تعديل هذا التقرير هنا بعد الآن.",
     unsavedChangesConfirm: "لديك تغييرات غير محفوظة. هل تريد تجاهلها؟",
+    noActiveCycleMessage: "لا توجد دورة تقارير نشطة لهذه الشركة حالياً.",
+    metricsNotConfiguredMessage:
+      "لم يتم بعد ربط إدخال بيانات التقرير — فهو يعتمد على قالب التقارير الخاص بفلك، والذي لم يُحدَّد بعد.",
+    metricsIncompleteMessage: "هذا التقرير يفتقد إلى معلومات مطلوبة ولا يمكن إرساله بعد.",
   },
   reviewWorkspace: {
     subtitle: "مراجعة التقارير المُقدَّمة وإدارة حالة اعتمادها.",
