@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import type { Prisma, SubmissionStatus } from "@/generated/prisma/client";
 import { requireFalakRole } from "@/lib/auth/authorization";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 
 /**
  * Reads a fresh event-version count and appends the next workflow event --
@@ -58,6 +59,13 @@ export async function startReview(submissionId: string): Promise<void> {
       fromStatus: "submitted",
       toStatus: "under_review",
     });
+
+    await writeAuditEvent(tx, {
+      actorId: user.id,
+      action: "submission.review_started",
+      targetType: "CompanySubmission",
+      targetId: submissionId,
+    });
   });
 }
 
@@ -97,6 +105,13 @@ export async function requestChanges(submissionId: string, comment: string): Pro
         status: "Open",
       },
     });
+
+    await writeAuditEvent(tx, {
+      actorId: user.id,
+      action: "submission.changes_requested",
+      targetType: "CompanySubmission",
+      targetId: submissionId,
+    });
   });
 }
 
@@ -122,6 +137,13 @@ export async function approveSubmission(submissionId: string): Promise<void> {
       actorId: user.id,
       fromStatus: "under_review",
       toStatus: "approved",
+    });
+
+    await writeAuditEvent(tx, {
+      actorId: user.id,
+      action: "submission.approved",
+      targetType: "CompanySubmission",
+      targetId: submissionId,
     });
   });
 }

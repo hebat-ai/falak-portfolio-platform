@@ -1,10 +1,14 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
+import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-errors";
 import { hashInviteToken } from "@/lib/auth/invite-token";
 import { normalizeEmail, MAX_RAW_EMAIL_LENGTH } from "@/lib/auth/utils";
+import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import type {
   Currency,
   CustomerModel,
@@ -56,7 +60,15 @@ function isValidSlug(value: string | null): value is string {
 // ============================================================
 
 export async function createCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
 
   const slug = readString(formData, "slug");
   const nameEn = readString(formData, "nameEn");
@@ -94,19 +106,27 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
   }
 
   try {
-    await db.company.create({
-      data: {
-        slug,
-        nameEn,
-        nameAr,
-        sectorEn,
-        sectorAr,
-        customerModel: customerModel as CustomerModel,
-        revenueModels: revenueModels as RevenueModel[],
-        currency: currency as Currency,
-        entryStage: entryStage as FundingStage,
-        currentStage: currentStage as FundingStage,
-      },
+    await db.$transaction(async (tx) => {
+      const company = await tx.company.create({
+        data: {
+          slug,
+          nameEn,
+          nameAr,
+          sectorEn,
+          sectorAr,
+          customerModel: customerModel as CustomerModel,
+          revenueModels: revenueModels as RevenueModel[],
+          currency: currency as Currency,
+          entryStage: entryStage as FundingStage,
+          currentStage: currentStage as FundingStage,
+        },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "company.created",
+        targetType: "Company",
+        targetId: company.id,
+      });
     });
   } catch {
     return { error: GENERIC_ERROR };
@@ -122,10 +142,24 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
 // server-fetched data re-runs and the row disappears/updates without a
 // manual redirect or revalidatePath call.
 export async function archiveCompanyAction(formData: FormData): Promise<void> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      redirect("/sign-in");
+    }
+    if (error instanceof ForbiddenError) {
+      return;
+    }
+    throw error;
+  }
   const companyId = readString(formData, "companyId");
   if (!companyId) return;
-  await db.company.update({ where: { id: companyId }, data: { archivedAt: new Date() } });
+  await db.$transaction(async (tx) => {
+    await tx.company.update({ where: { id: companyId }, data: { archivedAt: new Date() } });
+    await writeAuditEvent(tx, { actorId: user.id, action: "company.archived", targetType: "Company", targetId: companyId });
+  });
 }
 
 // ============================================================
@@ -133,7 +167,15 @@ export async function archiveCompanyAction(formData: FormData): Promise<void> {
 // ============================================================
 
 export async function createVehicleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
 
   const slug = readString(formData, "slug");
   const nameEn = readString(formData, "nameEn");
@@ -159,8 +201,11 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
   }
 
   try {
-    await db.vehicle.create({
-      data: { slug, nameEn, nameAr, type: type as VehicleType, currency: currency as Currency },
+    await db.$transaction(async (tx) => {
+      const vehicle = await tx.vehicle.create({
+        data: { slug, nameEn, nameAr, type: type as VehicleType, currency: currency as Currency },
+      });
+      await writeAuditEvent(tx, { actorId: user.id, action: "vehicle.created", targetType: "Vehicle", targetId: vehicle.id });
     });
   } catch {
     return { error: GENERIC_ERROR };
@@ -170,10 +215,24 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
 }
 
 export async function archiveVehicleAction(formData: FormData): Promise<void> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      redirect("/sign-in");
+    }
+    if (error instanceof ForbiddenError) {
+      return;
+    }
+    throw error;
+  }
   const vehicleId = readString(formData, "vehicleId");
   if (!vehicleId) return;
-  await db.vehicle.update({ where: { id: vehicleId }, data: { archivedAt: new Date() } });
+  await db.$transaction(async (tx) => {
+    await tx.vehicle.update({ where: { id: vehicleId }, data: { archivedAt: new Date() } });
+    await writeAuditEvent(tx, { actorId: user.id, action: "vehicle.archived", targetType: "Vehicle", targetId: vehicleId });
+  });
 }
 
 // ============================================================
@@ -181,7 +240,15 @@ export async function archiveVehicleAction(formData: FormData): Promise<void> {
 // ============================================================
 
 export async function createInvestorAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
 
   const nameEn = readString(formData, "nameEn");
   const nameAr = readString(formData, "nameAr");
@@ -192,7 +259,10 @@ export async function createInvestorAction(_prevState: ActionState, formData: Fo
   }
 
   try {
-    await db.investor.create({ data: { nameEn, nameAr, type: type as InvestorType } });
+    await db.$transaction(async (tx) => {
+      const investor = await tx.investor.create({ data: { nameEn, nameAr, type: type as InvestorType } });
+      await writeAuditEvent(tx, { actorId: user.id, action: "investor.created", targetType: "Investor", targetId: investor.id });
+    });
   } catch {
     return { error: GENERIC_ERROR };
   }
@@ -201,10 +271,24 @@ export async function createInvestorAction(_prevState: ActionState, formData: Fo
 }
 
 export async function archiveInvestorAction(formData: FormData): Promise<void> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      redirect("/sign-in");
+    }
+    if (error instanceof ForbiddenError) {
+      return;
+    }
+    throw error;
+  }
   const investorId = readString(formData, "investorId");
   if (!investorId) return;
-  await db.investor.update({ where: { id: investorId }, data: { archivedAt: new Date() } });
+  await db.$transaction(async (tx) => {
+    await tx.investor.update({ where: { id: investorId }, data: { archivedAt: new Date() } });
+    await writeAuditEvent(tx, { actorId: user.id, action: "investor.archived", targetType: "Investor", targetId: investorId });
+  });
 }
 
 // ============================================================
@@ -212,7 +296,15 @@ export async function archiveInvestorAction(formData: FormData): Promise<void> {
 // ============================================================
 
 export async function linkVehicleToCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
 
   const companyId = readString(formData, "companyId");
   const vehicleId = readString(formData, "vehicleId");
@@ -270,6 +362,13 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
       await tx.ownershipSnapshot.create({
         data: { ownershipPositionId: position.id, asOfDate: signedDate, ownershipPct, source: "admin" },
       });
+
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "ownership_position.linked",
+        targetType: "OwnershipPosition",
+        targetId: position.id,
+      });
     });
   } catch {
     return { error: GENERIC_ERROR };
@@ -283,7 +382,15 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
 // ============================================================
 
 export async function createReportingTemplateAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
 
   const nameEn = readString(formData, "nameEn");
   const nameAr = readString(formData, "nameAr");
@@ -323,6 +430,12 @@ export async function createReportingTemplateAction(_prevState: ActionState, for
       await tx.metricDefinition.createMany({
         data: metrics.map((m) => ({ ...m, templateId: template.id, required: true })),
       });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "reporting_template.created",
+        targetType: "ReportingTemplate",
+        targetId: template.id,
+      });
     });
   } catch {
     return { error: GENERIC_ERROR };
@@ -336,7 +449,15 @@ export async function createReportingTemplateAction(_prevState: ActionState, for
 // ============================================================
 
 export async function createReportingCycleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
 
   const companyId = readString(formData, "companyId");
   const templateId = readString(formData, "templateId");
@@ -378,6 +499,12 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
         },
       });
       await tx.companySubmission.create({ data: { cycleId: cycle.id, status: "draft" } });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "reporting_cycle.created",
+        targetType: "ReportingCycle",
+        targetId: cycle.id,
+      });
     });
   } catch {
     return { error: GENERIC_ERROR };
@@ -393,7 +520,15 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
 const INVITE_EXPIRY_DAYS = 7;
 
 export async function createCompanyInviteAction(_prevState: InviteActionState, formData: FormData): Promise<InviteActionState> {
-  const { user } = await requireFalakRole("FALAK_ADMIN");
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
 
   const companyId = readString(formData, "companyId");
   const emailInput = formData.get("email");
@@ -416,8 +551,16 @@ export async function createCompanyInviteAction(_prevState: InviteActionState, f
   const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
   try {
-    await db.companyInvite.create({
-      data: { companyId, email, tokenHash, invitedById: user.id, expiresAt },
+    await db.$transaction(async (tx) => {
+      const invite = await tx.companyInvite.create({
+        data: { companyId, email, tokenHash, invitedById: user.id, expiresAt },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "invite.created",
+        targetType: "CompanyInvite",
+        targetId: invite.id,
+      });
     });
   } catch {
     return { error: GENERIC_ERROR };

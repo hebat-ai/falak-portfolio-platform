@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import type { Prisma, NarrativeKind } from "@/generated/prisma/client";
 import { requireFalakRole } from "@/lib/auth/authorization";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 
 export interface NarrativeInput {
   textEn: string;
@@ -152,6 +153,13 @@ export async function publishSubmission(
     for (const investorId of investorIds) {
       await tx.reportAccessGrant.create({ data: { reportVersionId: version.id, investorId } });
     }
+
+    await writeAuditEvent(tx, {
+      actorId: user.id,
+      action: "report.published",
+      targetType: "ReportVersion",
+      targetId: version.id,
+    });
 
     return { reportId: report.id, versionNo: version.versionNo };
   });

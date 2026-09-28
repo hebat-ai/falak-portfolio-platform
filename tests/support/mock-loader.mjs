@@ -5,7 +5,7 @@
 // Its job: let plain `node --test` resolve this project's `@/*`
 // TypeScript path alias (which only Next.js's own bundler normally
 // understands), so the REAL, unmodified source files under src/ can be
-// imported and executed directly in tests, with exactly four specifiers
+// imported and executed directly in tests, with exactly five specifiers
 // substituted:
 //
 //   - "server-only"              -> a no-op stub. This package is not
@@ -31,6 +31,20 @@
 //                                    outbound email, stubbed the same way
 //                                    as the database so tests never call
 //                                    the real Resend API.
+//   - "next/navigation"          -> a synthetic module whose `redirect`
+//                                    throws a MockRedirectError(url) --
+//                                    next/navigation is only resolvable
+//                                    inside Next's own bundler (the same
+//                                    class of problem next/server posed
+//                                    for src/auth.ts, worked around there
+//                                    by extracting authorize-credentials.ts
+//                                    into its own file). Faithful to the
+//                                    real redirect()'s actual behavior:
+//                                    it throws rather than returning, so a
+//                                    caller's own try/catch still sees a
+//                                    thrown control-flow signal, just a
+//                                    test-visible one instead of Next's
+//                                    internal NEXT_REDIRECT digest.
 //
 // Every other "@/..." specifier resolves to the real file on disk under
 // src/ and is loaded completely unmodified -- including
@@ -55,6 +69,9 @@ export async function resolve(specifier, context, nextResolve) {
   }
   if (specifier === "@/lib/email/send-email") {
     return { url: "mock:send-email", shortCircuit: true };
+  }
+  if (specifier === "next/navigation") {
+    return { url: "mock:next-navigation", shortCircuit: true };
   }
   if (specifier.startsWith("@/")) {
     const rewritten = pathToFileURL(`${SRC_ROOT}/${specifier.slice(2)}.ts`).href;
@@ -86,6 +103,18 @@ export async function load(url, context, nextLoad) {
       format: "module",
       shortCircuit: true,
       source: "export const sendSignInEmail = (...args) => globalThis.__TEST_SEND_EMAIL_STUB__(...args);",
+    };
+  }
+  if (url === "mock:next-navigation") {
+    return {
+      format: "module",
+      shortCircuit: true,
+      source: `
+        export class MockRedirectError extends Error {
+          constructor(url) { super("NEXT_REDIRECT:" + url); this.digest = "NEXT_REDIRECT"; this.url = url; }
+        }
+        export function redirect(url) { throw new MockRedirectError(url); }
+      `,
     };
   }
   return nextLoad(url, context);

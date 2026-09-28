@@ -158,9 +158,11 @@ export function makeReportingDbStub(options: {
     eventCount: number;
     lastAppliedPrevStatus?: string;
     lastEventData?: Record<string, unknown>;
+    auditEvents: Record<string, unknown>[];
   } = {
     submission: options.submission ? { ...options.submission } : null,
     eventCount: options.eventCount ?? 0,
+    auditEvents: [],
   };
   const metricDefinitions = options.metricDefinitions ?? [];
   const submissionMetricValues = options.submissionMetricValues ?? [];
@@ -234,7 +236,14 @@ export function makeReportingDbStub(options: {
         return data;
       },
     },
+    auditEvent: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        state.auditEvents.push(data);
+        return data;
+      },
+    },
     getLastEventData: () => state.lastEventData,
+    getAuditEvents: () => state.auditEvents,
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
       try {
         return await fn(stub);
@@ -351,6 +360,7 @@ export function makeReviewWorkflowDbStub(options: {
     submission: ReviewSubmissionFixture | null;
     eventCount: number;
     reviewComments: Record<string, unknown>[];
+    auditEvents: Record<string, unknown>[];
     lastEventData?: Record<string, unknown>;
     lastAppliedPrevStatus?: string;
     lastAppliedPrevEventCount?: number;
@@ -358,6 +368,7 @@ export function makeReviewWorkflowDbStub(options: {
     submission: options.submission ? { ...options.submission } : null,
     eventCount: options.eventCount ?? 0,
     reviewComments: [],
+    auditEvents: [],
   };
 
   const stub = {
@@ -402,10 +413,17 @@ export function makeReviewWorkflowDbStub(options: {
         return data;
       },
     },
+    auditEvent: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        state.auditEvents.push(data);
+        return data;
+      },
+    },
     getSubmissionStatus: () => state.submission?.status,
     getEventCount: () => state.eventCount,
     getLastEventData: () => state.lastEventData,
     getReviewComments: () => state.reviewComments,
+    getAuditEvents: () => state.auditEvents,
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
       try {
         return await fn(stub);
@@ -481,6 +499,7 @@ export function makePublishWorkflowDbStub(options: {
     reportVersionSubmissions: [] as Record<string, unknown>[],
     narrativeSections: [] as Record<string, unknown>[],
     reportAccessGrants: [] as Record<string, unknown>[],
+    auditEvents: [] as Record<string, unknown>[],
   };
 
   const stub = {
@@ -599,12 +618,61 @@ export function makePublishWorkflowDbStub(options: {
         return row;
       },
     },
+    auditEvent: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: genId("audit"), ...data };
+        state.auditEvents.push(row);
+        return row;
+      },
+    },
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(stub),
     getReports: () => state.reports,
     getReportVersions: () => state.reportVersions,
     getReportVersionSubmissions: () => state.reportVersionSubmissions,
     getNarrativeSections: () => state.narrativeSections,
     getReportAccessGrants: () => state.reportAccessGrants,
+    getAuditEvents: () => state.auditEvents,
+  };
+  return stub;
+}
+
+/**
+ * Generic stub for the admin CRUD actions (src/app/admin/actions.ts) and
+ * the accept-invite actions (src/app/accept-invite/actions.ts). Unlike the
+ * other factories above, this one doesn't hardcode a fixed set of models --
+ * each test supplies exactly the model methods its action path touches via
+ * `options.models` (e.g. `{ company: { findUnique: ..., create: ... } }`),
+ * and this factory adds the three things every one of those actions needs
+ * regardless of which models it touches: `userRoleAssignment.findMany`
+ * (backs requireFalakRole), a `$transaction` that just invokes its
+ * callback with this same stub (these actions don't rely on rollback
+ * semantics the way the workflow stubs above do), and an `auditEvent.create`
+ * spy + `getAuditEvents()` accessor so a test can assert the one audit row
+ * each action's transaction is expected to write.
+ */
+export function makeAdminActionDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  models?: Record<string, Record<string, (...args: never[]) => unknown>>;
+}) {
+  const auditEvents: Record<string, unknown>[] = [];
+  const stub = {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    auditEvent: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        auditEvents.push(data);
+        return data;
+      },
+    },
+    getAuditEvents: (): Record<string, unknown>[] => auditEvents,
+    $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(stub),
+    ...(options.models ?? {}),
   };
   return stub;
 }

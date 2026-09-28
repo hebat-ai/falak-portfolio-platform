@@ -3,6 +3,7 @@
 import { startReview, requestChanges, approveSubmission } from "@/lib/reporting/review-workflow";
 import { publishSubmission, type NarrativeInputs } from "@/lib/reporting/publish-workflow";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
+import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
 import type { NarrativeKind } from "@/generated/prisma/client";
 
 export interface ReviewActionState {
@@ -33,6 +34,9 @@ export async function startReviewAction(_prevState: ReviewActionState, formData:
   try {
     await startReview(submissionId);
   } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
     if (error instanceof InvalidTransitionError) {
       return { error: GENERIC_ERROR };
     }
@@ -62,6 +66,9 @@ export async function requestChangesAction(_prevState: ReviewActionState, formDa
   try {
     await requestChanges(submissionId, comment);
   } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
     if (error instanceof InvalidTransitionError) {
       return { error: GENERIC_ERROR };
     }
@@ -80,6 +87,9 @@ export async function approveSubmissionAction(_prevState: ReviewActionState, for
   try {
     await approveSubmission(submissionId);
   } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
     if (error instanceof InvalidTransitionError) {
       return { error: GENERIC_ERROR };
     }
@@ -112,6 +122,9 @@ export async function publishSubmissionAction(_prevState: ReviewActionState, for
   try {
     await publishSubmission(submissionId, narratives);
   } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
     if (error instanceof InvalidTransitionError) {
       return { error: GENERIC_ERROR };
     }

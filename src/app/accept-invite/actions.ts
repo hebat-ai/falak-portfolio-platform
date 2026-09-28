@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { hashInviteToken } from "@/lib/auth/invite-token";
 import { claimInvite } from "@/lib/auth/invite-claim";
 import { MAX_RAW_INVITE_TOKEN_LENGTH } from "@/lib/auth/utils";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 
 export interface AcceptInviteState {
   error: string | null;
@@ -79,6 +80,13 @@ export async function acceptInviteAction(
       await tx.companyMembership.create({
         data: { userId: user.id, companyId: invite.companyId, role: "MEMBER" },
       });
+
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "invite.accepted",
+        targetType: "CompanyInvite",
+        targetId: invite.id,
+      });
     });
   } catch {
     // Covers a failed claim (InviteClaimFailedError) and any other race
@@ -141,6 +149,13 @@ export async function completeExistingMemberAction(rawToken: string): Promise<Ac
         where: { userId_companyId: { userId: existingUser.id, companyId: invite.companyId } },
         update: {},
         create: { userId: existingUser.id, companyId: invite.companyId, role: "MEMBER" },
+      });
+
+      await writeAuditEvent(tx, {
+        actorId: existingUser.id,
+        action: "invite.accepted",
+        targetType: "CompanyInvite",
+        targetId: invite.id,
       });
     });
   } catch {

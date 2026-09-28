@@ -3,6 +3,7 @@ import type { SubmissionStatus, Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireCompanyMembership, requireFalakRole } from "@/lib/auth/authorization";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import type { SubmissionDTO } from "@/lib/reporting/dto";
 
 // Statuses a CompanySubmission may be submitted FROM. Mirrors the
@@ -214,6 +215,13 @@ export async function submitCompanySubmission(companyId: string, submissionId: s
         fromStatus: submission.status,
         toStatus: "submitted",
       },
+    });
+
+    await writeAuditEvent(tx, {
+      actorId: user.id,
+      action: "submission.submitted",
+      targetType: "CompanySubmission",
+      targetId: submissionId,
     });
 
     return toSubmissionDTO(
