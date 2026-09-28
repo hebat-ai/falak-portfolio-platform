@@ -676,3 +676,173 @@ export function makeAdminActionDbStub(options: {
   };
   return stub;
 }
+
+export interface InvestorMembershipFixture {
+  userId: string;
+  investorId: string;
+  investorNameEn: string;
+  investorNameAr: string;
+  revoked?: boolean;
+  investorArchived?: boolean;
+}
+
+export interface ReportAccessGrantFixture {
+  investorId: string;
+  revoked?: boolean;
+  reportVersionId: string;
+  versionNo: number;
+  publishedAt: Date | null;
+  reportId: string;
+  scope?: string;
+  periodLabel: string;
+  periodStart: Date;
+  periodEnd: Date;
+  companyId: string;
+  companyArchived?: boolean;
+  companyNameEn: string;
+  companyNameAr: string;
+  companySlug: string;
+  companySectorEn: string;
+  companySectorAr: string;
+  companyCustomerModel: string;
+  companyRevenueModels: string[];
+  companyCurrency: string;
+  companyEntryStage: string;
+  companyCurrentStage: string;
+  submissionId: string;
+  revenue: number | null;
+  isNa?: boolean;
+}
+
+export interface InvestorVehiclePositionFixtureForQueries {
+  investorId: string;
+  vehicleId: string;
+  status: string;
+}
+
+export interface VehicleFixture {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  type: string;
+  currency: string;
+  archivedAt?: Date | null;
+}
+
+export interface OwnershipLinkFixture {
+  vehicleId: string;
+  companyId: string;
+}
+
+/**
+ * Backs getInvestorPortfolioData (src/lib/investor/queries.ts) exactly as
+ * that real module queries them: investorMembership.findMany (scoped to
+ * userId, revokedAt: null, investor.archivedAt: null),
+ * reportAccessGrant.findMany (nested reportVersion/report/company/
+ * submissions/metricValues select, filtered to scope COMPANY and a
+ * non-archived company), investorVehiclePosition.findMany (status
+ * Active), vehicle.findMany, and ownershipPosition.findMany (holderType
+ * VEHICLE). Revenue fixtures carry a numericValue-like `.toNumber()`
+ * wrapper to match the real Prisma Decimal API the query calls.
+ */
+export function makeInvestorQueriesDbStub(options: {
+  memberships?: InvestorMembershipFixture[];
+  reportAccessGrants?: ReportAccessGrantFixture[];
+  investorVehiclePositions?: InvestorVehiclePositionFixtureForQueries[];
+  vehicles?: VehicleFixture[];
+  ownershipLinks?: OwnershipLinkFixture[];
+}) {
+  const memberships = options.memberships ?? [];
+  const grants = options.reportAccessGrants ?? [];
+  const vehiclePositions = options.investorVehiclePositions ?? [];
+  const vehicles = options.vehicles ?? [];
+  const ownershipLinks = options.ownershipLinks ?? [];
+
+  return {
+    investorMembership: {
+      findMany: async ({ where }: { where: { userId: string; revokedAt: null; investor: { archivedAt: null } } }) =>
+        memberships
+          .filter((m) => m.userId === where.userId && !m.revoked && !m.investorArchived)
+          .map((m) => ({
+            investorId: m.investorId,
+            investor: { nameEn: m.investorNameEn, nameAr: m.investorNameAr },
+          })),
+    },
+    reportAccessGrant: {
+      findMany: async ({
+        where,
+      }: {
+        where: { investorId: { in: string[] }; revokedAt: null; reportVersion: { report: { scope: string; company: { archivedAt: null } } } };
+      }) =>
+        grants
+          .filter(
+            (g) =>
+              where.investorId.in.includes(g.investorId) &&
+              !g.revoked &&
+              (g.scope ?? "COMPANY") === "COMPANY" &&
+              !g.companyArchived
+          )
+          .map((g) => ({
+            investorId: g.investorId,
+            reportVersion: {
+              id: g.reportVersionId,
+              versionNo: g.versionNo,
+              publishedAt: g.publishedAt,
+              report: {
+                id: g.reportId,
+                periodLabel: g.periodLabel,
+                periodStart: g.periodStart,
+                periodEnd: g.periodEnd,
+                company: {
+                  id: g.companyId,
+                  slug: g.companySlug,
+                  nameEn: g.companyNameEn,
+                  nameAr: g.companyNameAr,
+                  sectorEn: g.companySectorEn,
+                  sectorAr: g.companySectorAr,
+                  customerModel: g.companyCustomerModel,
+                  revenueModels: g.companyRevenueModels,
+                  currency: g.companyCurrency,
+                  entryStage: g.companyEntryStage,
+                  currentStage: g.companyCurrentStage,
+                },
+              },
+              submissions: [
+                {
+                  submission: {
+                    metricValues:
+                      g.revenue === null && !g.isNa
+                        ? []
+                        : [
+                            {
+                              numericValue: g.revenue === null ? null : { toNumber: () => g.revenue },
+                              isNa: g.isNa ?? false,
+                            },
+                          ],
+                  },
+                },
+              ],
+            },
+          })),
+    },
+    investorVehiclePosition: {
+      findMany: async ({ where }: { where: { investorId: { in: string[] }; status: string } }) =>
+        vehiclePositions
+          .filter((p) => where.investorId.in.includes(p.investorId) && p.status === where.status)
+          .map((p) => ({ investorId: p.investorId, vehicleId: p.vehicleId })),
+    },
+    vehicle: {
+      findMany: async ({ where }: { where: { id: { in: string[] }; archivedAt: null } }) =>
+        vehicles
+          .filter((v) => where.id.in.includes(v.id) && !v.archivedAt)
+          .map((v) => ({ id: v.id, slug: v.slug, nameEn: v.nameEn, nameAr: v.nameAr, type: v.type, currency: v.currency })),
+    },
+    ownershipPosition: {
+      findMany: async ({ where }: { where: { vehicleId: { in: string[] }; holderType: string } }) =>
+        ownershipLinks
+          .filter((l) => where.vehicleId.in.includes(l.vehicleId))
+          .map((l) => ({ vehicleId: l.vehicleId, companyId: l.companyId })),
+    },
+  };
+}

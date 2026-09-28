@@ -231,6 +231,7 @@ export interface Dictionary {
     companiesTableTitle: string;
     companiesTableCaption: string;
     noApprovedReports: string;
+    noOrgAccess: string;
   };
   companyRegister: {
     subtitle: string;
@@ -517,7 +518,7 @@ export const en = {
     },
   },
   investorDashboard: {
-    subtitle: "A read-only, simulated view of one investor's vehicle exposure.",
+    subtitle: "Vehicle exposure and published company reports visible to your investor organization.",
     prototypeNotice:
       "Prototype only — there are no real investor accounts. This selector simulates viewing as one of the synthetic investors; it is not a login, and nothing selected here is saved anywhere.",
     viewerRoleLabel: "Investor (demo)",
@@ -527,7 +528,8 @@ export const en = {
     visibleCompaniesLabel: "Visible companies this period",
     companiesTableTitle: "Companies",
     companiesTableCaption: "Companies visible to this investor for the selected period, approved or published only",
-    noApprovedReports: "No approved or published reports for this period yet.",
+    noApprovedReports: "No published reports for this organization and period yet.",
+    noOrgAccess: "You don't have access to any investor organization yet.",
   },
   companyRegister: {
     subtitle: "Every company's reporting record across all periods, browsable and filterable.",
@@ -815,7 +817,7 @@ export const ar = {
     },
   },
   investorDashboard: {
-    subtitle: "عرض للقراءة فقط يحاكي نطاق اطلاع مستثمر واحد على أدواته الاستثمارية.",
+    subtitle: "الأدوات الاستثمارية المرتبطة وتقارير الشركات المنشورة المرئية لمؤسستك الاستثمارية.",
     prototypeNotice:
       "نموذج أولي فقط — لا توجد حسابات مستثمرين حقيقية. يحاكي هذا المحدد العرض كأحد المستثمرين الاصطناعيين، وهو ليس تسجيل دخول، ولا يُحفظ أي اختيار هنا في أي مكان.",
     viewerRoleLabel: "مستثمر (تجريبي)",
@@ -825,7 +827,8 @@ export const ar = {
     visibleCompaniesLabel: "الشركات المرئية لهذه الفترة",
     companiesTableTitle: "الشركات",
     companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة أو المنشورة فقط",
-    noApprovedReports: "لا توجد تقارير معتمدة أو منشورة لهذه الفترة بعد.",
+    noApprovedReports: "لا توجد تقارير منشورة لهذه المؤسسة والفترة بعد.",
+    noOrgAccess: "ليس لديك وصول إلى أي مؤسسة استثمارية بعد.",
   },
   companyRegister: {
     subtitle: "سجل تقارير كل شركة عبر جميع الفترات، قابل للتصفح والتصفية.",
