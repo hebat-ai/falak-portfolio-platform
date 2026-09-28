@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { authorizeCredentials } from "@/lib/auth/authorize-credentials";
+import { authorizeSignInToken } from "@/lib/auth/authorize-sign-in-token";
 
 declare module "next-auth" {
   interface Session {
@@ -25,16 +25,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/sign-in" },
   providers: [
     Credentials({
+      // No password field -- sign-in is a one-time token emailed via a
+      // verification link (see src/lib/auth/request-sign-in.ts and
+      // src/app/api/sign-in/verify/route.ts), not a persistent credential.
       credentials: {
-        email: { label: "Email" },
-        password: { label: "Password", type: "password" },
+        token: { label: "Token", type: "text" },
       },
-      // The actual credential-checking decision lives in
-      // src/lib/auth/authorize-credentials.ts -- kept out of this file so
+      // The actual token-checking decision lives in
+      // src/lib/auth/authorize-sign-in-token.ts -- kept out of this file so
       // it never pulls in next-auth's own request-handling machinery
       // (which imports next/server, resolvable only inside Next.js's
       // bundler), and so it's independently importable and testable.
-      authorize: authorizeCredentials,
+      authorize: authorizeSignInToken,
     }),
   ],
   callbacks: {

@@ -26,12 +26,17 @@ enum PlatformRole {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  passwordHash  String
+  // Nullable: password sign-in was replaced by email verification links
+  // (EmailVerificationToken below). Existing hash values are preserved but
+  // never read or written by any code path anymore; a new user is created
+  // with no passwordHash at all.
+  passwordHash  String?
   deactivatedAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   roles                      UserRoleAssignment[]
+  verificationTokens         EmailVerificationToken[]
   companyMemberships         CompanyMembership[]
   investorMemberships        InvestorMembership[]
   companyInvitesSent         CompanyInvite[]                   @relation("CompanyInviteInvitedBy")
@@ -72,6 +77,25 @@ model UserRoleAssignment {
 
   @@index([userId, role])
   @@map("user_roles")
+}
+
+// Passwordless sign-in: a short-lived, single-use token emailed to the
+// user, hashed the same way as CompanyInvite.tokenHash -- the raw token is
+// never persisted, only this hash. consumedAt is set atomically at claim
+// time (see verify-sign-in.ts's conditional updateMany, mirroring
+// invite-claim.ts) so a link can never be used twice, including by two
+// concurrent requests racing each other.
+model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@map("email_verification_tokens")
 }
 
 // ============================================================

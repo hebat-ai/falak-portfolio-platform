@@ -1,19 +1,12 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getValidInvite } from "@/lib/auth/invite-lookup";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { hashInviteToken } from "@/lib/auth/invite-token";
 import { claimInvite } from "@/lib/auth/invite-claim";
-import {
-  normalizePassword,
-  validatePassword,
-  BCRYPT_COST_FACTOR,
-  MAX_RAW_PASSWORD_LENGTH,
-  MAX_RAW_INVITE_TOKEN_LENGTH,
-} from "@/lib/auth/utils";
+import { MAX_RAW_INVITE_TOKEN_LENGTH } from "@/lib/auth/utils";
 
 export interface AcceptInviteState {
   error: string | null;
@@ -25,8 +18,10 @@ const EXISTING_ACCOUNT_MESSAGE = "An account already exists for this email. Sign
 /**
  * New-user path: the invite's email has no existing User row. Atomically
  * claims the invite FIRST, inside the transaction, then creates the User
- * (with the password the invitee just chose) and the CompanyMembership.
- * Re-validates the invite and the "no existing user" precondition itself;
+ * and the CompanyMembership -- no password is set or collected anywhere
+ * in this flow (sign-in is a one-time emailed link, see
+ * src/lib/auth/request-sign-in.ts, not a persistent credential). Re-
+ * validates the invite and the "no existing user" precondition itself;
  * never trusts the page's own rendering decision, since that's a UI
  * convenience, not the security boundary. The claim's own WHERE clause
  * (see claimInvite) is what actually prevents two concurrent acceptances
@@ -37,7 +32,7 @@ const EXISTING_ACCOUNT_MESSAGE = "An account already exists for this email. Sign
 export async function acceptInviteAction(
   rawToken: string,
   _prevState: AcceptInviteState,
-  formData: FormData
+  _formData: FormData
 ): Promise<AcceptInviteState> {
   // Reject an oversized raw token before getValidInvite()/hashInviteToken()
   // touch it at all -- token is untrusted, client-originated input (the
@@ -47,28 +42,6 @@ export async function acceptInviteAction(
     return { error: GENERIC_INVALID_INVITE };
   }
 
-  const passwordInput = formData.get("password");
-  const confirmInput = formData.get("confirmPassword");
-  if (typeof passwordInput !== "string" || typeof confirmInput !== "string") {
-    return { error: "Enter and confirm a password." };
-  }
-  // Reject oversized raw password/confirmation input before the equality
-  // comparison, normalization, validation, or bcrypt -- never truncate to
-  // make it fit. Reuses validatePassword's own "too long" wording: any
-  // input over this raw cap will always exceed the normalized 72-byte
-  // bcrypt limit too, so the two messages describe the same real
-  // condition, just rejected at the cheaper, earlier point.
-  if (passwordInput.length > MAX_RAW_PASSWORD_LENGTH || confirmInput.length > MAX_RAW_PASSWORD_LENGTH) {
-    return { error: "Password is too long." };
-  }
-  if (passwordInput !== confirmInput) {
-    return { error: "Passwords do not match." };
-  }
-  const passwordError = validatePassword(passwordInput);
-  if (passwordError) {
-    return { error: passwordError };
-  }
-
   const invite = await getValidInvite(rawToken);
   if (!invite) {
     return { error: GENERIC_INVALID_INVITE };
@@ -76,12 +49,10 @@ export async function acceptInviteAction(
 
   const existingUser = await db.user.findUnique({ where: { email: invite.email } });
   if (existingUser) {
-    // Never create a second account, and never touch this user's existing
-    // password from this code path.
+    // Never create a second account.
     return { error: EXISTING_ACCOUNT_MESSAGE };
   }
 
-  const passwordHash = await bcrypt.hash(normalizePassword(passwordInput), BCRYPT_COST_FACTOR);
   // rawToken is untrusted, client-originated input (see the length-check
   // comment above). The only trusted property is that tokenHash is
   // derived server-side, right here, from that raw value -- never
@@ -103,7 +74,7 @@ export async function acceptInviteAction(
       // Reuses the exact email/companyId the successful claim was bound
       // to -- never re-derived from a separate post-claim read.
       const user = await tx.user.create({
-        data: { email: invite.email, passwordHash },
+        data: { email: invite.email },
       });
       await tx.companyMembership.create({
         data: { userId: user.id, companyId: invite.companyId, role: "MEMBER" },
@@ -124,10 +95,9 @@ export async function acceptInviteAction(
 /**
  * Existing-user path: the invite's email already belongs to a User row,
  * and the visitor is currently authenticated AS that exact user (checked
- * again here, not just by the page). No password is set or touched here
- * at all. Atomically claims the invite first, then upserts the
- * CompanyMembership -- a pre-existing membership is treated as
- * already-satisfied rather than an error.
+ * again here, not just by the page). Atomically claims the invite first,
+ * then upserts the CompanyMembership -- a pre-existing membership is
+ * treated as already-satisfied rather than an error.
  */
 export async function completeExistingMemberAction(rawToken: string): Promise<AcceptInviteState> {
   // Same reasoning as acceptInviteAction above: reject an oversized raw

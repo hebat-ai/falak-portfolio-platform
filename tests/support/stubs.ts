@@ -1,10 +1,11 @@
 /**
- * Shared, minimal stand-ins for the two real I/O dependencies intercepted
- * by mock-loader.mjs (`@/lib/db`'s `db` and `@/lib/auth/current-user`'s
- * `getCurrentUser`). Every test file sets `globalThis.__TEST_DB_STUB__`
- * and `globalThis.__TEST_GET_CURRENT_USER_STUB__` before dynamically
- * importing the real production module under test, so each test gets a
- * fresh, independent stub -- nothing here ever touches a real database.
+ * Shared, minimal stand-ins for the real I/O dependencies intercepted by
+ * mock-loader.mjs (`@/lib/db`'s `db`, `@/lib/auth/current-user`'s
+ * `getCurrentUser`, and `@/lib/email/send-email`'s `sendSignInEmail`).
+ * Every test file sets the matching `globalThis.__TEST_*_STUB__` before
+ * dynamically importing the real production module under test, so each
+ * test gets a fresh, independent stub -- nothing here ever touches a real
+ * database or sends a real email.
  */
 
 export interface StubUser {
@@ -18,6 +19,24 @@ export function setCurrentUser(user: StubUser | null): void {
 
 export function setDbStub(stub: unknown): void {
   (globalThis as Record<string, unknown>).__TEST_DB_STUB__ = stub;
+}
+
+export interface SentEmail {
+  to: string;
+  verifyUrl: string;
+}
+
+/**
+ * Installs a spy in place of sendSignInEmail and returns the array it
+ * records calls into -- push-only, read by tests via .length/[0], never
+ * mutated by the stub itself beyond appending.
+ */
+export function setSendEmailSpy(): SentEmail[] {
+  const calls: SentEmail[] = [];
+  (globalThis as Record<string, unknown>).__TEST_SEND_EMAIL_STUB__ = async (to: string, verifyUrl: string) => {
+    calls.push({ to, verifyUrl });
+  };
+  return calls;
 }
 
 export const REAL_USER: StubUser = { id: "user_1", email: "a@b.com" };
@@ -230,4 +249,76 @@ export function makeReportingDbStub(options: {
     },
   };
   return stub;
+}
+
+export interface SignInUserFixture {
+  id: string;
+  email: string;
+  deactivatedAt?: Date | null;
+}
+
+export interface SignInTokenFixture {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+  consumedAt?: Date | null;
+}
+
+/**
+ * Backs requestSignInLink/consumeSignInToken/authorizeSignInToken exactly
+ * as those real modules query them: `user.findUnique` by id or email, and
+ * `emailVerificationToken.create`/`updateMany`/`findUnique` against a
+ * genuinely mutated in-memory token list -- `updateMany`'s conditional
+ * WHERE (tokenHash + consumedAt:null + expiresAt:{gt}) really only flips
+ * `consumedAt` when it matches, mirroring Postgres semantics, so the same
+ * atomic-claim behavior verify-sign-in.ts relies on is exercised for real.
+ */
+export function makeSignInDbStub(options: { users?: SignInUserFixture[]; tokens?: SignInTokenFixture[] } = {}) {
+  const users = options.users ?? [];
+  const tokens: SignInTokenFixture[] = (options.tokens ?? []).map((t) => ({ ...t }));
+  let nextId = 0;
+
+  return {
+    user: {
+      findUnique: async ({ where }: { where: { id?: string; email?: string } }) => {
+        const user = users.find((u) => (where.id ? u.id === where.id : u.email === where.email));
+        if (!user) return null;
+        return { id: user.id, email: user.email, deactivatedAt: user.deactivatedAt ?? null };
+      },
+    },
+    emailVerificationToken: {
+      create: async ({ data }: { data: { userId: string; tokenHash: string; expiresAt: Date } }) => {
+        const row: SignInTokenFixture = {
+          id: `token_${++nextId}`,
+          userId: data.userId,
+          tokenHash: data.tokenHash,
+          expiresAt: data.expiresAt,
+          consumedAt: null,
+        };
+        tokens.push(row);
+        return row;
+      },
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: { tokenHash: string; consumedAt: null; expiresAt: { gt: Date } };
+        data: { consumedAt: Date };
+      }) => {
+        const row = tokens.find((t) => t.tokenHash === where.tokenHash);
+        if (!row) return { count: 0 };
+        if (row.consumedAt) return { count: 0 };
+        if (!(row.expiresAt.getTime() > where.expiresAt.gt.getTime())) return { count: 0 };
+        row.consumedAt = data.consumedAt;
+        return { count: 1 };
+      },
+      findUnique: async ({ where }: { where: { tokenHash: string } }) => {
+        const row = tokens.find((t) => t.tokenHash === where.tokenHash);
+        if (!row) return null;
+        return { userId: row.userId };
+      },
+    },
+    getTokens: () => tokens,
+  };
 }

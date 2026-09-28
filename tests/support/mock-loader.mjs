@@ -5,7 +5,7 @@
 // Its job: let plain `node --test` resolve this project's `@/*`
 // TypeScript path alias (which only Next.js's own bundler normally
 // understands), so the REAL, unmodified source files under src/ can be
-// imported and executed directly in tests, with exactly three specifiers
+// imported and executed directly in tests, with exactly four specifiers
 // substituted:
 //
 //   - "server-only"              -> a no-op stub. This package is not
@@ -24,6 +24,13 @@
 //   - "@/lib/auth/current-user"  -> a synthetic module whose
 //                                    `getCurrentUser` forwards live to
 //                                    globalThis.__TEST_GET_CURRENT_USER_STUB__.
+//   - "@/lib/email/send-email"   -> a synthetic module whose
+//                                    `sendSignInEmail` forwards live to
+//                                    globalThis.__TEST_SEND_EMAIL_STUB__ --
+//                                    the one real network I/O boundary for
+//                                    outbound email, stubbed the same way
+//                                    as the database so tests never call
+//                                    the real Resend API.
 //
 // Every other "@/..." specifier resolves to the real file on disk under
 // src/ and is loaded completely unmodified -- including
@@ -45,6 +52,9 @@ export async function resolve(specifier, context, nextResolve) {
   }
   if (specifier === "@/lib/auth/current-user") {
     return { url: "mock:current-user", shortCircuit: true };
+  }
+  if (specifier === "@/lib/email/send-email") {
+    return { url: "mock:send-email", shortCircuit: true };
   }
   if (specifier.startsWith("@/")) {
     const rewritten = pathToFileURL(`${SRC_ROOT}/${specifier.slice(2)}.ts`).href;
@@ -69,6 +79,13 @@ export async function load(url, context, nextLoad) {
       format: "module",
       shortCircuit: true,
       source: "export const getCurrentUser = (...args) => globalThis.__TEST_GET_CURRENT_USER_STUB__(...args);",
+    };
+  }
+  if (url === "mock:send-email") {
+    return {
+      format: "module",
+      shortCircuit: true,
+      source: "export const sendSignInEmail = (...args) => globalThis.__TEST_SEND_EMAIL_STUB__(...args);",
     };
   }
   return nextLoad(url, context);

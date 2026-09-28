@@ -1,12 +1,20 @@
 "use client";
 
 import { useActionState } from "react";
-import { signInAction, type SignInState } from "./actions";
+import { requestSignInLinkAction, type SignInState } from "./actions";
 
-const initialState: SignInState = { error: null };
+const initialState: SignInState = { error: null, sent: false };
 
 export function SignInForm() {
-  const [state, formAction, isPending] = useActionState(signInAction, initialState);
+  const [state, formAction, isPending] = useActionState(requestSignInLinkAction, initialState);
+
+  if (state.sent) {
+    return (
+      <p role="status" className="text-sm text-foreground">
+        If an account exists for that email, we&apos;ve sent a sign-in link. Check your inbox.
+      </p>
+    );
+  }
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
@@ -23,19 +31,6 @@ export function SignInForm() {
           className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
         />
       </div>
-      <div className="space-y-1">
-        <label htmlFor="sign-in-password" className="text-xs font-medium text-muted-foreground">
-          Password
-        </label>
-        <input
-          id="sign-in-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-        />
-      </div>
       {state.error ? (
         <p role="alert" className="text-xs font-medium text-foreground">
           {state.error}
@@ -46,7 +41,7 @@ export function SignInForm() {
         disabled={isPending}
         className="inline-flex items-center gap-1.5 rounded-md bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60"
       >
-        {isPending ? "Signing in..." : "Sign in"}
+        {isPending ? "Sending..." : "Send sign-in link"}
       </button>
     </form>
   );
