@@ -11,19 +11,26 @@ import { archiveCompanyAction } from "../actions";
 import type { AdminCompanyDTO, AdminVehicleDTO, AdminOwnershipLinkDTO } from "@/lib/admin/dto";
 
 // Admin-specific counterpart to the shared CompanyTable component (which
-// stays mock-typed for /investor, /vehicle, and /review until Steps 10-13
-// wire those up) -- same markup shape, but reads real DTOs and adds an
-// Archive action, which only ever belongs on the admin surface.
+// stays mock-typed for /investor and /vehicle until Step 13 wires those
+// up) -- same markup shape, but reads real DTOs. Reused by both /admin
+// (Archive action) and /review (Review-selection action, Step 10) --
+// never both at once, since archiving a company mid-review and selecting
+// it for review are different contexts.
 interface AdminCompanyTableProps {
   companies: AdminCompanyDTO[];
   period: string;
   vehicles: AdminVehicleDTO[];
   vehicleLinks: AdminOwnershipLinkDTO[];
+  // Adds a per-row "Review" action and omits the Archive column -- used by
+  // /review's queue table. When omitted (the /admin default), the table
+  // keeps its normal Archive action instead.
+  onSelectForReview?: (company: AdminCompanyDTO) => void;
 }
 
-export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks }: AdminCompanyTableProps) {
+export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks, onSelectForReview }: AdminCompanyTableProps) {
   const { t, lang } = useLanguage();
   const ChevronIcon = lang === "ar" ? ChevronLeft : ChevronRight;
+  const columnCount = 10;
 
   return (
     <Table caption={t.admin.table.caption}>
@@ -41,14 +48,14 @@ export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks }:
             <span className="sr-only">{t.admin.table.viewCompanyAction}</span>
           </Th>
           <Th>
-            <span className="sr-only">{t.admin.manage.archiveAction}</span>
+            <span className="sr-only">{onSelectForReview ? t.reviewWorkspace.reviewAction : t.admin.manage.archiveAction}</span>
           </Th>
         </Tr>
       </THead>
       <TBody>
         {companies.length === 0 ? (
           <Tr>
-            <Td colSpan={10} className="py-8 text-center text-muted-foreground">
+            <Td colSpan={columnCount} className="py-8 text-center text-muted-foreground">
               {t.admin.emptyState}
             </Td>
           </Tr>
@@ -114,7 +121,16 @@ export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks }:
                   </Link>
                 </Td>
                 <Td>
-                  {company.archivedAt ? null : (
+                  {onSelectForReview ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectForReview(company)}
+                      aria-label={`${t.reviewWorkspace.reviewAction} — ${lang === "ar" ? company.nameAr : company.nameEn}`}
+                      className="rounded border border-control-border px-2 py-1 text-xs font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                    >
+                      {t.reviewWorkspace.reviewAction}
+                    </button>
+                  ) : company.archivedAt ? null : (
                     <form action={archiveCompanyAction}>
                       <input type="hidden" name="companyId" value={company.id} />
                       <button

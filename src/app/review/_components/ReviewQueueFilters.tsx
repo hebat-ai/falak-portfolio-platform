@@ -2,26 +2,20 @@
 
 import { Search, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { REPORTING_CYCLES, REPORTING_PERIODS_ORDER } from "@/lib/mock/companies";
-import type { ReportingPeriod, ReportingStatus } from "@/lib/mock/types";
+import type { SubmissionStatus } from "@/generated/prisma/client";
+import type { AdminPeriodOption } from "@/lib/admin/dto";
 
-export type QueueStatusFilter = "actionable" | "all" | ReportingStatus;
+export type QueueStatusFilter = "actionable" | "all" | SubmissionStatus;
 
-const STATUS_OPTIONS: ReportingStatus[] = [
-  "draft",
-  "submitted",
-  "under_review",
-  "changes_requested",
-  "approved",
-  "published",
-];
+const STATUS_OPTIONS: SubmissionStatus[] = ["draft", "submitted", "under_review", "changes_requested", "approved"];
 
 const selectClass =
   "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground";
 
 interface ReviewQueueFiltersProps {
-  period: ReportingPeriod;
-  onPeriodChange: (period: ReportingPeriod) => void;
+  period: string;
+  onPeriodChange: (period: string) => void;
+  periods: AdminPeriodOption[];
   statusFilter: QueueStatusFilter;
   onStatusFilterChange: (status: QueueStatusFilter) => void;
   searchQuery: string;
@@ -31,12 +25,13 @@ interface ReviewQueueFiltersProps {
 export function ReviewQueueFilters({
   period,
   onPeriodChange,
+  periods,
   statusFilter,
   onStatusFilterChange,
   searchQuery,
   onSearchChange,
 }: ReviewQueueFiltersProps) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface p-4">
@@ -79,11 +74,11 @@ export function ReviewQueueFilters({
             id="review-period"
             className={selectClass}
             value={period}
-            onChange={(e) => onPeriodChange(e.target.value as ReportingPeriod)}
+            onChange={(e) => onPeriodChange(e.target.value)}
           >
-            {REPORTING_PERIODS_ORDER.map((p) => (
-              <option key={p} value={p}>
-                {lang === "ar" ? REPORTING_CYCLES[p].labelAr : REPORTING_CYCLES[p].labelEn}
+            {periods.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
               </option>
             ))}
           </select>

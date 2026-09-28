@@ -322,3 +322,106 @@ export function makeSignInDbStub(options: { users?: SignInUserFixture[]; tokens?
     getTokens: () => tokens,
   };
 }
+
+export interface ReviewSubmissionFixture {
+  id: string;
+  status: string;
+  companyArchived?: boolean;
+}
+
+/**
+ * Backs startReview/requestChanges/approveSubmission
+ * (src/lib/reporting/review-workflow.ts) exactly as that real module
+ * queries them: `userRoleAssignment.findMany` for requireFalakRole, a
+ * genuinely-conditional `companySubmission.updateMany` (mirroring
+ * Postgres semantics -- only flips status when the WHERE actually
+ * matches), `submissionWorkflowEvent.count`/`create`, and
+ * `reviewComment.create`. `$transaction` rolls back the status change if
+ * its callback throws (e.g. a failed reviewComment.create), simulating
+ * Prisma's own interactive-transaction rollback -- the same technique
+ * makeReportingDbStub uses for submitCompanySubmission.
+ */
+export function makeReviewWorkflowDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  submission: ReviewSubmissionFixture | null;
+  eventCount?: number;
+  throwOnCommentCreate?: Error;
+}) {
+  const state: {
+    submission: ReviewSubmissionFixture | null;
+    eventCount: number;
+    reviewComments: Record<string, unknown>[];
+    lastEventData?: Record<string, unknown>;
+    lastAppliedPrevStatus?: string;
+    lastAppliedPrevEventCount?: number;
+  } = {
+    submission: options.submission ? { ...options.submission } : null,
+    eventCount: options.eventCount ?? 0,
+    reviewComments: [],
+  };
+
+  const stub = {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    companySubmission: {
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: { id: string; status: string };
+        data: { status: string };
+      }) => {
+        if (!state.submission) return { count: 0 };
+        if (where.id !== state.submission.id) return { count: 0 };
+        if (state.submission.companyArchived) return { count: 0 };
+        if (where.status !== state.submission.status) return { count: 0 };
+        state.lastAppliedPrevStatus = state.submission.status;
+        state.lastAppliedPrevEventCount = state.eventCount;
+        state.submission.status = data.status;
+        return { count: 1 };
+      },
+    },
+    submissionWorkflowEvent: {
+      count: async () => state.eventCount,
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        state.eventCount += 1;
+        state.lastEventData = data;
+        return data;
+      },
+    },
+    reviewComment: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        if (options.throwOnCommentCreate) throw options.throwOnCommentCreate;
+        state.reviewComments.push(data);
+        return data;
+      },
+    },
+    getSubmissionStatus: () => state.submission?.status,
+    getEventCount: () => state.eventCount,
+    getLastEventData: () => state.lastEventData,
+    getReviewComments: () => state.reviewComments,
+    $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
+      try {
+        return await fn(stub);
+      } catch (err) {
+        if (state.submission && state.lastAppliedPrevStatus !== undefined) {
+          state.submission.status = state.lastAppliedPrevStatus;
+        }
+        if (state.lastAppliedPrevEventCount !== undefined) {
+          state.eventCount = state.lastAppliedPrevEventCount;
+        }
+        throw err;
+      } finally {
+        state.lastAppliedPrevStatus = undefined;
+        state.lastAppliedPrevEventCount = undefined;
+      }
+    },
+  };
+  return stub;
+}
