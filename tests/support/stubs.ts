@@ -425,3 +425,186 @@ export function makeReviewWorkflowDbStub(options: {
   };
   return stub;
 }
+
+export interface PublishSubmissionFixture {
+  id: string;
+  status: string;
+  companyArchived?: boolean;
+  companyId: string;
+  periodLabel: string;
+  periodStart: Date;
+  periodEnd: Date;
+}
+
+export interface OwnershipPositionFixture {
+  companyId: string;
+  holderType: string;
+  vehicleId?: string;
+  investorId?: string;
+}
+
+export interface InvestorVehiclePositionFixture {
+  vehicleId: string;
+  investorId: string;
+  status: string;
+}
+
+export interface InvestorFixture {
+  id: string;
+  archivedAt?: Date | null;
+}
+
+/**
+ * Backs publishSubmission (src/lib/reporting/publish-workflow.ts) exactly
+ * as that real module queries them: userRoleAssignment.findMany for
+ * requireFalakRole, companySubmission.findUnique (with the exact
+ * cycle/company shape the real select clause reads), report.findFirst/
+ * create/update, reportVersion.updateMany/count/create, and the two-path
+ * ownershipPosition/investorVehiclePosition/investor resolution --
+ * genuinely mutated in-memory arrays, so a second publish call sees the
+ * first call's real effects (existing report, prior version count),
+ * exactly like Postgres would.
+ */
+export function makePublishWorkflowDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  submission: PublishSubmissionFixture | null;
+  ownershipPositions?: OwnershipPositionFixture[];
+  investorVehiclePositions?: InvestorVehiclePositionFixture[];
+  investors?: InvestorFixture[];
+}) {
+  let nextId = 0;
+  const genId = (prefix: string) => `${prefix}_${++nextId}`;
+
+  const state = {
+    reports: [] as Record<string, unknown>[],
+    reportVersions: [] as Record<string, unknown>[],
+    reportVersionSubmissions: [] as Record<string, unknown>[],
+    narrativeSections: [] as Record<string, unknown>[],
+    reportAccessGrants: [] as Record<string, unknown>[],
+  };
+
+  const stub = {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    companySubmission: {
+      findUnique: async ({ where }: { where: { id: string } }) => {
+        const s = options.submission;
+        if (!s || s.id !== where.id) return null;
+        return {
+          id: s.id,
+          status: s.status,
+          cycle: {
+            companyId: s.companyId,
+            periodLabel: s.periodLabel,
+            periodStart: s.periodStart,
+            periodEnd: s.periodEnd,
+            company: { archivedAt: s.companyArchived ? new Date() : null },
+          },
+        };
+      },
+    },
+    report: {
+      findFirst: async ({
+        where,
+      }: {
+        where: { scope: string; companyId: string; periodStart: Date; periodEnd: Date };
+      }) =>
+        state.reports.find(
+          (r) =>
+            r.scope === where.scope &&
+            r.companyId === where.companyId &&
+            (r.periodStart as Date).getTime() === where.periodStart.getTime() &&
+            (r.periodEnd as Date).getTime() === where.periodEnd.getTime()
+        ) ?? null,
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: genId("report"), ...data };
+        state.reports.push(row);
+        return row;
+      },
+      update: async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+        const row = state.reports.find((r) => r.id === where.id);
+        if (!row) throw new Error("report not found");
+        Object.assign(row, data);
+        return row;
+      },
+    },
+    reportVersion: {
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: { reportId: string; isSuperseded: boolean };
+        data: { isSuperseded: boolean };
+      }) => {
+        const matches = state.reportVersions.filter(
+          (v) => v.reportId === where.reportId && v.isSuperseded === where.isSuperseded
+        );
+        matches.forEach((v) => Object.assign(v, data));
+        return { count: matches.length };
+      },
+      count: async ({ where }: { where: { reportId: string } }) =>
+        state.reportVersions.filter((v) => v.reportId === where.reportId).length,
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: genId("version"), ...data };
+        state.reportVersions.push(row);
+        return row;
+      },
+    },
+    reportVersionSubmission: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: genId("rvs"), ...data };
+        state.reportVersionSubmissions.push(row);
+        return row;
+      },
+    },
+    narrativeSection: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: genId("narrative"), ...data };
+        state.narrativeSections.push(row);
+        return row;
+      },
+    },
+    ownershipPosition: {
+      findMany: async ({ where }: { where: { companyId: string; holderType: string } }) =>
+        (options.ownershipPositions ?? [])
+          .filter((p) => p.companyId === where.companyId && p.holderType === where.holderType)
+          .map((p) => ({ vehicleId: p.vehicleId ?? null, investorId: p.investorId ?? null })),
+    },
+    investorVehiclePosition: {
+      findMany: async ({ where }: { where: { vehicleId: { in: string[] }; status: string } }) => {
+        const matches = (options.investorVehiclePositions ?? []).filter(
+          (p) => where.vehicleId.in.includes(p.vehicleId) && p.status === where.status
+        );
+        const distinct = new Map<string, { investorId: string }>();
+        for (const m of matches) distinct.set(m.investorId, { investorId: m.investorId });
+        return [...distinct.values()];
+      },
+    },
+    investor: {
+      findMany: async ({ where }: { where: { id: { in: string[] }; archivedAt: null } }) =>
+        (options.investors ?? [])
+          .filter((i) => where.id.in.includes(i.id) && !i.archivedAt)
+          .map((i) => ({ id: i.id })),
+    },
+    reportAccessGrant: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: genId("grant"), ...data };
+        state.reportAccessGrants.push(row);
+        return row;
+      },
+    },
+    $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(stub),
+    getReports: () => state.reports,
+    getReportVersions: () => state.reportVersions,
+    getReportVersionSubmissions: () => state.reportVersionSubmissions,
+    getNarrativeSections: () => state.narrativeSections,
+    getReportAccessGrants: () => state.reportAccessGrants,
+  };
+  return stub;
+}

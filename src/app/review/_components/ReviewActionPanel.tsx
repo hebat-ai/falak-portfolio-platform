@@ -7,8 +7,22 @@ import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { getOverdueDays } from "@/lib/admin/overdue";
-import { startReviewAction, requestChangesAction, approveSubmissionAction, type ReviewActionState } from "../actions";
+import {
+  startReviewAction,
+  requestChangesAction,
+  approveSubmissionAction,
+  publishSubmissionAction,
+  type ReviewActionState,
+} from "../actions";
 import type { AdminCompanyDTO, AdminCompanyPeriodData, AdminPeriodOption } from "@/lib/admin/dto";
+import type { NarrativeKind } from "@/generated/prisma/client";
+
+const NARRATIVE_KINDS: NarrativeKind[] = [
+  "operational_update",
+  "quarter_highlights",
+  "investment_review_notes",
+  "management_commentary",
+];
 
 const primaryButtonClass =
   "inline-flex items-center gap-1.5 rounded-md bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60";
@@ -36,6 +50,7 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
   const [startState, startFormAction, startPending] = useActionState(startReviewAction, initialActionState);
   const [changesState, changesFormAction, changesPending] = useActionState(requestChangesAction, initialActionState);
   const [approveState, approveFormAction, approvePending] = useActionState(approveSubmissionAction, initialActionState);
+  const [publishState, publishFormAction, publishPending] = useActionState(publishSubmissionAction, initialActionState);
 
   const overdueDays =
     effectiveData?.currentDeadline ? getOverdueDays(effectiveData.status, effectiveData.currentDeadline) : null;
@@ -137,9 +152,51 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
               </>
             ) : null}
 
-            {effectiveData.status === "draft" ||
-            effectiveData.status === "changes_requested" ||
-            effectiveData.status === "approved" ? (
+            {effectiveData.status === "approved" ? (
+              <form action={publishFormAction} className="flex w-full flex-col gap-3">
+                <input type="hidden" name="submissionId" value={submissionId} />
+                {NARRATIVE_KINDS.map((kind) => (
+                  <div key={kind} className="flex flex-col gap-1.5 rounded-md border border-border-subtle p-3">
+                    <span className="text-xs font-medium text-foreground">{t.reviewWorkspace.narrativeKinds[kind]}</span>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor={`${kind}En`} className="text-xs text-muted-foreground">
+                          {t.reviewWorkspace.narrativeEnLabel}
+                        </label>
+                        <textarea
+                          id={`${kind}En`}
+                          name={`${kind}En`}
+                          rows={2}
+                          className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor={`${kind}Ar`} className="text-xs text-muted-foreground">
+                          {t.reviewWorkspace.narrativeArLabel}
+                        </label>
+                        <textarea
+                          id={`${kind}Ar`}
+                          name={`${kind}Ar`}
+                          dir="rtl"
+                          rows={2}
+                          className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <button type="submit" disabled={publishPending} className={`${primaryButtonClass} w-fit`}>
+                  {t.reviewWorkspace.publishAction}
+                </button>
+                {publishState.error ? (
+                  <p role="alert" className="text-xs font-medium text-foreground">
+                    {publishState.error}
+                  </p>
+                ) : null}
+              </form>
+            ) : null}
+
+            {effectiveData.status === "draft" || effectiveData.status === "changes_requested" ? (
               <p className="text-sm text-muted-foreground">{t.reviewWorkspace.noActionAvailable}</p>
             ) : null}
           </div>

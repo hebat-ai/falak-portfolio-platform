@@ -1,7 +1,9 @@
 "use server";
 
 import { startReview, requestChanges, approveSubmission } from "@/lib/reporting/review-workflow";
+import { publishSubmission, type NarrativeInputs } from "@/lib/reporting/publish-workflow";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
+import type { NarrativeKind } from "@/generated/prisma/client";
 
 export interface ReviewActionState {
   error: string | null;
@@ -9,6 +11,13 @@ export interface ReviewActionState {
 
 const GENERIC_ERROR = "That action isn't available for this submission right now.";
 const MAX_COMMENT_LENGTH = 4000;
+const MAX_NARRATIVE_LENGTH = 8000;
+const NARRATIVE_KINDS: NarrativeKind[] = [
+  "operational_update",
+  "quarter_highlights",
+  "investment_review_notes",
+  "management_commentary",
+];
 
 function readSubmissionId(formData: FormData): string | null {
   const value = formData.get("submissionId");
@@ -70,6 +79,38 @@ export async function approveSubmissionAction(_prevState: ReviewActionState, for
 
   try {
     await approveSubmission(submissionId);
+  } catch (error) {
+    if (error instanceof InvalidTransitionError) {
+      return { error: GENERIC_ERROR };
+    }
+    throw error;
+  }
+
+  return { error: null };
+}
+
+export async function publishSubmissionAction(_prevState: ReviewActionState, formData: FormData): Promise<ReviewActionState> {
+  const submissionId = readSubmissionId(formData);
+  if (!submissionId) {
+    return { error: GENERIC_ERROR };
+  }
+
+  const narratives: NarrativeInputs = {};
+  for (const kind of NARRATIVE_KINDS) {
+    const enInput = formData.get(`${kind}En`);
+    const arInput = formData.get(`${kind}Ar`);
+    const textEn = typeof enInput === "string" ? enInput : "";
+    const textAr = typeof arInput === "string" ? arInput : "";
+    // Reject oversized raw input before it's stored -- same discipline as
+    // every other free-text field in this codebase.
+    if (textEn.length > MAX_NARRATIVE_LENGTH || textAr.length > MAX_NARRATIVE_LENGTH) {
+      return { error: "One of the narrative fields is too long." };
+    }
+    narratives[kind] = { textEn, textAr };
+  }
+
+  try {
+    await publishSubmission(submissionId, narratives);
   } catch (error) {
     if (error instanceof InvalidTransitionError) {
       return { error: GENERIC_ERROR };

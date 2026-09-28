@@ -211,6 +211,14 @@ export interface Dictionary {
     prototypeNotice: string;
     emptyQueueMessage: string;
     queueCaption: string;
+    narrativeEnLabel: string;
+    narrativeArLabel: string;
+    narrativeKinds: {
+      operational_update: string;
+      quarter_highlights: string;
+      investment_review_notes: string;
+      management_commentary: string;
+    };
   };
   investorDashboard: {
     subtitle: string;
@@ -499,6 +507,14 @@ export const en = {
       "Prototype only — actions taken here are simulated in memory for this session and are not sent to or saved on any server, and there is no real authentication or authorization behind them. Reloading this page resets every change, and nothing here affects Company Report, Portfolio Overview, or any other page.",
     emptyQueueMessage: "No reports match the current filters.",
     queueCaption: "Reports in the review workspace, filtered by status and period.",
+    narrativeEnLabel: "English",
+    narrativeArLabel: "Arabic",
+    narrativeKinds: {
+      operational_update: "Operational Update",
+      quarter_highlights: "Quarter Highlights",
+      investment_review_notes: "Investment Review Notes",
+      management_commentary: "Management Commentary",
+    },
   },
   investorDashboard: {
     subtitle: "A read-only, simulated view of one investor's vehicle exposure.",
@@ -789,6 +805,14 @@ export const ar = {
       "نموذج أولي فقط — الإجراءات المُتخذة هنا محاكاة داخل الذاكرة لهذه الجلسة فقط، ولا تُرسل أو تُحفظ على أي خادم، ولا تتضمن أي مصادقة أو تفويض حقيقي. تؤدي إعادة تحميل الصفحة إلى إلغاء جميع التغييرات، ولا يؤثر أي شيء هنا على تقرير الشركة أو نظرة عامة على المحفظة أو أي صفحة أخرى.",
     emptyQueueMessage: "لا توجد تقارير مطابقة لعوامل التصفية الحالية.",
     queueCaption: "التقارير في مساحة المراجعة، مُصفّاة حسب الحالة والفترة.",
+    narrativeEnLabel: "الإنجليزية",
+    narrativeArLabel: "العربية",
+    narrativeKinds: {
+      operational_update: "التحديث التشغيلي",
+      quarter_highlights: "أبرز أحداث الربع",
+      investment_review_notes: "ملاحظات مراجعة الاستثمار",
+      management_commentary: "تعليق الإدارة",
+    },
   },
   investorDashboard: {
     subtitle: "عرض للقراءة فقط يحاكي نطاق اطلاع مستثمر واحد على أدواته الاستثمارية.",
