@@ -102,6 +102,53 @@ export interface Dictionary {
       noDataValue: string;
     };
     emptyState: string;
+    manage: {
+      sectionTitle: string;
+      nameEnLabel: string;
+      nameArLabel: string;
+      slugLabel: string;
+      sectorEnLabel: string;
+      sectorArLabel: string;
+      customerModelLabel: string;
+      revenueModelsLabel: string;
+      currencyLabel: string;
+      entryStageLabel: string;
+      currentStageLabel: string;
+      typeLabel: string;
+      submitLabel: string;
+      archiveAction: string;
+      companyLabel: string;
+      vehicleLabel: string;
+      investedAmountLabel: string;
+      ownershipPctLabel: string;
+      signedDateLabel: string;
+      templateLabel: string;
+      periodLabelLabel: string;
+      periodStartLabel: string;
+      periodEndLabel: string;
+      deadlineLabel: string;
+      emailLabel: string;
+      addMetricAction: string;
+      metricKeyLabel: string;
+      metricLabelEnLabel: string;
+      metricLabelArLabel: string;
+      metricDataTypeLabel: string;
+      selectPlaceholder: string;
+      createCompanyTitle: string;
+      createVehicleTitle: string;
+      createInvestorTitle: string;
+      linkVehicleTitle: string;
+      createTemplateTitle: string;
+      createCycleTitle: string;
+      createInviteTitle: string;
+      companiesListTitle: string;
+      vehiclesListTitle: string;
+      investorsListTitle: string;
+      successMessage: string;
+      inviteCreatedMessage: string;
+      copyLinkAction: string;
+      linkCopiedMessage: string;
+    };
   };
   stub: {
     vehicleTitle: string;
@@ -340,6 +387,53 @@ export const en = {
       noDataValue: "No data submitted",
     },
     emptyState: "No companies match the selected filters.",
+    manage: {
+      sectionTitle: "Manage Portfolio",
+      nameEnLabel: "Name (English)",
+      nameArLabel: "Name (Arabic)",
+      slugLabel: "Slug (used in URLs, e.g. my-company)",
+      sectorEnLabel: "Sector (English)",
+      sectorArLabel: "Sector (Arabic)",
+      customerModelLabel: "Customer Model",
+      revenueModelsLabel: "Revenue Models",
+      currencyLabel: "Currency",
+      entryStageLabel: "Entry Stage",
+      currentStageLabel: "Current Stage",
+      typeLabel: "Type",
+      submitLabel: "Create",
+      archiveAction: "Archive",
+      companyLabel: "Company",
+      vehicleLabel: "Vehicle",
+      investedAmountLabel: "Invested Amount",
+      ownershipPctLabel: "Ownership % (e.g. 0.10 for 10%)",
+      signedDateLabel: "Signed Date",
+      templateLabel: "Reporting Template",
+      periodLabelLabel: "Period Label (e.g. Q3 2026)",
+      periodStartLabel: "Period Start",
+      periodEndLabel: "Period End",
+      deadlineLabel: "Submission Deadline",
+      emailLabel: "Email",
+      addMetricAction: "Add another metric",
+      metricKeyLabel: "Metric Key (e.g. revenue_b2b)",
+      metricLabelEnLabel: "Metric Label (English)",
+      metricLabelArLabel: "Metric Label (Arabic)",
+      metricDataTypeLabel: "Data Type",
+      selectPlaceholder: "Select...",
+      createCompanyTitle: "New Company",
+      createVehicleTitle: "New Vehicle",
+      createInvestorTitle: "New Investor",
+      linkVehicleTitle: "Link Vehicle to Company",
+      createTemplateTitle: "New Reporting Template",
+      createCycleTitle: "New Reporting Cycle",
+      createInviteTitle: "Send Company Invite",
+      companiesListTitle: "Companies",
+      vehiclesListTitle: "Vehicles",
+      investorsListTitle: "Investors",
+      successMessage: "Saved.",
+      inviteCreatedMessage: "Invite created. Copy this link and send it to the company yourself — email delivery isn't wired up yet.",
+      copyLinkAction: "Copy link",
+      linkCopiedMessage: "Copied.",
+    },
   },
   stub: {
     vehicleTitle: "Vehicle Dashboard",
@@ -583,6 +677,53 @@ export const ar = {
       noDataValue: "لا توجد بيانات مُقدَّمة",
     },
     emptyState: "لا توجد شركات مطابقة لعوامل التصفية المحددة.",
+    manage: {
+      sectionTitle: "إدارة المحفظة",
+      nameEnLabel: "الاسم (إنجليزي)",
+      nameArLabel: "الاسم (عربي)",
+      slugLabel: "المعرّف المختصر (يُستخدم في الروابط، مثال: my-company)",
+      sectorEnLabel: "القطاع (إنجليزي)",
+      sectorArLabel: "القطاع (عربي)",
+      customerModelLabel: "نموذج العملاء",
+      revenueModelsLabel: "نماذج الإيرادات",
+      currencyLabel: "العملة",
+      entryStageLabel: "مرحلة الاستثمار",
+      currentStageLabel: "المرحلة الحالية",
+      typeLabel: "النوع",
+      submitLabel: "إنشاء",
+      archiveAction: "أرشفة",
+      companyLabel: "الشركة",
+      vehicleLabel: "الأداة الاستثمارية",
+      investedAmountLabel: "المبلغ المستثمر",
+      ownershipPctLabel: "نسبة الملكية (مثال: 0.10 لنسبة 10%)",
+      signedDateLabel: "تاريخ التوقيع",
+      templateLabel: "قالب التقارير",
+      periodLabelLabel: "اسم الفترة (مثال: الربع الثالث 2026)",
+      periodStartLabel: "بداية الفترة",
+      periodEndLabel: "نهاية الفترة",
+      deadlineLabel: "الموعد النهائي للتقديم",
+      emailLabel: "البريد الإلكتروني",
+      addMetricAction: "إضافة مؤشر آخر",
+      metricKeyLabel: "معرّف المؤشر (مثال: revenue_b2b)",
+      metricLabelEnLabel: "تسمية المؤشر (إنجليزي)",
+      metricLabelArLabel: "تسمية المؤشر (عربي)",
+      metricDataTypeLabel: "نوع البيانات",
+      selectPlaceholder: "اختر...",
+      createCompanyTitle: "شركة جديدة",
+      createVehicleTitle: "أداة استثمارية جديدة",
+      createInvestorTitle: "مستثمر جديد",
+      linkVehicleTitle: "ربط أداة استثمارية بشركة",
+      createTemplateTitle: "قالب تقارير جديد",
+      createCycleTitle: "دورة تقارير جديدة",
+      createInviteTitle: "إرسال دعوة للشركة",
+      companiesListTitle: "الشركات",
+      vehiclesListTitle: "الأدوات الاستثمارية",
+      investorsListTitle: "المستثمرون",
+      successMessage: "تم الحفظ.",
+      inviteCreatedMessage: "تم إنشاء الدعوة. انسخ هذا الرابط وأرسله إلى الشركة بنفسك — إرسال البريد الإلكتروني التلقائي غير مُفعّل بعد.",
+      copyLinkAction: "نسخ الرابط",
+      linkCopiedMessage: "تم النسخ.",
+    },
   },
   stub: {
     vehicleTitle: "لوحة الأداة الاستثمارية",

@@ -3,20 +3,17 @@
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { formatDate, DASHBOARD_SNAPSHOT_DATE } from "@/lib/format";
-import { getOverdueDays } from "@/lib/reportingStatus";
-import { REPORTING_CYCLES } from "@/lib/mock/companies";
-import type { Company, ReportingPeriod } from "@/lib/mock/types";
+import { formatDate } from "@/lib/format";
+import { getOverdueDays } from "@/lib/admin/overdue";
+import type { AdminCompanyDTO, AdminPeriodOption } from "@/lib/admin/dto";
 
 interface ReportingStatusPanelProps {
-  companies: Company[];
-  period: ReportingPeriod;
+  companies: AdminCompanyDTO[];
+  period: AdminPeriodOption;
 }
 
 export function ReportingStatusPanel({ companies, period }: ReportingStatusPanelProps) {
   const { t, lang } = useLanguage();
-  const cycle = REPORTING_CYCLES[period];
-  const deadline = new Date(`${cycle.deadline}T00:00:00Z`);
 
   return (
     <section
@@ -24,13 +21,17 @@ export function ReportingStatusPanel({ companies, period }: ReportingStatusPanel
       className="rounded-xl border border-border-subtle bg-surface"
     >
       <h2 className="font-heading border-b border-border-subtle px-4 py-3 text-sm font-semibold text-foreground">
-        {t.admin.reportingStatusPanel.title} — {lang === "ar" ? cycle.labelAr : cycle.labelEn}
+        {t.admin.reportingStatusPanel.title} — {period.label}
       </h2>
       <ul className="divide-y divide-border-subtle">
         {companies.map((company) => {
-          const periodData = company.periods[period];
-          const overdueDays = getOverdueDays(periodData.status, cycle.deadline);
-          const isWithinDeadline = DASHBOARD_SNAPSHOT_DATE <= deadline;
+          const periodData = company.periods[period.key];
+          const overdueDays = periodData.currentDeadline
+            ? getOverdueDays(periodData.status, periodData.currentDeadline)
+            : null;
+          const isWithinDeadline = periodData.currentDeadline
+            ? new Date() <= new Date(`${periodData.currentDeadline}T00:00:00Z`)
+            : false;
 
           return (
             <li key={company.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -47,10 +48,12 @@ export function ReportingStatusPanel({ companies, period }: ReportingStatusPanel
                 ) : (
                   <span className="text-xs text-muted-foreground">{t.admin.reportingStatusPanel.neverSubmitted}</span>
                 )}
-                <span className="text-xs text-muted-foreground">
-                  {t.admin.reportingStatusPanel.deadlineColumn}:{" "}
-                  <time dateTime={cycle.deadline}>{formatDate(cycle.deadline, lang)}</time>
-                </span>
+                {periodData.currentDeadline ? (
+                  <span className="text-xs text-muted-foreground">
+                    {t.admin.reportingStatusPanel.deadlineColumn}:{" "}
+                    <time dateTime={periodData.currentDeadline}>{formatDate(periodData.currentDeadline, lang)}</time>
+                  </span>
+                ) : null}
                 {overdueDays !== null ? (
                   <span className="text-xs font-medium text-foreground">
                     <Num>{overdueDays}</Num> {t.admin.reportingStatusPanel.daysOverdueSuffix}

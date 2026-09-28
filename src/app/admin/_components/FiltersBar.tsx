@@ -2,21 +2,19 @@
 
 import { LayoutList, LayoutGrid, RotateCcw, Search, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { vehicles } from "@/lib/mock/vehicles";
-import { REPORTING_CYCLES } from "@/lib/mock/companies";
-import type { Currency, ReportingPeriod, ReportingStatus } from "@/lib/mock/types";
+import type { Currency, SubmissionStatus } from "@/generated/prisma/client";
+import type { AdminVehicleDTO, AdminPeriodOption } from "@/lib/admin/dto";
 
 export interface AdminFilterState {
   vehicleId: string | "all";
-  period: ReportingPeriod;
+  period: string;
   currency: Currency | "all";
-  status: ReportingStatus | "all";
+  status: SubmissionStatus | "all";
   searchQuery: string;
 }
 
-export const DEFAULT_ADMIN_FILTERS: AdminFilterState = {
+export const DEFAULT_ADMIN_FILTERS: Omit<AdminFilterState, "period"> = {
   vehicleId: "all",
-  period: "Q2_2026",
   currency: "all",
   status: "all",
   searchQuery: "",
@@ -27,21 +25,16 @@ interface FiltersBarProps {
   onChange: (next: AdminFilterState) => void;
   viewMode: "table" | "cards";
   onViewModeChange: (mode: "table" | "cards") => void;
+  vehicles: AdminVehicleDTO[];
+  periods: AdminPeriodOption[];
 }
 
-const STATUS_OPTIONS: ReportingStatus[] = [
-  "draft",
-  "submitted",
-  "under_review",
-  "changes_requested",
-  "approved",
-  "published",
-];
+const STATUS_OPTIONS: SubmissionStatus[] = ["draft", "submitted", "under_review", "changes_requested", "approved"];
 
 const selectClass =
   "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground";
 
-export function FiltersBar({ filters, onChange, viewMode, onViewModeChange }: FiltersBarProps) {
+export function FiltersBar({ filters, onChange, viewMode, onViewModeChange, vehicles, periods }: FiltersBarProps) {
   const { t, lang } = useLanguage();
 
   return (
@@ -109,11 +102,11 @@ export function FiltersBar({ filters, onChange, viewMode, onViewModeChange }: Fi
             id="filter-period"
             className={selectClass}
             value={filters.period}
-            onChange={(e) => onChange({ ...filters, period: e.target.value as ReportingPeriod })}
+            onChange={(e) => onChange({ ...filters, period: e.target.value })}
           >
-            {(Object.keys(REPORTING_CYCLES) as ReportingPeriod[]).map((p) => (
-              <option key={p} value={p}>
-                {lang === "ar" ? REPORTING_CYCLES[p].labelAr : REPORTING_CYCLES[p].labelEn}
+            {periods.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
               </option>
             ))}
           </select>
@@ -143,7 +136,7 @@ export function FiltersBar({ filters, onChange, viewMode, onViewModeChange }: Fi
             id="filter-status"
             className={selectClass}
             value={filters.status}
-            onChange={(e) => onChange({ ...filters, status: e.target.value as ReportingStatus | "all" })}
+            onChange={(e) => onChange({ ...filters, status: e.target.value as SubmissionStatus | "all" })}
           >
             <option value="all">{t.admin.filters.allOption}</option>
             {STATUS_OPTIONS.map((s) => (
@@ -156,7 +149,7 @@ export function FiltersBar({ filters, onChange, viewMode, onViewModeChange }: Fi
 
         <button
           type="button"
-          onClick={() => onChange(DEFAULT_ADMIN_FILTERS)}
+          onClick={() => onChange({ ...DEFAULT_ADMIN_FILTERS, period: filters.period })}
           className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground sm:w-auto"
         >
           <RotateCcw aria-hidden="true" className="h-4 w-4" />

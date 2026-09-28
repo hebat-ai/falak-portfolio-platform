@@ -6,15 +6,16 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency } from "@/lib/format";
-import { vehicles, vehicleCompanyLinks } from "@/lib/mock/vehicles";
-import type { Company, ReportingPeriod } from "@/lib/mock/types";
+import type { AdminCompanyDTO, AdminVehicleDTO, AdminOwnershipLinkDTO } from "@/lib/admin/dto";
 
 interface CompanyCardGridProps {
-  companies: Company[];
-  period: ReportingPeriod;
+  companies: AdminCompanyDTO[];
+  period: string;
+  vehicles: AdminVehicleDTO[];
+  vehicleLinks: AdminOwnershipLinkDTO[];
 }
 
-export function CompanyCardGrid({ companies, period }: CompanyCardGridProps) {
+export function CompanyCardGrid({ companies, period, vehicles, vehicleLinks }: CompanyCardGridProps) {
   const { t, lang } = useLanguage();
 
   if (companies.length === 0) {
@@ -25,7 +26,7 @@ export function CompanyCardGrid({ companies, period }: CompanyCardGridProps) {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {companies.map((company) => {
         const periodData = company.periods[period];
-        const links = vehicleCompanyLinks.filter((l) => l.companyId === company.id);
+        const links = vehicleLinks.filter((l) => l.companyId === company.id);
         const companyVehicles = links
           .map((l) => vehicles.find((v) => v.id === l.vehicleId))
           .filter((v): v is NonNullable<typeof v> => Boolean(v));

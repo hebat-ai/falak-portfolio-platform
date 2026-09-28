@@ -4,7 +4,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import type { Currency } from "@/lib/mock/types";
+import type { Currency } from "@/generated/prisma/client";
 
 interface RevenueByCurrency {
   currency: Currency;
