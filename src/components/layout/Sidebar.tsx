@@ -67,7 +67,7 @@ export function SidebarNavList({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ showSyntheticDataNotice = false }: { showSyntheticDataNotice?: boolean }) {
   const { t } = useLanguage();
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-nav-bg xl:flex xl:sticky xl:top-0 xl:h-screen xl:self-start xl:overflow-y-auto">
@@ -75,7 +75,9 @@ export function Sidebar() {
         <BrandMark variant="on-dark" />
       </div>
       <SidebarNavList />
-      <div className="mt-auto p-4 text-[11px] text-nav-fg-muted">{t.common.syntheticDataNotice}</div>
+      {showSyntheticDataNotice ? (
+        <div className="mt-auto p-4 text-[11px] text-nav-fg-muted">{t.common.syntheticDataNotice}</div>
+      ) : null}
     </aside>
   );
 }

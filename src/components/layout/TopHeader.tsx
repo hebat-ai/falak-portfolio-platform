@@ -39,10 +39,12 @@ export function TopHeader({ title, subtitle, viewerRoleLabel, menuOpen, onOpenMe
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1 text-xs text-muted-foreground">
-          <User aria-hidden="true" className="h-3.5 w-3.5" />
-          {t.common.viewingAsLabel}: {viewerRoleLabel ?? t.common.falakAdminRole}
-        </span>
+        {viewerRoleLabel ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1 text-xs text-muted-foreground">
+            <User aria-hidden="true" className="h-3.5 w-3.5" />
+            {t.common.viewingAsLabel}: {viewerRoleLabel}
+          </span>
+        ) : null}
         <span className="text-xs text-muted-foreground">
           {t.common.dataAsOfLabel} <time dateTime={snapshotIso}>{formatDate(snapshotIso, lang)}</time>
         </span>

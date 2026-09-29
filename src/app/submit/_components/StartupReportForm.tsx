@@ -29,11 +29,7 @@ export function StartupReportForm({ company, submission }: StartupReportFormProp
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
   return (
-    <AppShell
-      title={lang === "ar" ? company.nameAr : company.nameEn}
-      subtitle={t.nav.startupForm}
-      viewerRoleLabel={t.submitPortal.viewerRoleLabel}
-    >
+    <AppShell title={lang === "ar" ? company.nameAr : company.nameEn} subtitle={t.nav.startupForm}>
       <div className="space-y-6">
         <Link
           href={`/company/${company.slug}`}

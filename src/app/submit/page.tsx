@@ -34,6 +34,7 @@ export default function StartupPortalPage() {
       title={t.nav.startupForm}
       subtitle={t.submitPortal.subtitle}
       viewerRoleLabel={t.submitPortal.viewerRoleLabel}
+      showSyntheticDataNotice
     >
       <div className="space-y-6">
         <div className="rounded-xl border border-border-subtle bg-surface-muted p-4 text-sm text-muted-foreground">

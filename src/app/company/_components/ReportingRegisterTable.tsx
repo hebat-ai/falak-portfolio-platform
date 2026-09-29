@@ -8,18 +8,23 @@ import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { getOverdueDays } from "@/lib/reportingStatus";
-import { REPORTING_CYCLES } from "@/lib/mock/companies";
-import { vehicles, vehicleCompanyLinks } from "@/lib/mock/vehicles";
-import type { Company, ReportingPeriod } from "@/lib/mock/types";
+import type { AdminCompanyDTO, AdminPeriodOption, AdminVehicleDTO, AdminOwnershipLinkDTO } from "@/lib/admin/dto";
 
 export interface RegisterRow {
-  company: Company;
-  period: ReportingPeriod;
+  company: AdminCompanyDTO;
+  periodKey: string;
 }
 
 const COLUMN_COUNT = 9;
 
-export function ReportingRegisterTable({ rows }: { rows: RegisterRow[] }) {
+interface ReportingRegisterTableProps {
+  rows: RegisterRow[];
+  periods: AdminPeriodOption[];
+  vehicles: AdminVehicleDTO[];
+  ownershipLinks: AdminOwnershipLinkDTO[];
+}
+
+export function ReportingRegisterTable({ rows, periods, vehicles, ownershipLinks }: ReportingRegisterTableProps) {
   const { t, lang } = useLanguage();
   const ChevronIcon = lang === "ar" ? ChevronLeft : ChevronRight;
 
@@ -48,19 +53,20 @@ export function ReportingRegisterTable({ rows }: { rows: RegisterRow[] }) {
             </Td>
           </Tr>
         ) : (
-          rows.map(({ company, period }) => {
-            const periodData = company.periods[period];
-            const cycle = REPORTING_CYCLES[period];
-            const overdueDays = getOverdueDays(periodData.status, cycle.deadline);
-            const companyVehicles = vehicleCompanyLinks
+          rows.map(({ company, periodKey }) => {
+            const periodData = company.periods[periodKey];
+            const period = periods.find((p) => p.key === periodKey);
+            const overdueDays =
+              periodData?.currentDeadline != null ? getOverdueDays(periodData.status, periodData.currentDeadline) : null;
+            const companyVehicles = ownershipLinks
               .filter((l) => l.companyId === company.id)
               .map((l) => vehicles.find((v) => v.id === l.vehicleId))
               .filter((v): v is NonNullable<typeof v> => Boolean(v));
 
             return (
-              <Tr key={`${company.id}-${period}`} className="hover:bg-surface-muted/60">
+              <Tr key={`${company.id}-${periodKey}`} className="hover:bg-surface-muted/60">
                 <Td className="font-medium">{lang === "ar" ? company.nameAr : company.nameEn}</Td>
-                <Td>{lang === "ar" ? cycle.labelAr : cycle.labelEn}</Td>
+                <Td>{period?.label ?? periodKey}</Td>
                 <Td>
                   <div className="flex flex-wrap items-center gap-1">
                     {companyVehicles.length === 0 ? (
@@ -85,24 +91,26 @@ export function ReportingRegisterTable({ rows }: { rows: RegisterRow[] }) {
                   </div>
                 </Td>
                 <Td>
-                  {periodData.revenue === null ? (
+                  {periodData?.revenue == null ? (
                     <span className="text-muted-foreground">{t.admin.table.noDataValue}</span>
                   ) : (
                     <Num>{formatCurrency(periodData.revenue, company.currency, lang)}</Num>
                   )}
                 </Td>
+                <Td>{periodData ? <StatusBadge status={periodData.status} /> : null}</Td>
                 <Td>
-                  <StatusBadge status={periodData.status} />
-                </Td>
-                <Td>
-                  {periodData.lastUpdated ? (
+                  {periodData?.lastUpdated ? (
                     <time dateTime={periodData.lastUpdated}>{formatDate(periodData.lastUpdated, lang)}</time>
                   ) : (
                     <span className="text-muted-foreground">{t.admin.reportingStatusPanel.neverSubmitted}</span>
                   )}
                 </Td>
                 <Td>
-                  <time dateTime={cycle.deadline}>{formatDate(cycle.deadline, lang)}</time>
+                  {periodData?.currentDeadline ? (
+                    <time dateTime={periodData.currentDeadline}>{formatDate(periodData.currentDeadline, lang)}</time>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </Td>
                 <Td>
                   {overdueDays !== null ? (
@@ -115,8 +123,8 @@ export function ReportingRegisterTable({ rows }: { rows: RegisterRow[] }) {
                 </Td>
                 <Td>
                   <Link
-                    href={`/company/${company.slug}?period=${period}`}
-                    aria-label={`${t.admin.table.viewCompanyAction} — ${lang === "ar" ? company.nameAr : company.nameEn} — ${lang === "ar" ? cycle.labelAr : cycle.labelEn}`}
+                    href={`/company/${company.slug}?period=${periodKey}`}
+                    aria-label={`${t.admin.table.viewCompanyAction} — ${lang === "ar" ? company.nameAr : company.nameEn} — ${period?.label ?? periodKey}`}
                     className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                   >
                     {t.admin.table.viewCompanyAction}

@@ -846,3 +846,148 @@ export function makeInvestorQueriesDbStub(options: {
     },
   };
 }
+
+export interface CompanyReportCycleFixture {
+  id: string;
+  periodLabel: string;
+  periodStart: Date;
+  periodEnd: Date;
+  currentDeadline: Date;
+  submission: null | {
+    id: string;
+    status: string;
+    updatedAt: Date;
+    revenue: number | null;
+    isNa?: boolean;
+  };
+}
+
+export interface CompanyReportReportFixture {
+  periodStart: Date;
+  periodEnd: Date;
+  scope?: string;
+  versions: { isSuperseded: boolean; narratives: { kind: string; textEn: string; textAr: string }[] }[];
+}
+
+export interface CompanyReportVehicleLinkFixture {
+  vehicleArchived?: boolean;
+  vehicle: { id: string; slug: string; nameEn: string; nameAr: string; type: string; currency: string };
+}
+
+export interface CompanyReportCompanyFixture {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  sectorEn: string;
+  sectorAr: string;
+  customerModel: string;
+  revenueModels: string[];
+  currency: string;
+  entryStage: string;
+  currentStage: string;
+  archivedAt?: Date | null;
+  cycles?: CompanyReportCycleFixture[];
+  reports?: CompanyReportReportFixture[];
+  vehicleLinks?: CompanyReportVehicleLinkFixture[];
+}
+
+/**
+ * Backs getCompanyReportData (src/lib/company/queries.ts): userRoleAssignment
+ * .findMany for requireFalakRole, companyMembership.findFirst for
+ * requireCompanyMembership, and a single company.findUnique returning the
+ * full nested cycles/reports/ownershipPositions shape the real query
+ * selects -- computed directly from the fixture rather than parsing the
+ * caller's actual `where`/`select` args (same simplification every other
+ * stub factory in this file already makes). The scope/isSuperseded
+ * filtering the real query pushes into Prisma's `where` is replicated here
+ * in the fixture-to-response mapping, not by inspecting the call args.
+ */
+export function makeCompanyReportDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  companyMemberships?: MembershipFixture[];
+  companies?: CompanyReportCompanyFixture[];
+}) {
+  const companies = options.companies ?? [];
+  const findUniqueCalls: string[] = [];
+
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    companyMembership: {
+      findFirst: async ({ where }: { where: Record<string, unknown> }) => {
+        const m = (options.companyMemberships ?? []).find(
+          (mm) => mm.userId === where.userId && mm.companyId === where.companyId
+        );
+        if (!m) return null;
+        if (m.revoked) return null;
+        if (m.archived) return null;
+        const roleFilter = where.role as { in: string[] };
+        if (!roleFilter.in.includes(m.role)) return null;
+        return { role: m.role };
+      },
+    },
+    company: {
+      findUnique: async ({ where }: { where: { slug: string } }) => {
+        findUniqueCalls.push(where.slug);
+        const c = companies.find((cc) => cc.slug === where.slug);
+        if (!c) return null;
+        return {
+          id: c.id,
+          slug: c.slug,
+          nameEn: c.nameEn,
+          nameAr: c.nameAr,
+          sectorEn: c.sectorEn,
+          sectorAr: c.sectorAr,
+          customerModel: c.customerModel,
+          revenueModels: c.revenueModels,
+          currency: c.currency,
+          entryStage: c.entryStage,
+          currentStage: c.currentStage,
+          archivedAt: c.archivedAt ?? null,
+          cycles: (c.cycles ?? []).map((cy) => ({
+            id: cy.id,
+            periodLabel: cy.periodLabel,
+            periodStart: cy.periodStart,
+            periodEnd: cy.periodEnd,
+            currentDeadline: cy.currentDeadline,
+            submission: cy.submission
+              ? {
+                  id: cy.submission.id,
+                  status: cy.submission.status,
+                  updatedAt: cy.submission.updatedAt,
+                  metricValues:
+                    cy.submission.revenue === null && !cy.submission.isNa
+                      ? []
+                      : [
+                          {
+                            numericValue:
+                              cy.submission.revenue === null ? null : { toNumber: () => cy.submission!.revenue },
+                            isNa: cy.submission.isNa ?? false,
+                          },
+                        ],
+                }
+              : null,
+          })),
+          reports: (c.reports ?? [])
+            .filter((r) => (r.scope ?? "COMPANY") === "COMPANY")
+            .map((r) => ({
+              periodStart: r.periodStart,
+              periodEnd: r.periodEnd,
+              versions: r.versions.filter((v) => v.isSuperseded === false).map((v) => ({ narratives: v.narratives })),
+            })),
+          ownershipPositions: (c.vehicleLinks ?? [])
+            .filter((l) => !l.vehicleArchived)
+            .map((l) => ({ vehicle: l.vehicle })),
+        };
+      },
+    },
+    getFindUniqueCalls: (): string[] => findUniqueCalls,
+  };
+}

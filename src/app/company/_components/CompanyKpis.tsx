@@ -5,8 +5,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { REPORTING_CYCLES } from "@/lib/mock/companies";
-import type { Currency, ReportingPeriod } from "@/lib/mock/types";
+import type { Currency } from "@/generated/prisma/client";
 
 interface CompanyKpisProps {
   currency: Currency;
@@ -15,7 +14,9 @@ interface CompanyKpisProps {
   // null means the selected period has no predecessor at all (it's the
   // first period), distinct from "a predecessor exists but its data is
   // insufficient" -- the two states get different localized messages.
-  previousPeriod: ReportingPeriod | null;
+  // Already resolved to a display label by the caller -- this component
+  // has no period lookup table of its own to resolve one from.
+  previousPeriodLabel: string | null;
 }
 
 // Fraction, not a percentage-point number -- matches every other percent
@@ -30,7 +31,7 @@ function computeRevenueGrowth(current: number | null, previous: number | null): 
 
 const nullStateClass = "text-sm font-normal text-muted-foreground";
 
-export function CompanyKpis({ currency, currentRevenue, previousRevenue, previousPeriod }: CompanyKpisProps) {
+export function CompanyKpis({ currency, currentRevenue, previousRevenue, previousPeriodLabel }: CompanyKpisProps) {
   const { t, lang } = useLanguage();
 
   const revenueValue: ReactNode =
@@ -43,13 +44,11 @@ export function CompanyKpis({ currency, currentRevenue, previousRevenue, previou
   let growthValue: ReactNode;
   let growthHint: string | undefined;
 
-  if (previousPeriod === null) {
+  if (previousPeriodLabel === null) {
     growthValue = <span className={nullStateClass}>{t.companyReport.revenueGrowthNoPriorPeriod}</span>;
     growthHint = undefined;
   } else {
-    const cycle = REPORTING_CYCLES[previousPeriod];
-    const periodLabel = lang === "ar" ? cycle.labelAr : cycle.labelEn;
-    growthHint = `${t.companyReport.revenueGrowthVsPrefix} ${periodLabel}`;
+    growthHint = `${t.companyReport.revenueGrowthVsPrefix} ${previousPeriodLabel}`;
 
     const growth = computeRevenueGrowth(currentRevenue, previousRevenue);
     growthValue =

@@ -55,6 +55,7 @@ export function VehicleDashboardView({ vehicle, linkedCompanies, linkedInvestors
     <AppShell
       title={lang === "ar" ? vehicle.nameAr : vehicle.nameEn}
       subtitle={t.vehicleTypes[vehicle.type]}
+      showSyntheticDataNotice
     >
       <div className="space-y-6">
         <Link

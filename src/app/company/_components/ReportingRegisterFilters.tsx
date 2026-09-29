@@ -2,34 +2,26 @@
 
 import { Search, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { REPORTING_CYCLES, REPORTING_PERIODS_ORDER } from "@/lib/mock/companies";
-import type { ReportingPeriod, ReportingStatus } from "@/lib/mock/types";
+import type { AdminPeriodOption } from "@/lib/admin/dto";
+import type { SubmissionStatus } from "@/generated/prisma/client";
 
-export type RegisterPeriodFilter = "all" | ReportingPeriod;
-export type RegisterStatusFilter = "all" | ReportingStatus;
-
-const STATUS_OPTIONS: ReportingStatus[] = [
-  "draft",
-  "submitted",
-  "under_review",
-  "changes_requested",
-  "approved",
-  "published",
-];
+const STATUS_OPTIONS: SubmissionStatus[] = ["draft", "submitted", "under_review", "changes_requested", "approved"];
 
 const selectClass =
   "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground";
 
 interface ReportingRegisterFiltersProps {
-  periodFilter: RegisterPeriodFilter;
-  onPeriodFilterChange: (period: RegisterPeriodFilter) => void;
-  statusFilter: RegisterStatusFilter;
-  onStatusFilterChange: (status: RegisterStatusFilter) => void;
+  periods: AdminPeriodOption[];
+  periodFilter: string;
+  onPeriodFilterChange: (period: string) => void;
+  statusFilter: SubmissionStatus | "all";
+  onStatusFilterChange: (status: SubmissionStatus | "all") => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }
 
 export function ReportingRegisterFilters({
+  periods,
   periodFilter,
   onPeriodFilterChange,
   statusFilter,
@@ -37,12 +29,12 @@ export function ReportingRegisterFilters({
   searchQuery,
   onSearchChange,
 }: ReportingRegisterFiltersProps) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
 
-  // Options shown newest-first without mutating the shared, oldest-first
-  // REPORTING_PERIODS_ORDER -- same reversed-copy pattern ReportingHistoryList
+  // Newest-first without mutating `periods` (oldest-first, the single
+  // source of truth) -- same reversed-copy pattern ReportingHistoryList
   // already uses for the same reason.
-  const periodsNewestFirst = [...REPORTING_PERIODS_ORDER].reverse();
+  const periodsNewestFirst = [...periods].reverse();
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface p-4">
@@ -85,12 +77,12 @@ export function ReportingRegisterFilters({
             id="register-period"
             className={selectClass}
             value={periodFilter}
-            onChange={(e) => onPeriodFilterChange(e.target.value as RegisterPeriodFilter)}
+            onChange={(e) => onPeriodFilterChange(e.target.value)}
           >
             <option value="all">{t.admin.filters.allOption}</option>
             {periodsNewestFirst.map((p) => (
-              <option key={p} value={p}>
-                {lang === "ar" ? REPORTING_CYCLES[p].labelAr : REPORTING_CYCLES[p].labelEn}
+              <option key={p.key} value={p.key}>
+                {p.label}
               </option>
             ))}
           </select>
@@ -104,7 +96,7 @@ export function ReportingRegisterFilters({
             id="register-status"
             className={selectClass}
             value={statusFilter}
-            onChange={(e) => onStatusFilterChange(e.target.value as RegisterStatusFilter)}
+            onChange={(e) => onStatusFilterChange(e.target.value as SubmissionStatus | "all")}
           >
             <option value="all">{t.admin.filters.allOption}</option>
             {STATUS_OPTIONS.map((s) => (

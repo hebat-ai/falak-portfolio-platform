@@ -12,17 +12,21 @@ interface AppShellProps {
   title: string;
   subtitle?: string;
   viewerRoleLabel?: string;
+  // Opt-in, not global -- only the pages still on fabricated demo data
+  // (currently /vehicle, /vehicle/[slug], /submit's portal picker) should
+  // set this. Every converted-to-real page omits it.
+  showSyntheticDataNotice?: boolean;
   children: ReactNode;
 }
 
-export function AppShell({ title, subtitle, viewerRoleLabel, children }: AppShellProps) {
+export function AppShell({ title, subtitle, viewerRoleLabel, showSyntheticDataNotice = false, children }: AppShellProps) {
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const titleId = useId();
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar showSyntheticDataNotice={showSyntheticDataNotice} />
 
       <MobileDrawer
         id={MOBILE_DRAWER_ID}
@@ -46,9 +50,11 @@ export function AppShell({ title, subtitle, viewerRoleLabel, children }: AppShel
         />
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">{children}</main>
         {/* Sidebar's footer carries this notice at xl+; it is hidden below that. */}
-        <footer className="border-t border-border-subtle px-4 py-3 text-xs text-muted-foreground sm:px-6 xl:hidden">
-          {t.common.syntheticDataNotice}
-        </footer>
+        {showSyntheticDataNotice ? (
+          <footer className="border-t border-border-subtle px-4 py-3 text-xs text-muted-foreground sm:px-6 xl:hidden">
+            {t.common.syntheticDataNotice}
+          </footer>
+        ) : null}
       </div>
     </div>
   );

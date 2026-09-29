@@ -20,7 +20,7 @@ export default function VehicleDirectoryPage() {
   const { t, lang } = useLanguage();
 
   return (
-    <AppShell title={t.nav.vehicleDashboard} subtitle={t.vehicleDirectory.subtitle}>
+    <AppShell title={t.nav.vehicleDashboard} subtitle={t.vehicleDirectory.subtitle} showSyntheticDataNotice>
       {vehicles.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t.vehicleDirectory.emptyMessage}</p>
       ) : (

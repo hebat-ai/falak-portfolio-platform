@@ -161,7 +161,10 @@ export interface Dictionary {
     revenueModelsLabel: string;
     linkedVehiclesTitle: string;
     noVehiclesLinked: string;
+    backToRegister: string;
+    narrativeTitle: string;
     historyTitle: string;
+    noReportingHistory: string;
     revenueLabel: string;
     revenueGrowthLabel: string;
     revenueGrowthVsPrefix: string;
@@ -455,7 +458,10 @@ export const en = {
     revenueModelsLabel: "Revenue Models",
     linkedVehiclesTitle: "Linked Investment Vehicles",
     noVehiclesLinked: "No investment vehicle linked",
+    backToRegister: "Back to Company Reports",
+    narrativeTitle: "Narrative",
     historyTitle: "Reporting History",
+    noReportingHistory: "No reporting cycles have been created for this company yet.",
     revenueLabel: "Revenue",
     revenueGrowthLabel: "Revenue Growth",
     revenueGrowthVsPrefix: "vs.",
@@ -754,7 +760,10 @@ export const ar = {
     revenueModelsLabel: "نماذج الإيرادات",
     linkedVehiclesTitle: "الأدوات الاستثمارية المرتبطة",
     noVehiclesLinked: "لا توجد أداة استثمارية مرتبطة",
+    backToRegister: "العودة إلى تقارير الشركات",
+    narrativeTitle: "السرد",
     historyTitle: "سجل التقارير",
+    noReportingHistory: "لم يتم إنشاء أي دورات تقارير لهذه الشركة بعد.",
     revenueLabel: "الإيرادات",
     revenueGrowthLabel: "نمو الإيرادات",
     revenueGrowthVsPrefix: "مقارنة بـ",
