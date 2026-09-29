@@ -19,6 +19,7 @@ export interface Dictionary {
     companyReports: string;
     startupForm: string;
     reviewWorkspace: string;
+    access: string;
     openMenu: string;
     closeMenu: string;
   };
@@ -237,6 +238,26 @@ export interface Dictionary {
     subtitle: string;
     openAdmin: string;
   };
+  access: {
+    subtitle: string;
+    viewOnlyNote: string;
+    companiesTitle: string;
+    investorsTitle: string;
+    noOrgs: string;
+    summaryCounts: string;
+    membersLabel: string;
+    pendingInvitesLabel: string;
+    noMembers: string;
+    noInvites: string;
+    roles: { ADMIN: string; MEMBER: string };
+    joinedLabel: string;
+    sentLabel: string;
+    expiresLabel: string;
+    revokeAction: string;
+    cancelInviteAction: string;
+    confirmRevoke: string;
+    confirmCancelInvite: string;
+  };
 }
 
 export const en = {
@@ -250,6 +271,7 @@ export const en = {
     companyReports: "Company Reports",
     startupForm: "My Companies",
     reviewWorkspace: "Review & Approval",
+    access: "Access Management",
     openMenu: "Open menu",
     closeMenu: "Close menu",
   },
@@ -502,6 +524,26 @@ export const en = {
     subtitle: "Portfolio reporting for Falak, its portfolio companies, and investors.",
     openAdmin: "Open Portfolio Overview",
   },
+  access: {
+    subtitle: "Who can access each company and investor organization, plus invites that haven't been used yet.",
+    viewOnlyNote: "View only — only Falak Admins can revoke access or cancel invites.",
+    companiesTitle: "Companies",
+    investorsTitle: "Investor Organizations",
+    noOrgs: "No organizations yet.",
+    summaryCounts: "{members} members · {invites} pending invites",
+    membersLabel: "Members",
+    pendingInvitesLabel: "Pending invites",
+    noMembers: "No active members.",
+    noInvites: "No pending invites.",
+    roles: { ADMIN: "Admin", MEMBER: "Member" },
+    joinedLabel: "Joined",
+    sentLabel: "Sent",
+    expiresLabel: "Expires",
+    revokeAction: "Revoke",
+    cancelInviteAction: "Cancel invite",
+    confirmRevoke: "Revoke access for {email}? They lose access on their next page load.",
+    confirmCancelInvite: "Cancel the invite sent to {email}? Its link will stop working.",
+  },
 } satisfies Dictionary;
 
 export const ar = {
@@ -515,6 +557,7 @@ export const ar = {
     companyReports: "تقارير الشركات",
     startupForm: "شركاتي",
     reviewWorkspace: "المراجعة والاعتماد",
+    access: "إدارة الوصول",
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",
   },
@@ -766,5 +809,25 @@ export const ar = {
     title: "منصة فلك لإدارة المحفظة",
     subtitle: "تقارير المحفظة لفلك وشركات محفظتها ومستثمريها.",
     openAdmin: "فتح نظرة عامة على المحفظة",
+  },
+  access: {
+    subtitle: "من يمكنه الوصول إلى كل شركة ومؤسسة استثمارية، إضافة إلى الدعوات التي لم تُستخدم بعد.",
+    viewOnlyNote: "للعرض فقط — يمكن لمسؤولي فلك فقط إلغاء الوصول أو إلغاء الدعوات.",
+    companiesTitle: "الشركات",
+    investorsTitle: "المؤسسات الاستثمارية",
+    noOrgs: "لا توجد مؤسسات بعد.",
+    summaryCounts: "{members} أعضاء · {invites} دعوات معلّقة",
+    membersLabel: "الأعضاء",
+    pendingInvitesLabel: "الدعوات المعلّقة",
+    noMembers: "لا يوجد أعضاء نشطون.",
+    noInvites: "لا توجد دعوات معلّقة.",
+    roles: { ADMIN: "مسؤول", MEMBER: "عضو" },
+    joinedLabel: "انضم في",
+    sentLabel: "أُرسلت في",
+    expiresLabel: "تنتهي في",
+    revokeAction: "إلغاء الوصول",
+    cancelInviteAction: "إلغاء الدعوة",
+    confirmRevoke: "إلغاء وصول {email}؟ سيفقد الوصول عند تحميل الصفحة التالية.",
+    confirmCancelInvite: "إلغاء الدعوة المرسلة إلى {email}؟ سيتوقف رابطها عن العمل.",
   },
 } satisfies Dictionary;

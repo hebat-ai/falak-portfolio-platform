@@ -134,6 +134,10 @@ commits):
     (`InvestorInvite` table, atomic claim in `investor-invite-claim.ts`).
     Accepting a fresh invite reactivates a previously revoked membership,
     for both company and investor invites.
+14. **Access management** (`/admin/access`) — every company and investor
+    org's active members and pending invites; FALAK_ADMIN can revoke a
+    membership or cancel an invite (conditional update + audit), which
+    takes effect on the person's next page load (`src/lib/access/`).
 
 Untouched by any application
 code anywhere: `Attachment`, `ReportDistribution`,
@@ -150,9 +154,12 @@ No step is planned yet. Open candidates:
 - Decide whether the untouched schema models above (distributions,
   attachments, cash flows, valuation/NAV snapshots, FX rates) are real
   near-term product needs or can stay dormant.
-- Access-grant revocation (grants are only ever created today, in
-  `publishSubmission`), and a UI to manage company/investor memberships
-  beyond the invite flow.
+- Report-access-grant revocation (an investor org's access to a specific
+  published report; grants are only ever created today, in
+  `publishSubmission`), and changing a member's role.
+- Emailing investors when a report is published (`ReportDistribution`),
+  and emailing invite links instead of copy-pasting them.
+- Reporting deadline extensions (`ReportingCycleDeadlineExtension`).
 - A company report opened from an *archived* vehicle's dashboard falls
   back to "Back to Company Reports" (the company's linked-vehicles list
   excludes archived vehicles).

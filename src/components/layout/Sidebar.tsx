@@ -9,6 +9,7 @@ import {
   Building2,
   ClipboardList,
   ShieldCheck,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -24,6 +25,7 @@ interface NavItemConfig {
     | "companyReports"
     | "startupForm"
     | "reviewWorkspace"
+    | "access"
   >;
   href: string;
   Icon: LucideIcon;
@@ -36,16 +38,27 @@ const NAV_ITEMS: NavItemConfig[] = [
   { key: "companyReports", href: "/company", Icon: Building2 },
   { key: "startupForm", href: "/submit", Icon: ClipboardList },
   { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck },
+  { key: "access", href: "/admin/access", Icon: KeyRound },
 ];
+
+// The single item whose href is the longest segment-wise prefix of the
+// current path -- so /admin/access highlights "Access" only, not also
+// "Portfolio Overview" (/admin).
+function activeHref(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const matches = NAV_ITEMS.map((i) => i.href).filter((h) => pathname === h || pathname.startsWith(`${h}/`));
+  return matches.sort((a, b) => b.length - a.length)[0] ?? null;
+}
 
 export function SidebarNavList({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useLanguage();
   const pathname = usePathname();
+  const current = activeHref(pathname);
 
   return (
     <nav aria-label={t.common.appName} className="flex flex-col gap-1 p-3">
       {NAV_ITEMS.map((item) => {
-        const isActive = pathname?.startsWith(item.href);
+        const isActive = item.href === current;
         const label = t.nav[item.key];
 
         return (
