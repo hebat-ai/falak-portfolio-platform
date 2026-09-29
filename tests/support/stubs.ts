@@ -991,3 +991,122 @@ export function makeCompanyReportDbStub(options: {
     getFindUniqueCalls: (): string[] => findUniqueCalls,
   };
 }
+
+export interface VehicleQueriesCompanyFixture {
+  id: string;
+  slug: string;
+  nameEn: string;
+  archived?: boolean;
+  currency?: string;
+  cycles?: CompanyReportCycleFixture[];
+}
+
+export interface VehicleQueriesInvestorPositionFixture {
+  investor: { id: string; nameEn: string; nameAr: string; type: string };
+  status: string;
+  investorArchived?: boolean;
+}
+
+export interface VehicleQueriesVehicleFixture {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr?: string;
+  type?: string;
+  currency?: string;
+  archived?: boolean;
+  companies?: VehicleQueriesCompanyFixture[];
+  investorPositions?: VehicleQueriesInvestorPositionFixture[];
+}
+
+/**
+ * Backs getVehicleDirectoryData/getVehicleDashboardData
+ * (src/lib/vehicle/queries.ts): userRoleAssignment.findMany for
+ * requireFalakRole, plus vehicle.findMany/findUnique returning the nested
+ * ownershipPositions/positions shape the real queries select. The
+ * Prisma-side filters (holderType VEHICLE, company.archivedAt null,
+ * status Active, investor.archivedAt null, and archivedAt null on the
+ * directory's vehicle list) are replicated in the fixture mapping, same
+ * simplification every other factory in this file makes.
+ */
+export function makeVehicleDbStub(options: { falakRoles?: FalakRoleFixture[]; vehicles?: VehicleQueriesVehicleFixture[] }) {
+  const vehicles = options.vehicles ?? [];
+
+  const toCompanyRow = (c: VehicleQueriesCompanyFixture) => ({
+    id: c.id,
+    slug: c.slug,
+    nameEn: c.nameEn,
+    nameAr: c.nameEn,
+    sectorEn: "SaaS",
+    sectorAr: "SaaS",
+    customerModel: "B2B",
+    revenueModels: ["SaaS"],
+    currency: c.currency ?? "SAR",
+    entryStage: "Seed",
+    currentStage: "Seed",
+    cycles: (c.cycles ?? []).map((cy) => ({
+      periodLabel: cy.periodLabel,
+      periodStart: cy.periodStart,
+      periodEnd: cy.periodEnd,
+      currentDeadline: cy.currentDeadline,
+      submission: cy.submission
+        ? {
+            status: cy.submission.status,
+            updatedAt: cy.submission.updatedAt,
+            metricValues:
+              cy.submission.revenue === null && !cy.submission.isNa
+                ? []
+                : [
+                    {
+                      numericValue: cy.submission.revenue === null ? null : { toNumber: () => cy.submission!.revenue },
+                      isNa: cy.submission.isNa ?? false,
+                    },
+                  ],
+          }
+        : null,
+    })),
+  });
+
+  const liveCompanies = (v: VehicleQueriesVehicleFixture) => (v.companies ?? []).filter((c) => !c.archived);
+  const liveInvestorPositions = (v: VehicleQueriesVehicleFixture) =>
+    (v.investorPositions ?? []).filter((p) => p.status === "Active" && !p.investorArchived);
+
+  const vehicleBase = (v: VehicleQueriesVehicleFixture) => ({
+    id: v.id,
+    slug: v.slug,
+    nameEn: v.nameEn,
+    nameAr: v.nameAr ?? v.nameEn,
+    type: v.type ?? "Fund",
+    currency: v.currency ?? "SAR",
+  });
+
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    vehicle: {
+      findMany: async () =>
+        vehicles
+          .filter((v) => !v.archived)
+          .map((v) => ({
+            ...vehicleBase(v),
+            ownershipPositions: liveCompanies(v).map((c) => ({ companyId: c.id })),
+            positions: liveInvestorPositions(v).map((p) => ({ investorId: p.investor.id })),
+          })),
+      findUnique: async ({ where }: { where: { slug: string } }) => {
+        const v = vehicles.find((vv) => vv.slug === where.slug);
+        if (!v) return null;
+        return {
+          ...vehicleBase(v),
+          ownershipPositions: liveCompanies(v).map((c) => ({ company: toCompanyRow(c) })),
+          positions: liveInvestorPositions(v).map((p) => ({ investor: p.investor })),
+        };
+      },
+    },
+  };
+}

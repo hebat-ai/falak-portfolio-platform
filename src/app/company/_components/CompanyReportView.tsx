@@ -17,13 +17,25 @@ const selectClass =
 interface CompanyReportViewProps {
   data: CompanyReportData;
   initialPeriodKey: string;
+  // Set when the report was opened from a vehicle dashboard's companies
+  // table, so the back link returns there instead of the register.
+  fromVehicleSlug: string | null;
 }
 
-export function CompanyReportView({ data, initialPeriodKey }: CompanyReportViewProps) {
+export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: CompanyReportViewProps) {
   const { company, periods, linkedVehicles, viewerRole } = data;
   const { t, lang } = useLanguage();
   const [selectedPeriodKey, setSelectedPeriodKey] = useState(initialPeriodKey);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
+
+  // Only honored for a vehicle actually linked to this company, so a
+  // hand-edited ?fromVehicle= can't produce a back link to an unrelated
+  // vehicle.
+  const fromVehicle = fromVehicleSlug ? linkedVehicles.find((v) => v.slug === fromVehicleSlug) : undefined;
+  const backHref = fromVehicle ? `/vehicle/${fromVehicle.slug}` : "/company";
+  const backLabel = fromVehicle
+    ? `${t.companyReport.backToPrefix} ${lang === "ar" ? fromVehicle.nameAr : fromVehicle.nameEn}`
+    : t.companyReport.backToRegister;
 
   const periodData = company.periods[selectedPeriodKey];
   const selectedIndex = periods.findIndex((p) => p.key === selectedPeriodKey);
@@ -35,11 +47,11 @@ export function CompanyReportView({ data, initialPeriodKey }: CompanyReportViewP
       <div className="space-y-6">
         {viewerRole === "FALAK_STAFF" ? (
           <Link
-            href="/company"
+            href={backHref}
             className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
             <BackIcon aria-hidden="true" className="h-4 w-4" />
-            {t.companyReport.backToRegister}
+            {backLabel}
           </Link>
         ) : null}
 

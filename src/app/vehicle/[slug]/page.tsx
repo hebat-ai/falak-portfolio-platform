@@ -1,32 +1,33 @@
-import { notFound } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getVehicleDashboardData } from "@/lib/vehicle/queries";
+import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { VehicleDashboardView } from "../_components/VehicleDashboardView";
-import { companies } from "@/lib/mock/companies";
-import { vehicles, vehicleCompanyLinks } from "@/lib/mock/vehicles";
-import { investors, investorVehicleExposures } from "@/lib/mock/investors";
 
-export default async function VehicleDashboardPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function VehicleDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const vehicle = vehicles.find((v) => v.slug === slug);
 
-  if (!vehicle) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    redirect("/sign-in");
+  }
+
+  // Falak-staff-only, same as /admin: a non-staff visitor is redirected
+  // rather than 404'd, since there is no member-vs-stranger slug-leak
+  // concern when no non-staff user can see any vehicle at all.
+  let data;
+  try {
+    data = await getVehicleDashboardData(slug);
+  } catch (error) {
+    if (error instanceof ForbiddenError || error instanceof UnauthenticatedError) {
+      redirect("/account");
+    }
+    throw error;
+  }
+
+  if (!data) {
     notFound();
   }
 
-  const linkedCompanies = vehicleCompanyLinks
-    .filter((link) => link.vehicleId === vehicle.id)
-    .map((link) => companies.find((c) => c.id === link.companyId))
-    .filter((c): c is NonNullable<typeof c> => Boolean(c));
-
-  const linkedInvestors = investorVehicleExposures
-    .filter((exposure) => exposure.vehicleId === vehicle.id)
-    .map((exposure) => investors.find((inv) => inv.id === exposure.investorId))
-    .filter((inv): inv is NonNullable<typeof inv> => Boolean(inv));
-
-  return (
-    <VehicleDashboardView vehicle={vehicle} linkedCompanies={linkedCompanies} linkedInvestors={linkedInvestors} />
-  );
+  return <VehicleDashboardView {...data} />;
 }

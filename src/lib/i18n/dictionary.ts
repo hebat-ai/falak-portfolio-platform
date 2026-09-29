@@ -162,6 +162,7 @@ export interface Dictionary {
     linkedVehiclesTitle: string;
     noVehiclesLinked: string;
     backToRegister: string;
+    backToPrefix: string;
     narrativeTitle: string;
     historyTitle: string;
     noReportingHistory: string;
@@ -172,6 +173,7 @@ export interface Dictionary {
     revenueGrowthInsufficientData: string;
   };
   vehicleReport: {
+    backToDirectory: string;
     profileTitle: string;
     companiesLabel: string;
     companiesTableTitle: string;
@@ -459,6 +461,7 @@ export const en = {
     linkedVehiclesTitle: "Linked Investment Vehicles",
     noVehiclesLinked: "No investment vehicle linked",
     backToRegister: "Back to Company Reports",
+    backToPrefix: "Back to",
     narrativeTitle: "Narrative",
     historyTitle: "Reporting History",
     noReportingHistory: "No reporting cycles have been created for this company yet.",
@@ -469,6 +472,7 @@ export const en = {
     revenueGrowthInsufficientData: "Insufficient comparable revenue data",
   },
   vehicleReport: {
+    backToDirectory: "Back to Vehicles",
     profileTitle: "Vehicle Profile",
     companiesLabel: "Companies",
     companiesTableTitle: "Companies in this Vehicle",
@@ -761,6 +765,7 @@ export const ar = {
     linkedVehiclesTitle: "الأدوات الاستثمارية المرتبطة",
     noVehiclesLinked: "لا توجد أداة استثمارية مرتبطة",
     backToRegister: "العودة إلى تقارير الشركات",
+    backToPrefix: "العودة إلى",
     narrativeTitle: "السرد",
     historyTitle: "سجل التقارير",
     noReportingHistory: "لم يتم إنشاء أي دورات تقارير لهذه الشركة بعد.",
@@ -771,6 +776,7 @@ export const ar = {
     revenueGrowthInsufficientData: "بيانات إيرادات غير كافية للمقارنة",
   },
   vehicleReport: {
+    backToDirectory: "العودة إلى الأدوات الاستثمارية",
     profileTitle: "الملف التعريفي للأداة الاستثمارية",
     companiesLabel: "الشركات",
     companiesTableTitle: "الشركات ضمن هذه الأداة الاستثمارية",

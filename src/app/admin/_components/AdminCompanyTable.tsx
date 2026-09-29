@@ -10,10 +10,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { archiveCompanyAction } from "../actions";
 import type { AdminCompanyDTO, AdminVehicleDTO, AdminOwnershipLinkDTO } from "@/lib/admin/dto";
 
-// Admin-specific counterpart to the shared CompanyTable component (which
-// stays mock-typed for /investor and /vehicle until Step 13 wires those
-// up) -- same markup shape, but reads real DTOs. Reused by both /admin
-// (Archive action) and /review (Review-selection action, Step 10) --
+// Reused by both /admin (Archive action) and /review (Review-selection action) --
 // never both at once, since archiving a company mid-review and selecting
 // it for review are different contexts.
 interface AdminCompanyTableProps {

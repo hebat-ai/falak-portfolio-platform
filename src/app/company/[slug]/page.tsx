@@ -9,7 +9,7 @@ export default async function CompanyReportPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ period?: string | string[] }>;
+  searchParams: Promise<{ period?: string | string[]; fromVehicle?: string | string[] }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
@@ -47,5 +47,14 @@ export default async function CompanyReportPage({
       ? requestedPeriod
       : (data.periods[data.periods.length - 1]?.key ?? "");
 
-  return <CompanyReportView key={`${data.company.id}-${initialPeriodKey}`} data={data} initialPeriodKey={initialPeriodKey} />;
+  const fromVehicle = Array.isArray(sp.fromVehicle) ? sp.fromVehicle[0] : sp.fromVehicle;
+
+  return (
+    <CompanyReportView
+      key={`${data.company.id}-${initialPeriodKey}`}
+      data={data}
+      initialPeriodKey={initialPeriodKey}
+      fromVehicleSlug={fromVehicle ?? null}
+    />
+  );
 }

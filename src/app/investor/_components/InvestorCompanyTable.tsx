@@ -6,9 +6,8 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { InvestorVisibleCompanyDTO } from "@/lib/investor/dto";
 
-// Investor-only counterpart to the shared CompanyTable (which stays
-// mock-typed for /company and /vehicle) and to AdminCompanyTable (which
-// has an Archive/Review action column and a vehicle column this view
+// Investor-only counterpart to AdminCompanyTable (which has an
+// Archive/Review action column and a vehicle column this view
 // deliberately never shows). No status column -- every row here is, by
 // construction, a published version this investor org was actually
 // granted, so there is nothing to badge. No action column, no link to

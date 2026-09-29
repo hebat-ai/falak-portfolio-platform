@@ -5,87 +5,71 @@ import Link from "next/link";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
-import { CompanyTable } from "@/app/admin/_components/CompanyTable";
+import { VehicleCompanyTable } from "./VehicleCompanyTable";
 import { VehicleKpis } from "./VehicleKpis";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getOverdueDays } from "@/lib/reportingStatus";
-import { computeRevenueByCurrency } from "@/lib/revenue";
-import { REPORTING_CYCLES, REPORTING_PERIODS_ORDER } from "@/lib/mock/companies";
-import type { Company, Investor, ReportingPeriod, Vehicle } from "@/lib/mock/types";
+import { computeVehicleRevenueByCurrency } from "@/lib/vehicle/revenue";
+import type { VehicleDashboardData } from "@/lib/vehicle/dto";
 
 const selectClass =
   "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground sm:w-auto";
 
-interface VehicleDashboardViewProps {
-  vehicle: Vehicle;
-  linkedCompanies: Company[];
-  linkedInvestors: Investor[];
-}
-
-export function VehicleDashboardView({ vehicle, linkedCompanies, linkedInvestors }: VehicleDashboardViewProps) {
+export function VehicleDashboardView({ vehicle, periods, companies, investors }: VehicleDashboardData) {
   const { t, lang } = useLanguage();
-  const [selectedPeriod, setSelectedPeriod] = useState<ReportingPeriod>(
-    REPORTING_PERIODS_ORDER[REPORTING_PERIODS_ORDER.length - 1]
-  );
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState(periods[periods.length - 1]?.key ?? "");
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
-  // Mirrors admin/page.tsx's own summary shape, scoped to this vehicle's
-  // linked companies only, and reusing the same shared rules (overdue
-  // days, revenue-by-currency) so the two views can never disagree.
+  // Same summary shape as /admin's, scoped to this vehicle's linked
+  // companies. "Complete" is `approved`: publishing is a Report-level
+  // event, and a published report's submission stays `approved`.
   const summary = useMemo(() => {
-    const cycle = REPORTING_CYCLES[selectedPeriod];
-
-    const completeCount = linkedCompanies.filter((c) => {
-      const status = c.periods[selectedPeriod].status;
-      return status === "approved" || status === "published";
+    const completeCount = companies.filter((c) => c.periods[selectedPeriodKey]?.status === "approved").length;
+    const overdueCount = companies.filter((c) => {
+      const periodData = c.periods[selectedPeriodKey];
+      return periodData?.currentDeadline != null && getOverdueDays(periodData.status, periodData.currentDeadline) !== null;
     }).length;
 
-    const overdueCount = linkedCompanies.filter(
-      (c) => getOverdueDays(c.periods[selectedPeriod].status, cycle.deadline) !== null
-    ).length;
-
     return {
-      completionRate: linkedCompanies.length === 0 ? 0 : completeCount / linkedCompanies.length,
+      completionRate: companies.length === 0 ? 0 : completeCount / companies.length,
       overdueCount,
-      revenueByCurrency: computeRevenueByCurrency(linkedCompanies, selectedPeriod),
+      revenueByCurrency: computeVehicleRevenueByCurrency(companies, selectedPeriodKey),
     };
-  }, [linkedCompanies, selectedPeriod]);
+  }, [companies, selectedPeriodKey]);
 
   return (
-    <AppShell
-      title={lang === "ar" ? vehicle.nameAr : vehicle.nameEn}
-      subtitle={t.vehicleTypes[vehicle.type]}
-      showSyntheticDataNotice
-    >
+    <AppShell title={lang === "ar" ? vehicle.nameAr : vehicle.nameEn} subtitle={t.vehicleTypes[vehicle.type]}>
       <div className="space-y-6">
         <Link
-          href="/admin"
+          href="/vehicle"
           className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <BackIcon aria-hidden="true" className="h-4 w-4" />
-          {t.stub.backToOverview}
+          {t.vehicleReport.backToDirectory}
         </Link>
 
-        <div className="flex w-full flex-col gap-1 sm:w-auto">
-          <label htmlFor="vehicle-report-period" className="text-xs font-medium text-muted-foreground">
-            {t.admin.filters.periodLabel}
-          </label>
-          <select
-            id="vehicle-report-period"
-            className={selectClass}
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value as ReportingPeriod)}
-          >
-            {REPORTING_PERIODS_ORDER.map((p) => (
-              <option key={p} value={p}>
-                {lang === "ar" ? REPORTING_CYCLES[p].labelAr : REPORTING_CYCLES[p].labelEn}
-              </option>
-            ))}
-          </select>
-        </div>
+        {periods.length > 0 ? (
+          <div className="flex w-full flex-col gap-1 sm:w-auto">
+            <label htmlFor="vehicle-report-period" className="text-xs font-medium text-muted-foreground">
+              {t.admin.filters.periodLabel}
+            </label>
+            <select
+              id="vehicle-report-period"
+              className={selectClass}
+              value={selectedPeriodKey}
+              onChange={(e) => setSelectedPeriodKey(e.target.value)}
+            >
+              {periods.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         <VehicleKpis
-          companiesCount={linkedCompanies.length}
+          companiesCount={companies.length}
           completionRate={summary.completionRate}
           overdueCount={summary.overdueCount}
           revenueByCurrency={summary.revenueByCurrency}
@@ -97,20 +81,18 @@ export function VehicleDashboardView({ vehicle, linkedCompanies, linkedInvestors
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="shrink-0 text-muted-foreground">{t.admin.filters.currencyLabel}</dt>
-                <dd className="min-w-0 break-words text-end text-foreground">
-                  {t.currencyNames[vehicle.currency]}
-                </dd>
+                <dd className="min-w-0 break-words text-end text-foreground">{t.currencyNames[vehicle.currency]}</dd>
               </div>
             </dl>
           </Card>
 
           <Card className="min-w-0">
             <h2 className="font-heading text-sm font-semibold text-foreground">{t.vehicleReport.investorsTitle}</h2>
-            {linkedInvestors.length === 0 ? (
+            {investors.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">{t.vehicleReport.noInvestorsLinked}</p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {linkedInvestors.map((investor) => (
+                {investors.map((investor) => (
                   <li key={investor.id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="min-w-0 break-words text-start text-foreground">
                       {lang === "ar" ? investor.nameAr : investor.nameEn}
@@ -124,15 +106,13 @@ export function VehicleDashboardView({ vehicle, linkedCompanies, linkedInvestors
         </div>
 
         <div>
-          <h2 className="font-heading mb-3 text-sm font-semibold text-foreground">
-            {t.vehicleReport.companiesTableTitle}
-          </h2>
-          <CompanyTable
-            companies={linkedCompanies}
-            period={selectedPeriod}
-            showVehicleColumn={false}
-            emptyStateText={t.vehicleReport.noCompaniesLinked}
+          <h2 className="font-heading mb-3 text-sm font-semibold text-foreground">{t.vehicleReport.companiesTableTitle}</h2>
+          <VehicleCompanyTable
+            companies={companies}
+            periodKey={selectedPeriodKey}
+            vehicleSlug={vehicle.slug}
             caption={t.vehicleReport.companiesTableTitle}
+            emptyStateText={t.vehicleReport.noCompaniesLinked}
           />
         </div>
       </div>
