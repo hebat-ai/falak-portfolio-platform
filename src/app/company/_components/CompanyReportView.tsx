@@ -28,14 +28,22 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
   const [selectedPeriodKey, setSelectedPeriodKey] = useState(initialPeriodKey);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
-  // Only honored for a vehicle actually linked to this company, so a
-  // hand-edited ?fromVehicle= can't produce a back link to an unrelated
-  // vehicle.
-  const fromVehicle = fromVehicleSlug ? linkedVehicles.find((v) => v.slug === fromVehicleSlug) : undefined;
-  const backHref = fromVehicle ? `/vehicle/${fromVehicle.slug}` : "/company";
-  const backLabel = fromVehicle
-    ? `${t.companyReport.backToPrefix} ${lang === "ar" ? fromVehicle.nameAr : fromVehicle.nameEn}`
-    : t.companyReport.backToRegister;
+  // Company members go back to their own "My Companies" page (they can't
+  // see the register or vehicles). Falak staff go back to the vehicle the
+  // report was opened from -- only honored for a vehicle actually linked
+  // to this company, so a hand-edited ?fromVehicle= can't point elsewhere
+  // -- or to the register.
+  const fromVehicle =
+    viewerRole === "FALAK_STAFF" && fromVehicleSlug
+      ? linkedVehicles.find((v) => v.slug === fromVehicleSlug)
+      : undefined;
+  const backHref = viewerRole === "COMPANY_MEMBER" ? "/submit" : fromVehicle ? `/vehicle/${fromVehicle.slug}` : "/company";
+  const backLabel =
+    viewerRole === "COMPANY_MEMBER"
+      ? t.companyReport.backToMyCompanies
+      : fromVehicle
+        ? `${t.companyReport.backToPrefix} ${lang === "ar" ? fromVehicle.nameAr : fromVehicle.nameEn}`
+        : t.companyReport.backToRegister;
 
   const periodData = company.periods[selectedPeriodKey];
   const selectedIndex = periods.findIndex((p) => p.key === selectedPeriodKey);
@@ -45,15 +53,13 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
   return (
     <AppShell title={lang === "ar" ? company.nameAr : company.nameEn} subtitle={lang === "ar" ? company.sectorAr : company.sectorEn}>
       <div className="space-y-6">
-        {viewerRole === "FALAK_STAFF" ? (
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-          >
-            <BackIcon aria-hidden="true" className="h-4 w-4" />
-            {backLabel}
-          </Link>
-        ) : null}
+        <Link
+          href={backHref}
+          className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          <BackIcon aria-hidden="true" className="h-4 w-4" />
+          {backLabel}
+        </Link>
 
         {periodData ? (
           <>

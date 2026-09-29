@@ -35,6 +35,7 @@ const STATE_ACTIONS: { name: string; invoke: () => Promise<{ error: string | nul
   { name: "createReportingTemplateAction", invoke: () => actions.createReportingTemplateAction({ error: null }, new FormData()) },
   { name: "createReportingCycleAction", invoke: () => actions.createReportingCycleAction({ error: null }, new FormData()) },
   { name: "createCompanyInviteAction", invoke: () => actions.createCompanyInviteAction({ error: null }, new FormData()) },
+  { name: "createInvestorInviteAction", invoke: () => actions.createInvestorInviteAction({ error: null }, new FormData()) },
 ];
 
 for (const { name, invoke } of STATE_ACTIONS) {
@@ -148,6 +149,65 @@ test("createCompanyInviteAction rejects an invalid email without creating an inv
   formData.set("companyId", "co_1");
   formData.set("email", "   ");
   const result = await actions.createCompanyInviteAction({ error: null }, formData);
+
+  assert.ok(result.error);
+  assert.equal(result.inviteUrl, undefined);
+  assert.equal(createCalled, false);
+});
+
+test("createInvestorInviteAction returns an /accept-investor-invite link whose token hashes to what's stored, and audits it", async () => {
+  setCurrentUser(REAL_USER);
+  let stored: { investorId: string; email: string; tokenHash: string } | undefined;
+  const db = makeAdminActionDbStub({
+    falakRoles: [{ role: "FALAK_ADMIN" }],
+    models: {
+      investor: { findUnique: async () => ({ id: "inv_1", archivedAt: null }) },
+      investorInvite: {
+        create: async ({ data }: { data: { investorId: string; email: string; tokenHash: string } }) => {
+          stored = data;
+          return { id: "iinv_1", ...data };
+        },
+      },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("email", "  LP@Example.com ");
+  const result = await actions.createInvestorInviteAction({ error: null }, formData);
+
+  assert.equal(result.error, null);
+  assert.ok(result.inviteUrl?.startsWith("/accept-investor-invite?token="));
+  const rawToken = new URL(result.inviteUrl!, "http://localhost").searchParams.get("token")!;
+  assert.equal(hashInviteToken(rawToken), stored!.tokenHash);
+  assert.equal(stored!.email, "lp@example.com");
+  assert.equal(stored!.investorId, "inv_1");
+
+  const events = db.getAuditEvents();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].action, "investor_invite.created");
+  assert.equal(events[0].targetType, "InvestorInvite");
+  assert.equal(events[0].targetId, "iinv_1");
+});
+
+test("createInvestorInviteAction refuses an archived investor without creating an invite", async () => {
+  setCurrentUser(REAL_USER);
+  let createCalled = false;
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      models: {
+        investor: { findUnique: async () => ({ id: "inv_1", archivedAt: new Date() }) },
+        investorInvite: { create: async () => { createCalled = true; } },
+      },
+    })
+  );
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("email", "lp@example.com");
+  const result = await actions.createInvestorInviteAction({ error: null }, formData);
 
   assert.ok(result.error);
   assert.equal(result.inviteUrl, undefined);

@@ -104,8 +104,10 @@ export async function acceptInviteAction(
  * Existing-user path: the invite's email already belongs to a User row,
  * and the visitor is currently authenticated AS that exact user (checked
  * again here, not just by the page). Atomically claims the invite first,
- * then upserts the CompanyMembership -- a pre-existing membership is
- * treated as already-satisfied rather than an error.
+ * then upserts the CompanyMembership -- a pre-existing active membership
+ * is treated as already-satisfied (role unchanged), and a previously
+ * revoked one is reactivated, since accepting a fresh invite is the
+ * explicit re-grant. Same rule as the investor invite flow.
  */
 export async function completeExistingMemberAction(rawToken: string): Promise<AcceptInviteState> {
   // Same reasoning as acceptInviteAction above: reject an oversized raw
@@ -147,7 +149,7 @@ export async function completeExistingMemberAction(rawToken: string): Promise<Ac
 
       await tx.companyMembership.upsert({
         where: { userId_companyId: { userId: existingUser.id, companyId: invite.companyId } },
-        update: {},
+        update: { revokedAt: null },
         create: { userId: existingUser.id, companyId: invite.companyId, role: "MEMBER" },
       });
 

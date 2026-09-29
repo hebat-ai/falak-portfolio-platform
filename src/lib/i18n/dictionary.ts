@@ -1,21 +1,16 @@
 import type {
-  ReportingStatus,
+  SubmissionStatus,
   FundingStage,
   CustomerModel,
   RevenueModel,
   Currency,
   VehicleType,
   InvestorType,
-} from "../mock/types";
+} from "@/generated/prisma/client";
 
 export interface Dictionary {
   common: {
     appName: string;
-    dataAsOfLabel: string;
-    syntheticDataNotice: string;
-    viewingAsLabel: string;
-    falakAdminRole: string;
-    close: string;
   };
   nav: {
     portfolioOverview: string;
@@ -37,7 +32,7 @@ export interface Dictionary {
     ariaSwitchToDark: string;
     ariaSwitchToLight: string;
   };
-  status: Record<ReportingStatus, { label: string; description: string }>;
+  status: Record<SubmissionStatus, { label: string; description: string }>;
   stages: Record<FundingStage, string>;
   customerModels: Record<CustomerModel, string>;
   revenueModels: Record<RevenueModel, string>;
@@ -62,8 +57,6 @@ export interface Dictionary {
     };
     reportingStatusPanel: {
       title: string;
-      companyColumn: string;
-      statusColumn: string;
       lastUpdatedColumn: string;
       deadlineColumn: string;
       neverSubmitted: string;
@@ -93,11 +86,9 @@ export interface Dictionary {
       entryStageColumn: string;
       currentStageColumn: string;
       vehicleColumn: string;
-      currencyColumn: string;
       revenueColumn: string;
       statusColumn: string;
       lastUpdatedColumn: string;
-      multiVehicleSuffix: string;
       viewCompanyAction: string;
       noDataValue: string;
     };
@@ -141,7 +132,8 @@ export interface Dictionary {
       createTemplateTitle: string;
       createCycleTitle: string;
       createInviteTitle: string;
-      companiesListTitle: string;
+      createInvestorInviteTitle: string;
+      investorLabel: string;
       vehiclesListTitle: string;
       investorsListTitle: string;
       successMessage: string;
@@ -150,18 +142,13 @@ export interface Dictionary {
       linkCopiedMessage: string;
     };
   };
-  stub: {
-    vehicleTitle: string;
-    companyTitle: string;
-    comingInBatch: string;
-    backToOverview: string;
-  };
   companyReport: {
     profileTitle: string;
     revenueModelsLabel: string;
     linkedVehiclesTitle: string;
     noVehiclesLinked: string;
     backToRegister: string;
+    backToMyCompanies: string;
     backToPrefix: string;
     narrativeTitle: string;
     historyTitle: string;
@@ -182,19 +169,10 @@ export interface Dictionary {
     noInvestorsLinked: string;
   };
   submitReport: {
-    prototypeNotice: string;
+    formTitle: string;
     openFormLinkLabel: string;
     backToCompanyReport: string;
-    revenueHint: string;
-    saveDraftButton: string;
-    submitButton: string;
-    draftSavedMessage: string;
-    submitSuccessMessage: string;
-    validationRequired: string;
-    validationNegative: string;
-    validationInvalid: string;
     lockedMessage: string;
-    unsavedChangesConfirm: string;
     noActiveCycleMessage: string;
     metricsNotConfiguredMessage: string;
     metricsIncompleteMessage: string;
@@ -211,11 +189,6 @@ export interface Dictionary {
     approveAction: string;
     publishAction: string;
     noActionAvailable: string;
-    statusUpdatedPrefix: string;
-    removedFromFilterSuffix: string;
-    prototypeNotice: string;
-    emptyQueueMessage: string;
-    queueCaption: string;
     narrativeEnLabel: string;
     narrativeArLabel: string;
     narrativeKinds: {
@@ -227,8 +200,6 @@ export interface Dictionary {
   };
   investorDashboard: {
     subtitle: string;
-    prototypeNotice: string;
-    viewerRoleLabel: string;
     investorSelectLabel: string;
     companiesInScopeLabel: string;
     vehicleExposureTitle: string;
@@ -252,12 +223,9 @@ export interface Dictionary {
   };
   submitPortal: {
     subtitle: string;
-    prototypeNotice: string;
-    viewerRoleLabel: string;
-    companySelectLabel: string;
+    noMembershipsMessage: string;
     willOpenEditableMessage: string;
     willOpenLockedMessage: string;
-    noCompaniesMessage: string;
   };
   notFound: {
     title: string;
@@ -267,8 +235,6 @@ export interface Dictionary {
   home: {
     title: string;
     subtitle: string;
-    batch1Label: string;
-    availableNow: string;
     openAdmin: string;
   };
 }
@@ -276,18 +242,13 @@ export interface Dictionary {
 export const en = {
   common: {
     appName: "Falak Portfolio Platform",
-    dataAsOfLabel: "Data as of",
-    syntheticDataNotice: "Synthetic demo data — for design review only",
-    viewingAsLabel: "Viewing as",
-    falakAdminRole: "Falak Admin (demo)",
-    close: "Close",
   },
   nav: {
     portfolioOverview: "Portfolio Overview",
     investorDashboard: "Investor Dashboard",
     vehicleDashboard: "Vehicle Dashboard",
     companyReports: "Company Reports",
-    startupForm: "Startup Reporting Form",
+    startupForm: "My Companies",
     reviewWorkspace: "Review & Approval",
     openMenu: "Open menu",
     closeMenu: "Close menu",
@@ -308,7 +269,6 @@ export const en = {
     under_review: { label: "Under Review", description: "Falak is reviewing the submission" },
     changes_requested: { label: "Changes Requested", description: "Falak requested corrections from the company" },
     approved: { label: "Approved", description: "Approved, pending publication" },
-    published: { label: "Published", description: "Visible to authorized investors" },
   },
   stages: {
     PreSeed: "Pre-Seed",
@@ -351,7 +311,7 @@ export const en = {
       vehiclesLabel: "Investment Vehicles",
       investorsLabel: "Investors",
       completionLabel: "Reporting Completion",
-      completionHint: "Approved or Published for the selected period",
+      completionHint: "Approved for the selected period",
       overdueLabel: "Overdue Submissions",
       revenueSectionLabel: "Total Reported Revenue",
       noCrossCurrencyNote: "Shown separately per currency — never combined",
@@ -361,8 +321,6 @@ export const en = {
     },
     reportingStatusPanel: {
       title: "Reporting Status",
-      companyColumn: "Company",
-      statusColumn: "Status",
       lastUpdatedColumn: "Last Updated",
       deadlineColumn: "Deadline",
       neverSubmitted: "Not yet submitted",
@@ -392,11 +350,9 @@ export const en = {
       entryStageColumn: "Entry Stage",
       currentStageColumn: "Current Stage",
       vehicleColumn: "Vehicle",
-      currencyColumn: "Currency",
       revenueColumn: "Revenue",
       statusColumn: "Status",
       lastUpdatedColumn: "Last Updated",
-      multiVehicleSuffix: "vehicles",
       viewCompanyAction: "View report",
       noDataValue: "No data submitted",
     },
@@ -440,7 +396,8 @@ export const en = {
       createTemplateTitle: "New Reporting Template",
       createCycleTitle: "New Reporting Cycle",
       createInviteTitle: "Send Company Invite",
-      companiesListTitle: "Companies",
+      createInvestorInviteTitle: "Send Investor Invite",
+      investorLabel: "Investor",
       vehiclesListTitle: "Vehicles",
       investorsListTitle: "Investors",
       successMessage: "Saved.",
@@ -449,18 +406,13 @@ export const en = {
       linkCopiedMessage: "Copied.",
     },
   },
-  stub: {
-    vehicleTitle: "Vehicle Dashboard",
-    companyTitle: "Company Performance Report",
-    comingInBatch: "Full detail view coming in a later prototype batch.",
-    backToOverview: "Back to Portfolio Overview",
-  },
   companyReport: {
     profileTitle: "Company Profile",
     revenueModelsLabel: "Revenue Models",
     linkedVehiclesTitle: "Linked Investment Vehicles",
     noVehiclesLinked: "No investment vehicle linked",
     backToRegister: "Back to Company Reports",
+    backToMyCompanies: "Back to My Companies",
     backToPrefix: "Back to",
     narrativeTitle: "Narrative",
     historyTitle: "Reporting History",
@@ -481,20 +433,10 @@ export const en = {
     noInvestorsLinked: "No investor currently linked",
   },
   submitReport: {
-    prototypeNotice:
-      "Prototype only — this form has no real authentication or authorization, and nothing entered here is saved to a server. Status-based locking shown in this UI is a design preview, not a security boundary.",
+    formTitle: "Reporting Form",
     openFormLinkLabel: "Open Reporting Form",
     backToCompanyReport: "Back to Company Report",
-    revenueHint: "Enter 0 if there was no revenue this period. Leave blank only if the figure isn't known yet.",
-    saveDraftButton: "Save Draft",
-    submitButton: "Submit Report",
-    draftSavedMessage: "Draft saved in this preview only. It will reset on reload.",
-    submitSuccessMessage: "Submission simulated for this preview. Nothing was sent or saved to a server.",
-    validationRequired: "Revenue is required to submit.",
-    validationNegative: "Revenue cannot be negative.",
-    validationInvalid: "Enter a valid number.",
     lockedMessage: "This report can no longer be edited here.",
-    unsavedChangesConfirm: "You have unsaved changes. Discard them?",
     noActiveCycleMessage: "There is no active reporting cycle for this company right now.",
     metricsNotConfiguredMessage:
       "Report data entry is not yet connected — it depends on Falak's reporting template, which has not been defined yet.",
@@ -512,12 +454,6 @@ export const en = {
     approveAction: "Approve",
     publishAction: "Publish",
     noActionAvailable: "No review action is available for this status.",
-    statusUpdatedPrefix: "Status updated to",
-    removedFromFilterSuffix: "This item no longer matches the current filter and has been removed from view.",
-    prototypeNotice:
-      "Prototype only — actions taken here are simulated in memory for this session and are not sent to or saved on any server, and there is no real authentication or authorization behind them. Reloading this page resets every change, and nothing here affects Company Report, Portfolio Overview, or any other page.",
-    emptyQueueMessage: "No reports match the current filters.",
-    queueCaption: "Reports in the review workspace, filtered by status and period.",
     narrativeEnLabel: "English",
     narrativeArLabel: "Arabic",
     narrativeKinds: {
@@ -529,15 +465,12 @@ export const en = {
   },
   investorDashboard: {
     subtitle: "Vehicle exposure and published company reports visible to your investor organization.",
-    prototypeNotice:
-      "Prototype only — there are no real investor accounts. This selector simulates viewing as one of the synthetic investors; it is not a login, and nothing selected here is saved anywhere.",
-    viewerRoleLabel: "Investor (demo)",
     investorSelectLabel: "Investor",
-    companiesInScopeLabel: "Companies (Approved or Published)",
+    companiesInScopeLabel: "Companies (Approved)",
     vehicleExposureTitle: "Vehicle Exposure",
     visibleCompaniesLabel: "Visible companies this period",
     companiesTableTitle: "Companies",
-    companiesTableCaption: "Companies visible to this investor for the selected period, approved or published only",
+    companiesTableCaption: "Companies visible to this investor for the selected period, approved only",
     noApprovedReports: "No published reports for this organization and period yet.",
     noOrgAccess: "You don't have access to any investor organization yet.",
   },
@@ -554,14 +487,10 @@ export const en = {
     emptyMessage: "No investment vehicles are available yet.",
   },
   submitPortal: {
-    subtitle: "Select a demo company to open its reporting form.",
-    prototypeNotice:
-      "Prototype only — there are no real startup accounts or authentication. This selector simulates viewing as one of the synthetic companies, and your selections are not saved. In production, a startup would arrive here already signed in as itself.",
-    viewerRoleLabel: "Startup (demo)",
-    companySelectLabel: "Company",
-    willOpenEditableMessage: "This form will open ready to edit.",
-    willOpenLockedMessage: "This form will open locked, read-only.",
-    noCompaniesMessage: "No companies are available yet.",
+    subtitle: "Your companies and where each one's current report stands.",
+    noMembershipsMessage: "You aren't a member of any company yet. Company members are added by invitation.",
+    willOpenEditableMessage: "This report is open for editing.",
+    willOpenLockedMessage: "This report is locked while it's in review or approved.",
   },
   notFound: {
     title: "Page Not Found",
@@ -569,10 +498,8 @@ export const en = {
     backToHome: "Back to Home",
   },
   home: {
-    title: "Falak Portfolio Platform — Prototype",
-    subtitle: "Frontend-only MVP prototype with synthetic demo data, for design review.",
-    batch1Label: "MVP prototype",
-    availableNow: "Available now",
+    title: "Falak Portfolio Platform",
+    subtitle: "Portfolio reporting for Falak, its portfolio companies, and investors.",
     openAdmin: "Open Portfolio Overview",
   },
 } satisfies Dictionary;
@@ -580,18 +507,13 @@ export const en = {
 export const ar = {
   common: {
     appName: "منصة فلك لإدارة المحفظة",
-    dataAsOfLabel: "البيانات كما في",
-    syntheticDataNotice: "بيانات تجريبية اصطناعية — لأغراض مراجعة التصميم فقط",
-    viewingAsLabel: "العرض بصفتك",
-    falakAdminRole: "مسؤول فلك (تجريبي)",
-    close: "إغلاق",
   },
   nav: {
     portfolioOverview: "نظرة عامة على المحفظة",
     investorDashboard: "لوحة المستثمر",
     vehicleDashboard: "لوحة الأداة الاستثمارية",
     companyReports: "تقارير الشركات",
-    startupForm: "نموذج تقرير الشركة الناشئة",
+    startupForm: "شركاتي",
     reviewWorkspace: "المراجعة والاعتماد",
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",
@@ -612,7 +534,6 @@ export const ar = {
     under_review: { label: "قيد المراجعة", description: "يقوم فريق فلك بمراجعة التقرير" },
     changes_requested: { label: "طُلب إجراء تعديلات", description: "طلب فلك من الشركة إجراء تعديلات" },
     approved: { label: "تمت الموافقة", description: "تمت الموافقة، بانتظار النشر" },
-    published: { label: "تم النشر", description: "متاح للمستثمرين المخوّلين" },
   },
   stages: {
     PreSeed: "مرحلة ما قبل البذرة",
@@ -655,7 +576,7 @@ export const ar = {
       vehiclesLabel: "الأدوات الاستثمارية",
       investorsLabel: "المستثمرون",
       completionLabel: "نسبة اكتمال التقارير",
-      completionHint: "معتمدة أو منشورة للفترة المحددة",
+      completionHint: "معتمدة للفترة المحددة",
       overdueLabel: "تقارير متأخرة عن التقديم",
       revenueSectionLabel: "إجمالي الإيرادات المُبلّغ عنها",
       noCrossCurrencyNote: "تُعرض كل عملة على حدة — لا يتم دمجها",
@@ -665,8 +586,6 @@ export const ar = {
     },
     reportingStatusPanel: {
       title: "حالة التقارير",
-      companyColumn: "الشركة",
-      statusColumn: "الحالة",
       lastUpdatedColumn: "آخر تحديث",
       deadlineColumn: "الموعد النهائي",
       neverSubmitted: "لم يتم التقديم بعد",
@@ -696,11 +615,9 @@ export const ar = {
       entryStageColumn: "مرحلة الاستثمار",
       currentStageColumn: "المرحلة الحالية",
       vehicleColumn: "الأداة الاستثمارية",
-      currencyColumn: "العملة",
       revenueColumn: "الإيرادات",
       statusColumn: "الحالة",
       lastUpdatedColumn: "آخر تحديث",
-      multiVehicleSuffix: "أدوات استثمارية",
       viewCompanyAction: "عرض التقرير",
       noDataValue: "لا توجد بيانات مُقدَّمة",
     },
@@ -744,7 +661,8 @@ export const ar = {
       createTemplateTitle: "قالب تقارير جديد",
       createCycleTitle: "دورة تقارير جديدة",
       createInviteTitle: "إرسال دعوة للشركة",
-      companiesListTitle: "الشركات",
+      createInvestorInviteTitle: "إرسال دعوة للمستثمر",
+      investorLabel: "المستثمر",
       vehiclesListTitle: "الأدوات الاستثمارية",
       investorsListTitle: "المستثمرون",
       successMessage: "تم الحفظ.",
@@ -753,18 +671,13 @@ export const ar = {
       linkCopiedMessage: "تم النسخ.",
     },
   },
-  stub: {
-    vehicleTitle: "لوحة الأداة الاستثمارية",
-    companyTitle: "تقرير أداء الشركة",
-    comingInBatch: "العرض التفصيلي الكامل سيتوفر في دفعة لاحقة من النموذج الأولي.",
-    backToOverview: "العودة إلى نظرة عامة على المحفظة",
-  },
   companyReport: {
     profileTitle: "الملف التعريفي للشركة",
     revenueModelsLabel: "نماذج الإيرادات",
     linkedVehiclesTitle: "الأدوات الاستثمارية المرتبطة",
     noVehiclesLinked: "لا توجد أداة استثمارية مرتبطة",
     backToRegister: "العودة إلى تقارير الشركات",
+    backToMyCompanies: "العودة إلى شركاتي",
     backToPrefix: "العودة إلى",
     narrativeTitle: "السرد",
     historyTitle: "سجل التقارير",
@@ -785,20 +698,10 @@ export const ar = {
     noInvestorsLinked: "لا يوجد مستثمر مرتبط حالياً",
   },
   submitReport: {
-    prototypeNotice:
-      "نموذج أولي فقط — لا يتضمن هذا النموذج مصادقة أو تفويضاً حقيقياً، ولا يتم حفظ أي بيانات تُدخل هنا على خادم. القفل المعروض حسب الحالة هو معاينة تصميمية وليس حاجزاً أمنياً.",
+    formTitle: "نموذج التقرير",
     openFormLinkLabel: "فتح نموذج التقرير",
     backToCompanyReport: "العودة إلى تقرير الشركة",
-    revenueHint: "أدخل 0 في حال عدم وجود إيرادات لهذه الفترة. اترك الحقل فارغاً فقط إذا كان الرقم غير معروف بعد.",
-    saveDraftButton: "حفظ كمسودة",
-    submitButton: "إرسال التقرير",
-    draftSavedMessage: "تم حفظ المسودة داخل هذه المعاينة فقط، وستُلغى عند إعادة تحميل الصفحة.",
-    submitSuccessMessage: "تمت محاكاة إرسال التقرير في هذه المعاينة فقط، ولم يتم إرسال أو حفظ أي بيانات على خادم.",
-    validationRequired: "الإيرادات مطلوبة للإرسال.",
-    validationNegative: "لا يمكن أن تكون الإيرادات سالبة.",
-    validationInvalid: "أدخل رقمًا صالحًا.",
     lockedMessage: "لا يمكن تعديل هذا التقرير هنا بعد الآن.",
-    unsavedChangesConfirm: "لديك تغييرات غير محفوظة. هل تريد تجاهلها؟",
     noActiveCycleMessage: "لا توجد دورة تقارير نشطة لهذه الشركة حالياً.",
     metricsNotConfiguredMessage:
       "لم يتم بعد ربط إدخال بيانات التقرير — فهو يعتمد على قالب التقارير الخاص بفلك، والذي لم يُحدَّد بعد.",
@@ -816,12 +719,6 @@ export const ar = {
     approveAction: "اعتماد",
     publishAction: "نشر",
     noActionAvailable: "لا يوجد إجراء مراجعة متاح لهذه الحالة.",
-    statusUpdatedPrefix: "تم تحديث الحالة إلى",
-    removedFromFilterSuffix: "لم يعد هذا العنصر مطابقاً لعامل التصفية الحالي وتمت إزالته من القائمة المعروضة.",
-    prototypeNotice:
-      "نموذج أولي فقط — الإجراءات المُتخذة هنا محاكاة داخل الذاكرة لهذه الجلسة فقط، ولا تُرسل أو تُحفظ على أي خادم، ولا تتضمن أي مصادقة أو تفويض حقيقي. تؤدي إعادة تحميل الصفحة إلى إلغاء جميع التغييرات، ولا يؤثر أي شيء هنا على تقرير الشركة أو نظرة عامة على المحفظة أو أي صفحة أخرى.",
-    emptyQueueMessage: "لا توجد تقارير مطابقة لعوامل التصفية الحالية.",
-    queueCaption: "التقارير في مساحة المراجعة، مُصفّاة حسب الحالة والفترة.",
     narrativeEnLabel: "الإنجليزية",
     narrativeArLabel: "العربية",
     narrativeKinds: {
@@ -833,15 +730,12 @@ export const ar = {
   },
   investorDashboard: {
     subtitle: "الأدوات الاستثمارية المرتبطة وتقارير الشركات المنشورة المرئية لمؤسستك الاستثمارية.",
-    prototypeNotice:
-      "نموذج أولي فقط — لا توجد حسابات مستثمرين حقيقية. يحاكي هذا المحدد العرض كأحد المستثمرين الاصطناعيين، وهو ليس تسجيل دخول، ولا يُحفظ أي اختيار هنا في أي مكان.",
-    viewerRoleLabel: "مستثمر (تجريبي)",
     investorSelectLabel: "المستثمر",
-    companiesInScopeLabel: "الشركات (المعتمدة أو المنشورة)",
+    companiesInScopeLabel: "الشركات (المعتمدة)",
     vehicleExposureTitle: "الأدوات الاستثمارية المرتبطة",
     visibleCompaniesLabel: "الشركات المرئية لهذه الفترة",
     companiesTableTitle: "الشركات",
-    companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة أو المنشورة فقط",
+    companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة فقط",
     noApprovedReports: "لا توجد تقارير منشورة لهذه المؤسسة والفترة بعد.",
     noOrgAccess: "ليس لديك وصول إلى أي مؤسسة استثمارية بعد.",
   },
@@ -858,14 +752,10 @@ export const ar = {
     emptyMessage: "لا توجد أدوات استثمارية متاحة حالياً.",
   },
   submitPortal: {
-    subtitle: "اختر شركة تجريبية لفتح نموذج تقريرها.",
-    prototypeNotice:
-      "نموذج أولي فقط — لا توجد حسابات أو مصادقة حقيقية للشركات الناشئة. يحاكي هذا المحدد العرض كإحدى الشركات الاصطناعية، ولا يتم حفظ اختياراتك. في الإنتاج، تصل الشركة الناشئة إلى هنا وهي مسجّلة الدخول بالفعل.",
-    viewerRoleLabel: "شركة ناشئة (تجريبية)",
-    companySelectLabel: "الشركة",
-    willOpenEditableMessage: "سيتم فتح هذا النموذج جاهزاً للتعديل.",
-    willOpenLockedMessage: "سيتم فتح هذا النموذج مقفلاً للقراءة فقط.",
-    noCompaniesMessage: "لا توجد شركات متاحة حالياً.",
+    subtitle: "شركاتك والوضع الحالي لتقرير كل منها.",
+    noMembershipsMessage: "لست عضواً في أي شركة بعد. تتم إضافة أعضاء الشركات عبر دعوة.",
+    willOpenEditableMessage: "هذا التقرير متاح للتعديل.",
+    willOpenLockedMessage: "هذا التقرير مقفل أثناء المراجعة أو بعد الاعتماد.",
   },
   notFound: {
     title: "الصفحة غير موجودة",
@@ -873,10 +763,8 @@ export const ar = {
     backToHome: "العودة إلى الصفحة الرئيسية",
   },
   home: {
-    title: "منصة فلك لإدارة المحفظة — نموذج أولي",
-    subtitle: "نموذج أولي (MVP) للواجهة الأمامية فقط ببيانات تجريبية اصطناعية، لمراجعة التصميم.",
-    batch1Label: "نموذج أولي",
-    availableNow: "متاح الآن",
+    title: "منصة فلك لإدارة المحفظة",
+    subtitle: "تقارير المحفظة لفلك وشركات محفظتها ومستثمريها.",
     openAdmin: "فتح نظرة عامة على المحفظة",
   },
 } satisfies Dictionary;

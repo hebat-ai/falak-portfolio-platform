@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
-import { getOverdueDays } from "@/lib/admin/overdue";
+import { getOverdueDays } from "@/lib/reportingStatus";
 import type { AdminCompanyDTO, AdminPeriodOption } from "@/lib/admin/dto";
 
 interface ReportingStatusPanelProps {

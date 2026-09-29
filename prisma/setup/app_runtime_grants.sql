@@ -51,6 +51,8 @@ GRANT UPDATE ("revokedAt") ON user_roles TO app_runtime;
 -- issuance.
 GRANT SELECT, INSERT ON company_invites TO app_runtime;
 GRANT UPDATE ("acceptedAt", "revokedAt") ON company_invites TO app_runtime;
+GRANT SELECT, INSERT ON investor_invites TO app_runtime;
+GRANT UPDATE ("acceptedAt", "revokedAt") ON investor_invites TO app_runtime;
 
 -- Sign-in verification tokens: same narrow shape as company_invites --
 -- only consumedAt legitimately changes after issuance.

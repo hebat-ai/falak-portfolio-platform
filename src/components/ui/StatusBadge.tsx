@@ -1,16 +1,15 @@
 "use client";
 
-import { FileText, Send, Search, MessageSquareWarning, CheckCircle2, Globe2, type LucideIcon } from "lucide-react";
-import type { ReportingStatus } from "@/lib/mock/types";
+import { FileText, Send, Search, MessageSquareWarning, CheckCircle2, type LucideIcon } from "lucide-react";
+import type { SubmissionStatus } from "@/generated/prisma/client";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
-const STATUS_ICON: Record<ReportingStatus, LucideIcon> = {
+const STATUS_ICON: Record<SubmissionStatus, LucideIcon> = {
   draft: FileText,
   submitted: Send,
   under_review: Search,
   changes_requested: MessageSquareWarning,
   approved: CheckCircle2,
-  published: Globe2,
 };
 
 // All badges share one background (bg-surface-muted, which flips
@@ -19,17 +18,16 @@ const STATUS_ICON: Record<ReportingStatus, LucideIcon> = {
 // never the badge background. This also fixes a dark-mode bug: the old
 // per-status tinted backgrounds (dark-nebula/5, dark-nebula/10) would
 // have been nearly invisible against an already-dark page.
-const STATUS_ICON_COLOR: Record<ReportingStatus, string> = {
+const STATUS_ICON_COLOR: Record<SubmissionStatus, string> = {
   draft: "text-muted-foreground",
   submitted: "text-nebula-aqua",
   under_review: "text-foreground",
   changes_requested: "text-foreground",
   approved: "text-nebula-aqua",
-  published: "text-nebula-aqua",
 };
 
 interface StatusBadgeProps {
-  status: ReportingStatus;
+  status: SubmissionStatus;
   className?: string;
 }
 

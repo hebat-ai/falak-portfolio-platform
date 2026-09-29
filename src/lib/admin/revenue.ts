@@ -10,10 +10,9 @@ export interface AdminRevenueByCurrencyEntry {
 const CURRENCY_ORDER: readonly Currency[] = ["SAR", "USD"] as const;
 
 /**
- * Real-data equivalent of the mock prototype's computeRevenueByCurrency
- * (src/lib/revenue.ts) -- same rule (never combine currencies, exclude a
- * company with no data for the period rather than treating it as zero),
- * applied to AdminCompanyDTO instead of the mock Company shape.
+ * Revenue per currency, never combined across currencies; a company with
+ * no data for the period is excluded (and counted) rather than treated as
+ * zero. Same rule as the investor and vehicle modules' own versions.
  */
 export function computeRevenueByCurrency(companies: AdminCompanyDTO[], periodKey: string): AdminRevenueByCurrencyEntry[] {
   const currenciesPresent = CURRENCY_ORDER.filter((currency) => companies.some((c) => c.currency === currency));

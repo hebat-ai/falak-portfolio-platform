@@ -12,6 +12,7 @@ import {
   createReportingTemplateAction,
   createReportingCycleAction,
   createCompanyInviteAction,
+  createInvestorInviteAction,
   type ActionState,
   type InviteActionState,
 } from "../actions";
@@ -399,26 +400,36 @@ function CreateReportingCycleForm({
   );
 }
 
-function CreateCompanyInviteForm({ companies }: { companies: AdminCompanyDTO[] }) {
+// Shared by the company and investor invite forms: pick an organization,
+// enter an email, and get a one-time link to copy.
+interface InviteFormProps {
+  action: (prevState: InviteActionState, formData: FormData) => Promise<InviteActionState>;
+  idPrefix: string;
+  selectName: "companyId" | "investorId";
+  selectLabel: string;
+  options: { id: string; nameEn: string; nameAr: string }[];
+}
+
+function InviteForm({ action, idPrefix, selectName, selectLabel, options }: InviteFormProps) {
   const { t, lang } = useLanguage();
-  const [state, formAction, isPending] = useActionState(createCompanyInviteAction, initialInviteState);
+  const [state, formAction, isPending] = useActionState(action, initialInviteState);
   const [copied, setCopied] = useState(false);
   const fullUrl = state.inviteUrl && typeof window !== "undefined" ? `${window.location.origin}${state.inviteUrl}` : state.inviteUrl;
 
   return (
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
-        <label className={labelClass} htmlFor="inv-company">{t.admin.manage.companyLabel}</label>
-        <select id="inv-company" name="companyId" required defaultValue="" className={inputClass}>
+        <label className={labelClass} htmlFor={`${idPrefix}-org`}>{selectLabel}</label>
+        <select id={`${idPrefix}-org`} name={selectName} required defaultValue="" className={inputClass}>
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
-          {companies.map((c) => (
-            <option key={c.id} value={c.id}>{lang === "ar" ? c.nameAr : c.nameEn}</option>
+          {options.map((o) => (
+            <option key={o.id} value={o.id}>{lang === "ar" ? o.nameAr : o.nameEn}</option>
           ))}
         </select>
       </div>
       <div className={fieldClass}>
-        <label className={labelClass} htmlFor="inv-email">{t.admin.manage.emailLabel}</label>
-        <input id="inv-email" name="email" type="email" required className={inputClass} />
+        <label className={labelClass} htmlFor={`${idPrefix}-email`}>{t.admin.manage.emailLabel}</label>
+        <input id={`${idPrefix}-email`} name="email" type="email" required className={inputClass} />
       </div>
       <div className="sm:col-span-2">
         {state.error ? (
@@ -508,7 +519,24 @@ export function ManagePanel({ companies, vehicles, investors, templates }: Manag
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-foreground">{t.admin.manage.createInviteTitle}</h3>
-          <CreateCompanyInviteForm companies={companies} />
+          <InviteForm
+            action={createCompanyInviteAction}
+            idPrefix="inv-company"
+            selectName="companyId"
+            selectLabel={t.admin.manage.companyLabel}
+            options={companies}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-foreground">{t.admin.manage.createInvestorInviteTitle}</h3>
+          <InviteForm
+            action={createInvestorInviteAction}
+            idPrefix="inv-investor"
+            selectName="investorId"
+            selectLabel={t.admin.manage.investorLabel}
+            options={investors.filter((i) => !i.archivedAt)}
+          />
         </div>
       </div>
     </section>

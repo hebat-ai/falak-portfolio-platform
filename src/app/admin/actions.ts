@@ -571,3 +571,59 @@ export async function createCompanyInviteAction(_prevState: InviteActionState, f
   // response is the only place it will ever appear again.
   return { error: null, inviteUrl: `/accept-invite?token=${rawToken}` };
 }
+
+// ============================================================
+// Investor invite -- same shape as the company invite above, for an
+// investor organization; accepted at /accept-investor-invite.
+// ============================================================
+
+export async function createInvestorInviteAction(_prevState: InviteActionState, formData: FormData): Promise<InviteActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const investorId = readString(formData, "investorId");
+  const emailInput = formData.get("email");
+
+  if (!investorId || typeof emailInput !== "string") {
+    return { error: "Fill in every field with a valid value." };
+  }
+  if (emailInput.length > MAX_RAW_EMAIL_LENGTH || !emailInput.trim()) {
+    return { error: "Enter a valid email address." };
+  }
+  const email = normalizeEmail(emailInput);
+
+  const investor = await db.investor.findUnique({ where: { id: investorId } });
+  if (!investor || investor.archivedAt) {
+    return { error: GENERIC_ERROR };
+  }
+
+  const rawToken = randomBytes(32).toString("hex");
+  const tokenHash = hashInviteToken(rawToken);
+  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+
+  try {
+    await db.$transaction(async (tx) => {
+      const invite = await tx.investorInvite.create({
+        data: { investorId, email, tokenHash, invitedById: user.id, expiresAt },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "investor_invite.created",
+        targetType: "InvestorInvite",
+        targetId: invite.id,
+      });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+
+  // Returned exactly once for the admin to copy; only the hash is stored.
+  return { error: null, inviteUrl: `/accept-investor-invite?token=${rawToken}` };
+}

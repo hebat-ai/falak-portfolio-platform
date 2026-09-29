@@ -1110,3 +1110,53 @@ export function makeVehicleDbStub(options: { falakRoles?: FalakRoleFixture[]; ve
     },
   };
 }
+
+export interface MyCompaniesMembershipFixture {
+  userId: string;
+  role: string;
+  revoked?: boolean;
+  company: {
+    id: string;
+    slug: string;
+    nameEn: string;
+    archived?: boolean;
+    cycles?: { periodLabel: string; periodStart: Date; currentDeadline: Date; submissionStatus: string | null }[];
+  };
+}
+
+/**
+ * Backs getMyCompaniesData (src/lib/submit/queries.ts): one
+ * companyMembership.findMany scoped to the caller's userId, excluding
+ * revoked memberships and archived companies, ordered by company nameEn,
+ * with each company's single most recent cycle (orderBy periodStart desc,
+ * take 1) -- the filters/ordering the real query pushes into Prisma are
+ * replicated here from the fixture.
+ */
+export function makeMyCompaniesDbStub(options: { memberships?: MyCompaniesMembershipFixture[] }) {
+  const memberships = options.memberships ?? [];
+  return {
+    companyMembership: {
+      findMany: async ({ where }: { where: { userId: string } }) =>
+        memberships
+          .filter((m) => m.userId === where.userId && !m.revoked && !m.company.archived)
+          .sort((a, b) => a.company.nameEn.localeCompare(b.company.nameEn))
+          .map((m) => ({
+            role: m.role,
+            company: {
+              id: m.company.id,
+              slug: m.company.slug,
+              nameEn: m.company.nameEn,
+              nameAr: m.company.nameEn,
+              cycles: [...(m.company.cycles ?? [])]
+                .sort((a, b) => b.periodStart.getTime() - a.periodStart.getTime())
+                .slice(0, 1)
+                .map((c) => ({
+                  periodLabel: c.periodLabel,
+                  currentDeadline: c.currentDeadline,
+                  submission: c.submissionStatus === null ? null : { status: c.submissionStatus },
+                })),
+            },
+          })),
+    },
+  };
+}

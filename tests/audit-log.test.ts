@@ -510,3 +510,43 @@ test("completeExistingMemberAction writes an invite.accepted audit event attribu
   assert.equal(events[0].targetType, "CompanyInvite");
   assert.equal(events[0].targetId, "invite_2");
 });
+
+test("completeExistingMemberAction reactivates a previously revoked company membership (same rule as investor invites)", async () => {
+  const { completeExistingMemberAction } = await import("../src/app/accept-invite/actions.ts");
+  const existingUser = { id: "user_existing", email: "member@example.com" };
+  setCurrentUser(existingUser);
+
+  let upsertArgs: { where: unknown; update: unknown; create: unknown } | undefined;
+  setDbStub(
+    makeAdminActionDbStub({
+      models: {
+        companyInvite: {
+          findUnique: async () => ({
+            id: "invite_3",
+            email: "member@example.com",
+            tokenHash: "irrelevant",
+            revokedAt: null,
+            acceptedAt: null,
+            expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+            company: { id: "co_1", nameEn: "Acme", archivedAt: null },
+          }),
+          updateMany: async () => ({ count: 1 }),
+        },
+        user: { findUnique: async () => existingUser },
+        companyMembership: {
+          upsert: async (args: { where: unknown; update: unknown; create: unknown }) => {
+            upsertArgs = args;
+            return {};
+          },
+        },
+      },
+    })
+  );
+
+  await assert.rejects(() => completeExistingMemberAction("raw_token_value"));
+
+  assert.deepEqual(upsertArgs!.where, { userId_companyId: { userId: "user_existing", companyId: "co_1" } });
+  // Clears revokedAt only -- an existing active member's role is left as is.
+  assert.deepEqual(upsertArgs!.update, { revokedAt: null });
+  assert.deepEqual(upsertArgs!.create, { userId: "user_existing", companyId: "co_1", role: "MEMBER" });
+});

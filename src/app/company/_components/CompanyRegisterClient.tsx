@@ -15,9 +15,8 @@ export function CompanyRegisterClient({ companies, vehicles, ownershipLinks, per
   const [searchQuery, setSearchQuery] = useState("");
 
   // Newest period first, globally; within each period, companies keep
-  // their existing array order. `periods` is oldest-first (same
-  // convention as the mock's REPORTING_PERIODS_ORDER), so this reverses a
-  // copy rather than hard-coding a second order.
+  // their existing array order. `periods` is oldest-first, so this
+  // reverses a copy rather than hard-coding a second order.
   const allRows: RegisterRow[] = useMemo(
     () => [...periods].reverse().flatMap((period) => companies.map((company) => ({ company, periodKey: period.key }))),
     [companies, periods]

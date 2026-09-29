@@ -4,9 +4,7 @@ import type { InvestorVisibleCompanyDTO } from "./dto";
 const CURRENCY_ORDER: readonly RevenueByCurrencyEntry["currency"][] = ["SAR", "USD"] as const;
 
 /**
- * Real-data equivalent of the mock prototype's computeRevenueByCurrency
- * (src/lib/revenue.ts) and admin's own real-data version
- * (src/lib/admin/revenue.ts) -- same rule (never combine currencies,
+ * Same rule as src/lib/admin/revenue.ts (never combine currencies,
  * exclude a company with no revenue value rather than treating it as
  * zero), applied to the flat, already period-scoped
  * InvestorVisibleCompanyDTO[] the client passes in (no periods record to

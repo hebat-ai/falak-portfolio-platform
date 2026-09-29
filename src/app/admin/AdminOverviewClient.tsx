@@ -10,7 +10,7 @@ import { CompanyCardGrid } from "./_components/CompanyCardGrid";
 import { ManagePanel } from "./_components/ManagePanel";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeRevenueByCurrency } from "@/lib/admin/revenue";
-import { getOverdueDays } from "@/lib/admin/overdue";
+import { getOverdueDays } from "@/lib/reportingStatus";
 import type { AdminPortfolioData } from "@/lib/admin/dto";
 
 export function AdminOverviewClient({ companies, vehicles, investors, ownershipLinks, periods, templates }: AdminPortfolioData) {

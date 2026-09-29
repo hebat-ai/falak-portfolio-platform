@@ -6,10 +6,8 @@ import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import type { SubmissionDTO } from "@/lib/reporting/dto";
 
-// Statuses a CompanySubmission may be submitted FROM. Mirrors the
-// existing isReportEditable() convention already coded in
-// src/lib/reportingStatus.ts (mock-typed) -- the same rule, applied here
-// to the real generated SubmissionStatus enum, not invented fresh.
+// Statuses a CompanySubmission may be submitted FROM. The /submit page's
+// "open for editing" hint (MyCompaniesClient) mirrors this same set.
 const SUBMITTABLE_FROM_STATUSES: SubmissionStatus[] = ["draft", "changes_requested"];
 
 interface SubmissionRow {

@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Falak Portfolio Platform",
   description:
-    "Falak Ventures portfolio monitoring & investor reporting -- frontend-only MVP prototype with synthetic data",
+    "Falak Ventures portfolio monitoring & investor reporting",
   // Defense in depth only: Deployment Protection is the real access control.
   robots: {
     index: false,

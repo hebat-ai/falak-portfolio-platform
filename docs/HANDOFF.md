@@ -1,8 +1,8 @@
 # Falak Portfolio Platform — Handoff
 
 This doc exists to get a new collaborator oriented fast: what this project
-is, what's actually built (vs. still mock), the conventions the codebase
-has been held to, and the concrete plan for what's next.
+is, what's actually built, the conventions the codebase has been held
+to, and the open candidates for what's next.
 
 ## What this is
 
@@ -56,14 +56,13 @@ assuming older Next.js/Prisma conventions.
   — every other `@/...` import resolves to the real, unmodified source.
   Tests exercise real production logic, never a re-simulated version of
   it. Shared fixtures/stub factories live in `tests/support/stubs.ts`.
-- **Mock-data isolation**: several pages (`/company`, `/vehicle`, and
-  `/investor` until Step 13) are still on the original fabricated-data
-  prototype (`src/lib/mock/*`). When converting a page to real data, the
-  established rule is: **build a parallel, real-DTO-typed component
-  instead of touching the shared mock-typed one** (see
-  `AdminCompanyTable.tsx` vs. the original shared `CompanyTable.tsx`).
-  Never partially convert a shared component out from under pages that
-  still depend on its mock typing.
+- **One feature module per area**: `src/lib/{admin,investor,company,vehicle,submit}/`
+  each own their `dto.ts` + `server-only` `queries.ts` (auth gate first,
+  one fetch, plain serializable DTOs out), even where DTO shapes look
+  alike — no cross-module DTO imports. Pages are async Server Components
+  that gate + fetch, then hand DTOs to a `"use client"` component.
+- **Overdue days** always come from `getOverdueDays` in
+  `src/lib/reportingStatus.ts` (live clock), so every page agrees.
 
 ## Working conventions this project has been held to
 
@@ -117,10 +116,26 @@ commits):
    row (`src/lib/audit/write-audit-event.ts`).
 8. **Session-expiry hardening** — Server Actions catch auth errors
    gracefully instead of crashing on an expired session.
+9. **Investor dashboard** (`/investor`) — only the signed-in user's own
+   investor orgs; only published versions they hold a non-revoked grant
+   for, highest `versionNo` per report (`src/lib/investor/`).
+10. **Company register + report** (`/company`, `/company/[slug]`) — register
+    is Falak-staff-only; a report is visible to Falak staff *or* that
+    company's own members (403 collapses into 404 so slugs don't leak).
+    First place narrative sections are rendered (`src/lib/company/`).
+11. **Vehicle directory + dashboard** (`/vehicle`, `/vehicle/[slug]`) —
+    Falak-staff-only (no per-vehicle membership model exists); periods
+    scoped to the vehicle's own companies (`src/lib/vehicle/`).
+12. **My Companies** (`/submit`) — each company the signed-in user is a
+    member of, with its current period's status (`src/lib/submit/`). The
+    mock-data layer (`src/lib/mock/`) is gone: every page reads real data.
+13. **Investor invites** — `/admin` "Send Investor Invite" → one-time link
+    → `/accept-investor-invite`, mirroring the company invite flow
+    (`InvestorInvite` table, atomic claim in `investor-invite-claim.ts`).
+    Accepting a fresh invite reactivates a previously revoked membership,
+    for both company and investor invites.
 
-**Still on the original fabricated-data prototype, not yet converted:**
-`/company`, `/vehicle`, `/vehicle/[slug]`, `/company/[slug]`, and
-`/investor` (in progress — see below). Also untouched by any application
+Untouched by any application
 code anywhere: `Attachment`, `ReportDistribution`,
 `AgreementCashFlow`, `InvestorCapitalTransaction`,
 `CompanyValuationSnapshot`, `VehicleNavSnapshot`, `FxRate`,
@@ -129,40 +144,18 @@ code anywhere: `Attachment`, `ReportDistribution`,
 already exist in the schema, none have a real query/mutation against them
 yet.
 
-## What's next: Step 13 — Investor Dashboard (real data)
+## What's next
 
-Fully planned, not yet implemented. Converts `/investor` from mock data
-to the real `InvestorMembership → ReportAccessGrant → ReportVersion`
-chain Step 6 (`publish-workflow.ts`) already populates — including fixing
-a real security gap in the current mock (its org picker lists *every*
-investor in the system, not just the signed-in user's own).
-
-Full design (DTOs, query shape, edge cases like an investor holding two
-simultaneous grants on different versions of the same report, test plan)
-is written out in detail and ready to execute — ask the project owner for
-the current plan file, or regenerate the same design by asking to
-"convert `/investor` to real data" and pointing at this handoff doc plus
-`src/lib/admin/queries.ts` / `src/lib/admin/dto.ts` as the reference
-pattern to mirror (that's exactly how this plan was derived).
-
-Key points anyone picking this up needs to know:
-- An investor must only ever see the metric value belonging to the exact
-  `ReportVersion` they hold a valid, non-revoked grant for — never a
-  company's live/in-progress submission.
-- `ReportAccessGrant` is never revoked or migrated when a report is
-  superseded — an investor can hold grants on two different versions of
-  the same report at once; show only the highest `versionNo` per
-  `(investor, report)`.
-- No `/company/[slug]` link from the investor view, ever (existing code
-  comment: "the internal Company Report page must not be reachable from
-  this read-only view").
-- Build a new `InvestorCompanyTable.tsx`, don't touch the shared
-  `CompanyTable.tsx`.
-
-After that: converting `/company`/`/vehicle` to real data, and deciding
-whether the still-untouched schema models above (distributions,
-attachments, cash flows, valuation/NAV snapshots, FX rates) represent
-real near-term product needs or can stay dormant.
+No step is planned yet. Open candidates:
+- Decide whether the untouched schema models above (distributions,
+  attachments, cash flows, valuation/NAV snapshots, FX rates) are real
+  near-term product needs or can stay dormant.
+- Access-grant revocation (grants are only ever created today, in
+  `publishSubmission`), and a UI to manage company/investor memberships
+  beyond the invite flow.
+- A company report opened from an *archived* vehicle's dashboard falls
+  back to "Back to Company Reports" (the company's linked-vehicles list
+  excludes archived vehicles).
 
 ## Environment / access needed
 

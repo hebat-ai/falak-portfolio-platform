@@ -40,6 +40,7 @@ model User {
   companyMemberships         CompanyMembership[]
   investorMemberships        InvestorMembership[]
   companyInvitesSent         CompanyInvite[]                   @relation("CompanyInviteInvitedBy")
+  investorInvitesSent        InvestorInvite[]                  @relation("InvestorInviteInvitedBy")
   auditEvents                AuditEvent[]
   narrativeSections          NarrativeSection[]
   workflowEventsActed        SubmissionWorkflowEvent[]
@@ -243,6 +244,7 @@ model Investor {
   updatedAt  DateTime     @updatedAt
 
   memberships        InvestorMembership[]
+  invites            InvestorInvite[]
   positions          InvestorVehiclePosition[]
   ownershipPositions OwnershipPosition[]
   reports            Report[]
@@ -274,6 +276,27 @@ model InvestorMembership {
   @@unique([investorId, userId])
   @@index([investorId])
   @@map("investor_memberships")
+}
+
+// Mirrors CompanyInvite field-for-field (investorId in place of companyId):
+// only the sha256 tokenHash is stored, never the raw token; acceptedAt is
+// set atomically at claim time (see investor-invite-claim.ts) so an invite
+// can only ever be used once.
+model InvestorInvite {
+  id          String    @id @default(cuid())
+  investor    Investor  @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  investorId  String
+  email       String
+  tokenHash   String    @unique
+  invitedBy   User?     @relation("InvestorInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedById String?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([investorId])
+  @@map("investor_invites")
 }
 
 enum PositionStatus {
