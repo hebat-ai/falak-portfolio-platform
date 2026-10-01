@@ -1,11 +1,7 @@
 import "server-only";
 import { Resend } from "resend";
 
-// Resend's shared sandbox sender -- works immediately with no domain
-// verification. Switch to a verified @falak.sa address here once Falak's
-// own domain is verified in Resend; nothing else in the app needs to
-// change.
-const FROM_ADDRESS = "Falak Portfolio Platform <onboarding@resend.dev>";
+const FROM_ADDRESS = "Falak Portfolio Platform <noreply@falakinvestments.space>";
 
 let client: Resend | null = null;
 
