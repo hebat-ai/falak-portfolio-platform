@@ -82,7 +82,7 @@ export function VehicleCompanyTable({ companies, periodKey, vehicleSlug, caption
                       ...(periodKey ? { period: periodKey } : {}),
                       fromVehicle: vehicleSlug,
                     }).toString()}`}
-                    className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                    className="chamfer-br-sm inline-flex items-center gap-1 text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                   >
                     {t.admin.table.viewCompanyAction}
                     <ChevronIcon aria-hidden="true" className="h-4 w-4" />

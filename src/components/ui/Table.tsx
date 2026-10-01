@@ -15,7 +15,7 @@ interface TableProps extends TableHTMLAttributes<HTMLTableElement> {
 
 export function Table({ caption, children, className = "", ...rest }: TableProps) {
   return (
-    <div className="scrollbar-thin overflow-x-auto rounded-xl border border-border-subtle">
+    <div className="chamfer-br-md scrollbar-thin overflow-x-auto shadow-[var(--inner-line)]">
       <table className={`w-full border-collapse text-start text-sm ${className}`} {...rest}>
         <caption className="sr-only">{caption}</caption>
         {children}

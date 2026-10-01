@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+
 interface RevokeButtonProps {
   action: (formData: FormData) => Promise<void>;
   fieldName: "membershipId" | "inviteId";
@@ -19,12 +21,9 @@ export function RevokeButton({ action, fieldName, id, label, confirmMessage }: R
       }}
     >
       <input type="hidden" name={fieldName} value={id} />
-      <button
-        type="submit"
-        className="rounded border border-control-border px-2 py-1 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-      >
+      <Button type="submit" variant="outline" size="xs">
         {label}
-      </button>
+      </Button>
     </form>
   );
 }

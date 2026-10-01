@@ -67,7 +67,7 @@ export function SidebarNavList({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             aria-current={isActive ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nebula-aqua ${
+            className={`chamfer-br-sm flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nebula-aqua ${
               isActive ? "bg-white/10 text-nav-fg" : "text-nav-fg-muted hover:bg-white/5 hover:text-nav-fg"
             }`}
           >

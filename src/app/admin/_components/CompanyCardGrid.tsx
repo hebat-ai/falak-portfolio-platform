@@ -65,7 +65,7 @@ export function CompanyCardGrid({ companies, period, vehicles, vehicleLinks }: C
                     <Link
                       key={v.id}
                       href={`/vehicle/${v.slug}`}
-                      className="rounded-full border border-control-border px-2 py-0.5 text-[11px] text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                      className="chamfer-br-sm px-2 py-0.5 text-[11px] text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                     >
                       {lang === "ar" ? v.nameAr : v.nameEn}
                     </Link>
@@ -76,7 +76,7 @@ export function CompanyCardGrid({ companies, period, vehicles, vehicleLinks }: C
 
             <Link
               href={`/company/${company.slug}`}
-              className="mt-auto inline-flex items-center justify-center rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+              className="chamfer-br-sm mt-auto inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
             >
               {t.admin.table.viewCompanyAction}
             </Link>

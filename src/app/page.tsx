@@ -17,7 +17,7 @@ export default function HomePage() {
           <h2 className="font-heading text-base font-semibold text-foreground">{t.nav.portfolioOverview}</h2>
           <Link
             href="/admin"
-            className="inline-flex items-center gap-1.5 rounded-md bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            className="chamfer-br-sm inline-flex items-center gap-1.5 bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
             {t.home.openAdmin}
             <ArrowIcon aria-hidden="true" className="h-4 w-4" />

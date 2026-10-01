@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { requestSignInLinkAction, type SignInState } from "./actions";
 
 const initialState: SignInState = { error: null, sent: false };
@@ -22,27 +24,16 @@ export function SignInForm() {
         <label htmlFor="sign-in-email" className="text-xs font-medium text-muted-foreground">
           Email
         </label>
-        <input
-          id="sign-in-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-        />
+        <Input id="sign-in-email" name="email" type="email" autoComplete="email" required />
       </div>
       {state.error ? (
         <p role="alert" className="text-xs font-medium text-foreground">
           {state.error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-md bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60"
-      >
+      <Button type="submit" disabled={isPending}>
         {isPending ? "Sending..." : "Send sign-in link"}
-      </button>
+      </Button>
     </form>
   );
 }

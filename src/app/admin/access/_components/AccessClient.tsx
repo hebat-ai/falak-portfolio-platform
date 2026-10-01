@@ -29,7 +29,7 @@ function OrgList({ orgs, canRevoke, revokeMember, revokeInvite }: OrgListProps) 
   return (
     <div className="flex flex-col gap-2">
       {orgs.map((org) => (
-        <details key={org.id} className="rounded-xl border border-border-subtle bg-surface">
+        <details key={org.id} className="chamfer-br-md bg-surface shadow-[var(--inner-line)]">
           <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground">
             <span className="font-medium text-foreground">{lang === "ar" ? org.nameAr : org.nameEn}</span>
             <span className="text-xs text-muted-foreground">

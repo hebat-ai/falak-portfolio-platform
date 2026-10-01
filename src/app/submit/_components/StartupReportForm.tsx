@@ -33,7 +33,7 @@ export function StartupReportForm({ company, submission }: StartupReportFormProp
       <div className="space-y-6">
         <Link
           href={`/company/${company.slug}`}
-          className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          className="chamfer-br-sm inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <BackIcon aria-hidden="true" className="h-4 w-4" />
           {t.submitReport.backToCompanyReport}
@@ -64,11 +64,11 @@ export function StartupReportForm({ company, submission }: StartupReportFormProp
                 (never the authoritative gate -- the Server Action
                 re-derives and re-checks all of this itself). */}
             {!submission.hasApplicableMetrics ? (
-              <p className="rounded-md border border-border-subtle bg-surface-muted p-3 text-xs text-muted-foreground">
+              <p className="chamfer-br-sm bg-surface-muted p-3 text-xs text-muted-foreground shadow-[var(--inner-line)]">
                 {t.submitReport.metricsNotConfiguredMessage}
               </p>
             ) : !submission.requiredMetricsComplete ? (
-              <p className="rounded-md border border-border-subtle bg-surface-muted p-3 text-xs text-muted-foreground">
+              <p className="chamfer-br-sm bg-surface-muted p-3 text-xs text-muted-foreground shadow-[var(--inner-line)]">
                 {t.submitReport.metricsIncompleteMessage}
               </p>
             ) : null}

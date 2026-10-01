@@ -24,7 +24,7 @@ export function BrandMark({ variant = "on-light", className = "" }: BrandMarkPro
     <div className={`flex items-center gap-2.5 ${className}`}>
       <span
         aria-hidden="true"
-        className="inline-block h-8 w-8 shrink-0 rounded-lg bg-nebula-aqua"
+        className="chamfer-br-sm inline-block h-8 w-8 shrink-0 bg-nebula-aqua"
       />
       <span className="flex flex-col leading-tight">
         <span className={`font-heading text-base font-semibold ${textColor}`}>

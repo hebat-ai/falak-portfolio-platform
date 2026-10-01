@@ -24,7 +24,7 @@ export function ReportingHistoryList({ periodOptions, periodsData, currency }: R
   const newestFirst = [...periodOptions].reverse();
 
   return (
-    <section aria-labelledby={HISTORY_HEADING_ID} className="rounded-xl border border-border-subtle bg-surface">
+    <section aria-labelledby={HISTORY_HEADING_ID} className="chamfer-br-md bg-surface shadow-[var(--inner-line)]">
       <h2
         id={HISTORY_HEADING_ID}
         className="font-heading border-b border-border-subtle px-4 py-3 text-sm font-semibold text-foreground"

@@ -1,7 +1,11 @@
 "use client";
 
-import { LayoutList, LayoutGrid, RotateCcw, Search, X } from "lucide-react";
+import { LayoutList, LayoutGrid, RotateCcw } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import type { Currency, SubmissionStatus } from "@/generated/prisma/client";
 import type { AdminVehicleDTO, AdminPeriodOption } from "@/lib/admin/dto";
 
@@ -31,14 +35,11 @@ interface FiltersBarProps {
 
 const STATUS_OPTIONS: SubmissionStatus[] = ["draft", "submitted", "under_review", "changes_requested", "approved"];
 
-const selectClass =
-  "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground";
-
 export function FiltersBar({ filters, onChange, viewMode, onViewModeChange, vehicles, periods }: FiltersBarProps) {
   const { t, lang } = useLanguage();
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface p-4">
+    <div className="chamfer-br-md flex flex-col gap-4 bg-surface p-4 shadow-[var(--inner-line)]">
       <div>
         <h2 className="font-heading text-sm font-semibold text-foreground">{t.admin.filters.title}</h2>
         <p className="text-xs text-muted-foreground">{t.admin.filters.scopeNote}</p>
@@ -49,39 +50,23 @@ export function FiltersBar({ filters, onChange, viewMode, onViewModeChange, vehi
           <label htmlFor="filter-search" className="text-xs font-medium text-muted-foreground">
             {t.admin.filters.searchLabel}
           </label>
-          <div className="relative">
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 start-0 my-auto ms-3 h-4 w-4 text-muted-foreground"
-            />
-            <input
-              id="filter-search"
-              type="search"
-              value={filters.searchQuery}
-              onChange={(e) => onChange({ ...filters, searchQuery: e.target.value })}
-              placeholder={t.admin.filters.searchPlaceholder}
-              className="w-full rounded-md border border-control-border bg-surface py-1.5 ps-9 pe-8 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground [&::-webkit-search-cancel-button]:appearance-none"
-            />
-            {filters.searchQuery ? (
-              <button
-                type="button"
-                onClick={() => onChange({ ...filters, searchQuery: "" })}
-                aria-label={t.admin.filters.clearSearchAriaLabel}
-                className="absolute inset-y-0 end-0 my-auto me-2 rounded p-1 text-muted-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-              >
-                <X aria-hidden="true" className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-          </div>
+          <Input
+            search
+            id="filter-search"
+            value={filters.searchQuery}
+            onChange={(e) => onChange({ ...filters, searchQuery: e.target.value })}
+            onClear={() => onChange({ ...filters, searchQuery: "" })}
+            placeholder={t.admin.filters.searchPlaceholder}
+            clearAriaLabel={t.admin.filters.clearSearchAriaLabel}
+          />
         </div>
 
         <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="filter-vehicle" className="text-xs font-medium text-muted-foreground">
             {t.admin.filters.vehicleLabel}
           </label>
-          <select
+          <Select
             id="filter-vehicle"
-            className={selectClass}
             value={filters.vehicleId}
             onChange={(e) => onChange({ ...filters, vehicleId: e.target.value })}
           >
@@ -91,50 +76,43 @@ export function FiltersBar({ filters, onChange, viewMode, onViewModeChange, vehi
                 {lang === "ar" ? v.nameAr : v.nameEn}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="filter-period" className="text-xs font-medium text-muted-foreground">
             {t.admin.filters.periodLabel}
           </label>
-          <select
-            id="filter-period"
-            className={selectClass}
-            value={filters.period}
-            onChange={(e) => onChange({ ...filters, period: e.target.value })}
-          >
+          <Select id="filter-period" value={filters.period} onChange={(e) => onChange({ ...filters, period: e.target.value })}>
             {periods.map((p) => (
               <option key={p.key} value={p.key}>
                 {p.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="filter-currency" className="text-xs font-medium text-muted-foreground">
             {t.admin.filters.currencyLabel}
           </label>
-          <select
+          <Select
             id="filter-currency"
-            className={selectClass}
             value={filters.currency}
             onChange={(e) => onChange({ ...filters, currency: e.target.value as Currency | "all" })}
           >
             <option value="all">{t.admin.filters.allOption}</option>
             <option value="SAR">{t.currencyNames.SAR}</option>
             <option value="USD">{t.currencyNames.USD}</option>
-          </select>
+          </Select>
         </div>
 
         <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="filter-status" className="text-xs font-medium text-muted-foreground">
             {t.admin.filters.statusLabel}
           </label>
-          <select
+          <Select
             id="filter-status"
-            className={selectClass}
             value={filters.status}
             onChange={(e) => onChange({ ...filters, status: e.target.value as SubmissionStatus | "all" })}
           >
@@ -144,41 +122,38 @@ export function FiltersBar({ filters, onChange, viewMode, onViewModeChange, vehi
                 {t.status[s].label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
+          block
+          className="sm:w-auto"
           onClick={() => onChange({ ...DEFAULT_ADMIN_FILTERS, period: filters.period })}
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground sm:w-auto"
         >
           <RotateCcw aria-hidden="true" className="h-4 w-4" />
           {t.admin.filters.resetFilters}
-        </button>
+        </Button>
 
-        <div className="flex w-full items-center justify-center gap-1 rounded-md border border-control-border p-1 sm:ms-auto sm:w-auto">
-          <button
-            type="button"
+        <div className="chamfer-br-sm flex w-full items-center justify-center gap-1 p-1 shadow-[inset_0_0_0_1px_var(--control-border)] sm:ms-auto sm:w-auto">
+          <IconButton
             onClick={() => onViewModeChange("table")}
             aria-pressed={viewMode === "table"}
             aria-label={t.admin.filters.viewTable}
-            className={`rounded p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground ${
-              viewMode === "table" ? "bg-nebula-aqua text-dark-green" : "text-foreground hover:bg-surface-muted"
-            }`}
+            active={viewMode === "table"}
           >
             <LayoutList aria-hidden="true" className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
             onClick={() => onViewModeChange("cards")}
             aria-pressed={viewMode === "cards"}
             aria-label={t.admin.filters.viewCards}
-            className={`rounded p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground ${
-              viewMode === "cards" ? "bg-nebula-aqua text-dark-green" : "text-foreground hover:bg-surface-muted"
-            }`}
+            active={viewMode === "cards"}
           >
             <LayoutGrid aria-hidden="true" className="h-4 w-4" />
-          </button>
+          </IconButton>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Button } from "@/components/ui/Button";
 import { acceptInviteAction, type AcceptInviteState } from "./actions";
 
 const initialState: AcceptInviteState = { error: null };
@@ -28,13 +29,9 @@ export function AcceptInviteForm({ token, email, companyName }: AcceptInviteForm
           {state.error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-md bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60"
-      >
+      <Button type="submit" disabled={isPending}>
         {isPending ? "Joining..." : "Accept invitation"}
-      </button>
+      </Button>
     </form>
   );
 }

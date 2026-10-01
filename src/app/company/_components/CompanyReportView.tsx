@@ -6,13 +6,11 @@ import { ArrowRight, ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Select } from "@/components/ui/Select";
 import { CompanyKpis } from "./CompanyKpis";
 import { ReportingHistoryList } from "./ReportingHistoryList";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { CompanyReportData } from "@/lib/company/dto";
-
-const selectClass =
-  "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground sm:w-auto";
 
 interface CompanyReportViewProps {
   data: CompanyReportData;
@@ -55,7 +53,7 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
       <div className="space-y-6">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          className="chamfer-br-sm inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <BackIcon aria-hidden="true" className="h-4 w-4" />
           {backLabel}
@@ -68,9 +66,9 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
                 <label htmlFor="report-period" className="text-xs font-medium text-muted-foreground">
                   {t.admin.filters.periodLabel}
                 </label>
-                <select
+                <Select
                   id="report-period"
-                  className={selectClass}
+                  className="sm:w-auto"
                   value={selectedPeriodKey}
                   onChange={(e) => setSelectedPeriodKey(e.target.value)}
                 >
@@ -79,7 +77,7 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
                       {p.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <StatusBadge status={periodData.status} />
               {viewerRole === "COMPANY_MEMBER" ? (
@@ -88,7 +86,7 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
                 // in a locked, read-only state -- see StartupReportForm.
                 <Link
                   href={`/submit/${company.slug}?period=${selectedPeriodKey}`}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:ms-auto"
+                  className="chamfer-br-sm inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:ms-auto"
                 >
                   {t.submitReport.openFormLinkLabel}
                 </Link>
@@ -154,7 +152,7 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
                   <li key={v.id} className="flex items-center justify-between gap-3 text-sm">
                     <Link
                       href={`/vehicle/${v.slug}`}
-                      className="min-w-0 break-words rounded text-start text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                      className="chamfer-br-sm min-w-0 break-words text-start text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                     >
                       {lang === "ar" ? v.nameAr : v.nameEn}
                     </Link>

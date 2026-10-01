@@ -5,12 +5,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { InvestorCompanyTable } from "./_components/InvestorCompanyTable";
 import { InvestorKpis } from "./_components/InvestorKpis";
 import { Num } from "@/components/ui/Num";
+import { Select } from "@/components/ui/Select";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeInvestorRevenueByCurrency } from "@/lib/investor/revenue";
 import type { InvestorPortfolioData } from "@/lib/investor/dto";
-
-const selectClass =
-  "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground";
 
 export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExposures }: InvestorPortfolioData) {
   const { t, lang } = useLanguage();
@@ -43,7 +41,7 @@ export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExpos
   if (orgs.length === 0) {
     return (
       <AppShell title={t.nav.investorDashboard} subtitle={t.investorDashboard.subtitle}>
-        <div className="rounded-xl border border-border-subtle bg-surface-muted p-4 text-sm text-muted-foreground">
+        <div className="chamfer-br-md bg-surface-muted p-5 text-sm text-muted-foreground shadow-[var(--inner-line)]">
           {t.investorDashboard.noOrgAccess}
         </div>
       </AppShell>
@@ -58,27 +56,21 @@ export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExpos
             <label htmlFor="investor-org-select" className="text-xs font-medium text-muted-foreground">
               {t.investorDashboard.investorSelectLabel}
             </label>
-            <select
-              id="investor-org-select"
-              className={selectClass}
-              value={orgId}
-              onChange={(e) => setOrgId(e.target.value)}
-            >
+            <Select id="investor-org-select" value={orgId} onChange={(e) => setOrgId(e.target.value)}>
               {orgs.map((org) => (
                 <option key={org.id} value={org.id}>
                   {lang === "ar" ? org.nameAr : org.nameEn}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="flex w-full flex-col gap-1 sm:w-auto">
             <label htmlFor="investor-period" className="text-xs font-medium text-muted-foreground">
               {t.admin.filters.periodLabel}
             </label>
-            <select
+            <Select
               id="investor-period"
-              className={selectClass}
               value={periodKey}
               onChange={(e) => setPeriodKey(e.target.value)}
               disabled={periods.length === 0}
@@ -92,7 +84,7 @@ export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExpos
                   </option>
                 ))
               )}
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -108,7 +100,7 @@ export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExpos
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {scope.vehicleCards.map(({ vehicle, visibleCount }) => (
-              <div key={vehicle.id} className="rounded-xl border border-border-subtle bg-surface p-4">
+              <div key={vehicle.id} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
                 <p className="font-heading text-sm font-semibold text-foreground">
                   {lang === "ar" ? vehicle.nameAr : vehicle.nameEn}
                 </p>

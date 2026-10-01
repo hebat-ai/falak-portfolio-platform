@@ -31,6 +31,64 @@
   --nav-bg: var(--brand-dark-green);
   --nav-fg: #f3f6f5;
   --nav-fg-muted: #8fa6a1;
+
+  /* Falak Ventures type scale -- 1.25 major third off 16px, from the brand
+     design system's tokens/typography.css. Font-family tokens above are
+     unaffected; this is size/tracking only. */
+  --fs-3xs: 11px;
+  --fs-2xs: 12px;
+  --fs-xs: 13px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 20px;
+  --fs-2xl: 25px;
+  --fs-3xl: 31px;
+  --fs-4xl: 39px;
+  --fs-5xl: 49px;
+  --fs-6xl: 61px;
+  --fs-7xl: 76px;
+  --ls-display: -0.02em;
+  --ls-heading: -0.01em;
+  --ls-body: 0em;
+  --ls-label: 0.02em;
+  --ls-eyebrow: 0.14em;
+
+  /* 4px-rung spacing scale (tokens/spacing.css). Tailwind's own default
+     spacing scale already lands on most of these rungs; the named ones
+     below are the sizes call sites actually need by name (control heights,
+     icon sizes, page gutters), not a full re-export of every rung. */
+  --control-h-sm: 32px;
+  --control-h-md: 40px;
+  --control-h-lg: 48px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+  --gutter-page: clamp(20px, 5vw, 64px);
+  --container-sm: 640px;
+  --container-md: 880px;
+  --container-lg: 1120px;
+  --container-xl: 1320px;
+
+  /* Geometry -- the brand's signature is a 45-degree CHAMFER (cut corner),
+     never a soft radius. Radius stays 0 everywhere except status pills,
+     avatars and switch tracks (unchanged -- see StatusBadge.tsx, which
+     deliberately keeps rounded-full). See tokens/effects.css. */
+  --chamfer-sm: 8px;
+  --chamfer-md: 14px;
+  --chamfer-lg: 24px;
+  --chamfer-xl: 40px;
+  --shadow-card: 0 2px 10px rgba(0, 20, 16, 0.08);
+  --shadow-raised: 0 10px 30px rgba(0, 20, 16, 0.14);
+  /* A hairline "border" that survives clip-path chamfering -- a real
+     `border` gets silently clipped off along a chamfered edge, but an
+     inset box-shadow does not. Use in place of `border` on any chamfered
+     surface. */
+  --inner-line: inset 0 0 0 1px var(--border-subtle);
+  --transition-control: background-color 120ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 120ms cubic-bezier(0.2, 0.8, 0.3, 1), border-color 120ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 120ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 @theme inline {
@@ -64,6 +122,18 @@
   --font-body-en: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
   --font-heading-ar: var(--font-cairo, "Segoe UI", Tahoma, sans-serif);
   --font-body-ar: var(--font-alexandria, "Segoe UI", Tahoma, sans-serif);
+
+  /* Control heights and icon sizes as Tailwind utilities (h-control-md,
+     size-icon-lg, ...) -- the raw --space-* rungs aren't re-exported here
+     since Tailwind's default spacing scale already lands on the same 4px
+     grid. */
+  --spacing-control-sm: var(--control-h-sm);
+  --spacing-control-md: var(--control-h-md);
+  --spacing-control-lg: var(--control-h-lg);
+  --spacing-icon-sm: var(--icon-sm);
+  --spacing-icon-md: var(--icon-md);
+  --spacing-icon-lg: var(--icon-lg);
+  --spacing-icon-xl: var(--icon-xl);
 }
 
 /* Dark theme -- semantic surface/text tokens invert; the raw Falak brand
@@ -122,4 +192,32 @@ body {
 
 .scrollbar-thin {
   scrollbar-width: thin;
+}
+
+/* Falak Ventures signature corner treatment -- a single 45-degree cut,
+   never a soft radius. `-br` cuts the bottom-right corner (controls,
+   cards); `-diag` cuts two opposite corners, top-left + bottom-right
+   (statement panels, dialogs). Sized variants match --chamfer-sm/md/lg.
+   Fixed to physical corners regardless of text direction -- treated as
+   brand identity, not logical layout, matching the design system's own
+   Button component. Pair with `--inner-line` (not `border`) for a hairline
+   edge that survives the clip. */
+.chamfer-br-sm {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--chamfer-sm)), calc(100% - var(--chamfer-sm)) 100%, 0 100%);
+}
+.chamfer-br-md {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--chamfer-md)), calc(100% - var(--chamfer-md)) 100%, 0 100%);
+}
+.chamfer-br-lg {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--chamfer-lg)), calc(100% - var(--chamfer-lg)) 100%, 0 100%);
+}
+.chamfer-diag-md {
+  clip-path: polygon(
+    var(--chamfer-md) 0,
+    100% 0,
+    100% calc(100% - var(--chamfer-md)),
+    calc(100% - var(--chamfer-md)) 100%,
+    0 100%,
+    0 var(--chamfer-md)
+  );
 }

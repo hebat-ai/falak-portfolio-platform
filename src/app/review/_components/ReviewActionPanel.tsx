@@ -4,6 +4,8 @@ import { useActionState, type RefObject } from "react";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Textarea";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { getOverdueDays } from "@/lib/reportingStatus";
@@ -23,12 +25,6 @@ const NARRATIVE_KINDS: NarrativeKind[] = [
   "investment_review_notes",
   "management_commentary",
 ];
-
-const primaryButtonClass =
-  "inline-flex items-center gap-1.5 rounded-md bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60";
-
-const secondaryButtonClass =
-  "inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60";
 
 const initialActionState: ReviewActionState = { error: null };
 
@@ -103,9 +99,9 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
             {effectiveData.status === "submitted" ? (
               <form action={startFormAction} className="flex flex-col gap-1">
                 <input type="hidden" name="submissionId" value={submissionId} />
-                <button type="submit" disabled={startPending} className={primaryButtonClass}>
+                <Button type="submit" disabled={startPending}>
                   {t.reviewWorkspace.startReviewAction}
-                </button>
+                </Button>
                 {startState.error ? (
                   <p role="alert" className="text-xs font-medium text-foreground">
                     {startState.error}
@@ -121,16 +117,10 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                     {t.reviewWorkspace.requestChangesAction}
                   </label>
                   <input type="hidden" name="submissionId" value={submissionId} />
-                  <textarea
-                    id="review-comment"
-                    name="comment"
-                    required
-                    rows={2}
-                    className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                  />
-                  <button type="submit" disabled={changesPending} className={`${secondaryButtonClass} w-fit`}>
+                  <Textarea id="review-comment" name="comment" required rows={2} />
+                  <Button type="submit" variant="outline" disabled={changesPending} className="w-fit">
                     {t.reviewWorkspace.requestChangesAction}
-                  </button>
+                  </Button>
                   {changesState.error ? (
                     <p role="alert" className="text-xs font-medium text-foreground">
                       {changesState.error}
@@ -140,9 +130,9 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
 
                 <form action={approveFormAction} className="flex flex-col gap-1">
                   <input type="hidden" name="submissionId" value={submissionId} />
-                  <button type="submit" disabled={approvePending} className={primaryButtonClass}>
+                  <Button type="submit" disabled={approvePending}>
                     {t.reviewWorkspace.approveAction}
-                  </button>
+                  </Button>
                   {approveState.error ? (
                     <p role="alert" className="text-xs font-medium text-foreground">
                       {approveState.error}
@@ -156,38 +146,27 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
               <form action={publishFormAction} className="flex w-full flex-col gap-3">
                 <input type="hidden" name="submissionId" value={submissionId} />
                 {NARRATIVE_KINDS.map((kind) => (
-                  <div key={kind} className="flex flex-col gap-1.5 rounded-md border border-border-subtle p-3">
+                  <div key={kind} className="chamfer-br-sm flex flex-col gap-1.5 p-3 shadow-[var(--inner-line)]">
                     <span className="text-xs font-medium text-foreground">{t.reviewWorkspace.narrativeKinds[kind]}</span>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <div className="flex flex-col gap-1">
                         <label htmlFor={`${kind}En`} className="text-xs text-muted-foreground">
                           {t.reviewWorkspace.narrativeEnLabel}
                         </label>
-                        <textarea
-                          id={`${kind}En`}
-                          name={`${kind}En`}
-                          rows={2}
-                          className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                        />
+                        <Textarea id={`${kind}En`} name={`${kind}En`} rows={2} />
                       </div>
                       <div className="flex flex-col gap-1">
                         <label htmlFor={`${kind}Ar`} className="text-xs text-muted-foreground">
                           {t.reviewWorkspace.narrativeArLabel}
                         </label>
-                        <textarea
-                          id={`${kind}Ar`}
-                          name={`${kind}Ar`}
-                          dir="rtl"
-                          rows={2}
-                          className="w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                        />
+                        <Textarea id={`${kind}Ar`} name={`${kind}Ar`} dir="rtl" rows={2} />
                       </div>
                     </div>
                   </div>
                 ))}
-                <button type="submit" disabled={publishPending} className={`${primaryButtonClass} w-fit`}>
+                <Button type="submit" disabled={publishPending} className="w-fit">
                   {t.reviewWorkspace.publishAction}
-                </button>
+                </Button>
                 {publishState.error ? (
                   <p role="alert" className="text-xs font-medium text-foreground">
                     {publishState.error}

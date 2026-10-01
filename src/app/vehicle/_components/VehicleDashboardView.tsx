@@ -5,15 +5,13 @@ import Link from "next/link";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
 import { VehicleCompanyTable } from "./VehicleCompanyTable";
 import { VehicleKpis } from "./VehicleKpis";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getOverdueDays } from "@/lib/reportingStatus";
 import { computeVehicleRevenueByCurrency } from "@/lib/vehicle/revenue";
 import type { VehicleDashboardData } from "@/lib/vehicle/dto";
-
-const selectClass =
-  "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground sm:w-auto";
 
 export function VehicleDashboardView({ vehicle, periods, companies, investors }: VehicleDashboardData) {
   const { t, lang } = useLanguage();
@@ -42,7 +40,7 @@ export function VehicleDashboardView({ vehicle, periods, companies, investors }:
       <div className="space-y-6">
         <Link
           href="/vehicle"
-          className="inline-flex items-center gap-1.5 rounded-md border border-control-border px-3 py-1.5 text-sm font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          className="chamfer-br-sm inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <BackIcon aria-hidden="true" className="h-4 w-4" />
           {t.vehicleReport.backToDirectory}
@@ -53,9 +51,9 @@ export function VehicleDashboardView({ vehicle, periods, companies, investors }:
             <label htmlFor="vehicle-report-period" className="text-xs font-medium text-muted-foreground">
               {t.admin.filters.periodLabel}
             </label>
-            <select
+            <Select
               id="vehicle-report-period"
-              className={selectClass}
+              className="sm:w-auto"
               value={selectedPeriodKey}
               onChange={(e) => setSelectedPeriodKey(e.target.value)}
             >
@@ -64,7 +62,7 @@ export function VehicleDashboardView({ vehicle, periods, companies, investors }:
                   {p.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         ) : null}
 

@@ -19,7 +19,7 @@ export function VehicleDirectoryClient({ vehicles }: { vehicles: VehicleDirector
             <Link
               key={vehicle.id}
               href={`/vehicle/${vehicle.slug}`}
-              className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="chamfer-br-lg flex flex-col gap-4 bg-surface p-4 shadow-[var(--inner-line)] transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
               <div>
                 <p className="font-heading text-base font-semibold text-foreground">

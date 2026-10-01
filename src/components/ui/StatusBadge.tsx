@@ -37,6 +37,15 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
   const iconColor = STATUS_ICON_COLOR[status];
   const { label, description } = t.status[status];
 
+  // rounded-full is intentional and NOT part of the chamfer-corner sweep --
+  // the Falak Ventures design system explicitly exempts status pills (and
+  // avatars/switch tracks) from the chamfer rule; radius stays at 0
+  // everywhere else. Icons stay lucide-react here too: this status set's
+  // shape is the primary signal (see STATUS_ICON_COLOR's comment above),
+  // and the brand's 39-icon set has no equivalent for "submitted" or
+  // "changes_requested" -- mixing brand + lucide icons within one
+  // tightly-coupled set would read as more inconsistent than uniformly
+  // lucide, so this badge is deliberately left out of the brand-icon swap.
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-medium text-foreground ${className}`}

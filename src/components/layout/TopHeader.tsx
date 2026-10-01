@@ -25,7 +25,7 @@ export function TopHeader({ title, subtitle, menuOpen, onOpenMenu, drawerId }: T
           aria-label={t.nav.openMenu}
           aria-expanded={menuOpen}
           aria-controls={drawerId}
-          className="rounded-md p-2 text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground xl:hidden"
+          className="chamfer-br-sm p-2 text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground xl:hidden"
         >
           <Menu aria-hidden="true" className="h-5 w-5" />
         </button>

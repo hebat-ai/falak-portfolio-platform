@@ -5,6 +5,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
+import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { archiveCompanyAction } from "../actions";
@@ -79,7 +80,7 @@ export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks, o
                         <span key={v.id} className="inline-flex items-center gap-1">
                           <Link
                             href={`/vehicle/${v.slug}`}
-                            className="rounded text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                            className="chamfer-br-sm text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                           >
                             {lang === "ar" ? v.nameAr : v.nameEn}
                           </Link>
@@ -111,7 +112,7 @@ export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks, o
                 <Td>
                   <Link
                     href={`/company/${company.slug}`}
-                    className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                    className="chamfer-br-sm inline-flex items-center gap-1 text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                   >
                     {t.admin.table.viewCompanyAction}
                     <ChevronIcon aria-hidden="true" className="h-4 w-4" />
@@ -119,23 +120,20 @@ export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks, o
                 </Td>
                 <Td>
                   {onSelectForReview ? (
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
+                      size="xs"
                       onClick={() => onSelectForReview(company)}
                       aria-label={`${t.reviewWorkspace.reviewAction} — ${lang === "ar" ? company.nameAr : company.nameEn}`}
-                      className="rounded border border-control-border px-2 py-1 text-xs font-medium text-link-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                     >
                       {t.reviewWorkspace.reviewAction}
-                    </button>
+                    </Button>
                   ) : company.archivedAt ? null : (
                     <form action={archiveCompanyAction}>
                       <input type="hidden" name="companyId" value={company.id} />
-                      <button
-                        type="submit"
-                        className="rounded border border-control-border px-2 py-1 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                      >
+                      <Button type="submit" variant="outline" size="xs">
                         {t.admin.manage.archiveAction}
-                      </button>
+                      </Button>
                     </form>
                   )}
                 </Td>

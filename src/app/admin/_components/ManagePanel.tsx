@@ -2,6 +2,9 @@
 
 import { useActionState, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
 import {
   createCompanyAction,
   createVehicleAction,
@@ -18,12 +21,8 @@ import {
 } from "../actions";
 import type { AdminCompanyDTO, AdminVehicleDTO, AdminInvestorDTO, AdminReportingTemplateDTO } from "@/lib/admin/dto";
 
-const inputClass =
-  "w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground";
 const labelClass = "text-xs font-medium text-muted-foreground";
 const fieldClass = "flex flex-col gap-1";
-const submitButtonClass =
-  "inline-flex items-center gap-1.5 rounded-md bg-nebula-aqua px-4 py-2 text-sm font-medium text-dark-green hover:bg-nebula-aqua/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60";
 
 const initialActionState: ActionState = { error: null };
 const initialInviteState: InviteActionState = { error: null };
@@ -51,58 +50,58 @@ function CreateCompanyForm() {
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-nameEn">{t.admin.manage.nameEnLabel}</label>
-        <input id="c-nameEn" name="nameEn" required className={inputClass} />
+        <Input id="c-nameEn" name="nameEn" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-nameAr">{t.admin.manage.nameArLabel}</label>
-        <input id="c-nameAr" name="nameAr" dir="rtl" required className={inputClass} />
+        <Input id="c-nameAr" name="nameAr" dir="rtl" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-slug">{t.admin.manage.slugLabel}</label>
-        <input id="c-slug" name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required className={inputClass} />
+        <Input id="c-slug" name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-sectorEn">{t.admin.manage.sectorEnLabel}</label>
-        <input id="c-sectorEn" name="sectorEn" required className={inputClass} />
+        <Input id="c-sectorEn" name="sectorEn" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-sectorAr">{t.admin.manage.sectorArLabel}</label>
-        <input id="c-sectorAr" name="sectorAr" dir="rtl" required className={inputClass} />
+        <Input id="c-sectorAr" name="sectorAr" dir="rtl" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-customerModel">{t.admin.manage.customerModelLabel}</label>
-        <select id="c-customerModel" name="customerModel" required defaultValue="" className={inputClass}>
+        <Select id="c-customerModel" name="customerModel" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="B2B">{t.customerModels.B2B}</option>
           <option value="B2C">{t.customerModels.B2C}</option>
           <option value="B2B_B2C">{t.customerModels.B2B_B2C}</option>
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-currency">{t.admin.manage.currencyLabel}</label>
-        <select id="c-currency" name="currency" required defaultValue="" className={inputClass}>
+        <Select id="c-currency" name="currency" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="SAR">{t.currencyNames.SAR}</option>
           <option value="USD">{t.currencyNames.USD}</option>
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-entryStage">{t.admin.manage.entryStageLabel}</label>
-        <select id="c-entryStage" name="entryStage" required defaultValue="" className={inputClass}>
+        <Select id="c-entryStage" name="entryStage" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           {(["PreSeed", "Seed", "SeriesA", "SeriesB", "Later"] as const).map((s) => (
             <option key={s} value={s}>{t.stages[s]}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-currentStage">{t.admin.manage.currentStageLabel}</label>
-        <select id="c-currentStage" name="currentStage" required defaultValue="" className={inputClass}>
+        <Select id="c-currentStage" name="currentStage" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           {(["PreSeed", "Seed", "SeriesA", "SeriesB", "Later"] as const).map((s) => (
             <option key={s} value={s}>{t.stages[s]}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <fieldset className="sm:col-span-2">
         <legend className={labelClass}>{t.admin.manage.revenueModelsLabel}</legend>
@@ -118,9 +117,9 @@ function CreateCompanyForm() {
       <div className="sm:col-span-2">
         <FormMessage state={state} />
       </div>
-      <button type="submit" disabled={isPending} className={`${submitButtonClass} sm:col-span-2 sm:w-fit`}>
+      <Button type="submit" disabled={isPending} className="sm:col-span-2 sm:w-fit">
         {t.admin.manage.submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -133,38 +132,38 @@ function CreateVehicleForm() {
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-nameEn">{t.admin.manage.nameEnLabel}</label>
-        <input id="v-nameEn" name="nameEn" required className={inputClass} />
+        <Input id="v-nameEn" name="nameEn" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-nameAr">{t.admin.manage.nameArLabel}</label>
-        <input id="v-nameAr" name="nameAr" dir="rtl" required className={inputClass} />
+        <Input id="v-nameAr" name="nameAr" dir="rtl" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-slug">{t.admin.manage.slugLabel}</label>
-        <input id="v-slug" name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required className={inputClass} />
+        <Input id="v-slug" name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-type">{t.admin.manage.typeLabel}</label>
-        <select id="v-type" name="type" required defaultValue="" className={inputClass}>
+        <Select id="v-type" name="type" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="Fund">{t.vehicleTypes.Fund}</option>
           <option value="SPV">{t.vehicleTypes.SPV}</option>
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-currency">{t.admin.manage.currencyLabel}</label>
-        <select id="v-currency" name="currency" required defaultValue="" className={inputClass}>
+        <Select id="v-currency" name="currency" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="SAR">{t.currencyNames.SAR}</option>
           <option value="USD">{t.currencyNames.USD}</option>
-        </select>
+        </Select>
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />
       </div>
-      <button type="submit" disabled={isPending} className={`${submitButtonClass} sm:col-span-2 sm:w-fit`}>
+      <Button type="submit" disabled={isPending} className="sm:col-span-2 sm:w-fit">
         {t.admin.manage.submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -177,27 +176,27 @@ function CreateInvestorForm() {
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="i-nameEn">{t.admin.manage.nameEnLabel}</label>
-        <input id="i-nameEn" name="nameEn" required className={inputClass} />
+        <Input id="i-nameEn" name="nameEn" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="i-nameAr">{t.admin.manage.nameArLabel}</label>
-        <input id="i-nameAr" name="nameAr" dir="rtl" required className={inputClass} />
+        <Input id="i-nameAr" name="nameAr" dir="rtl" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="i-type">{t.admin.manage.typeLabel}</label>
-        <select id="i-type" name="type" required defaultValue="" className={inputClass}>
+        <Select id="i-type" name="type" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="Institutional">{t.investorTypes.Institutional}</option>
           <option value="FamilyOffice">{t.investorTypes.FamilyOffice}</option>
           <option value="Individual">{t.investorTypes.Individual}</option>
-        </select>
+        </Select>
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />
       </div>
-      <button type="submit" disabled={isPending} className={`${submitButtonClass} sm:col-span-2 sm:w-fit`}>
+      <Button type="submit" disabled={isPending} className="sm:col-span-2 sm:w-fit">
         {t.admin.manage.submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -219,18 +218,15 @@ function ArchivableList({
   }
 
   return (
-    <ul className="divide-y divide-border-subtle rounded-md border border-border-subtle">
+    <ul className="chamfer-br-md divide-y divide-border-subtle shadow-[var(--inner-line)]">
       {active.map((item) => (
         <li key={item.id} className="flex items-center justify-between gap-3 px-3 py-2">
           <span className="text-sm text-foreground">{lang === "ar" ? item.nameAr : item.nameEn}</span>
           <form action={action}>
             <input type="hidden" name={fieldName} value={item.id} />
-            <button
-              type="submit"
-              className="rounded border border-control-border px-2 py-1 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-            >
+            <Button type="submit" variant="outline" size="xs">
               {t.admin.manage.archiveAction}
-            </button>
+            </Button>
           </form>
         </li>
       ))}
@@ -246,48 +242,48 @@ function LinkVehicleToCompanyForm({ companies, vehicles }: { companies: AdminCom
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-company">{t.admin.manage.companyLabel}</label>
-        <select id="l-company" name="companyId" required defaultValue="" className={inputClass}>
+        <Select id="l-company" name="companyId" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           {companies.map((c) => (
             <option key={c.id} value={c.id}>{lang === "ar" ? c.nameAr : c.nameEn}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-vehicle">{t.admin.manage.vehicleLabel}</label>
-        <select id="l-vehicle" name="vehicleId" required defaultValue="" className={inputClass}>
+        <Select id="l-vehicle" name="vehicleId" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           {vehicles.map((v) => (
             <option key={v.id} value={v.id}>{lang === "ar" ? v.nameAr : v.nameEn}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-amount">{t.admin.manage.investedAmountLabel}</label>
-        <input id="l-amount" name="investedAmount" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required className={inputClass} />
+        <Input id="l-amount" name="investedAmount" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-currency">{t.admin.manage.currencyLabel}</label>
-        <select id="l-currency" name="currency" required defaultValue="" className={inputClass}>
+        <Select id="l-currency" name="currency" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="SAR">{t.currencyNames.SAR}</option>
           <option value="USD">{t.currencyNames.USD}</option>
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-pct">{t.admin.manage.ownershipPctLabel}</label>
-        <input id="l-pct" name="ownershipPct" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required className={inputClass} />
+        <Input id="l-pct" name="ownershipPct" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-date">{t.admin.manage.signedDateLabel}</label>
-        <input id="l-date" name="signedDate" type="date" required className={inputClass} />
+        <Input id="l-date" name="signedDate" type="date" required />
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />
       </div>
-      <button type="submit" disabled={isPending} className={`${submitButtonClass} sm:col-span-2 sm:w-fit`}>
+      <Button type="submit" disabled={isPending} className="sm:col-span-2 sm:w-fit">
         {t.admin.manage.submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -304,41 +300,37 @@ function CreateReportingTemplateForm() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className={fieldClass}>
           <label className={labelClass} htmlFor="tpl-nameEn">{t.admin.manage.nameEnLabel}</label>
-          <input id="tpl-nameEn" name="nameEn" required className={inputClass} />
+          <Input id="tpl-nameEn" name="nameEn" required />
         </div>
         <div className={fieldClass}>
           <label className={labelClass} htmlFor="tpl-nameAr">{t.admin.manage.nameArLabel}</label>
-          <input id="tpl-nameAr" name="nameAr" dir="rtl" required className={inputClass} />
+          <Input id="tpl-nameAr" name="nameAr" dir="rtl" required />
         </div>
       </div>
 
       <div className="flex flex-col gap-3">
         {Array.from({ length: metricRowCount }, (_, i) => (
-          <div key={i} className="grid grid-cols-1 gap-2 rounded-md border border-border-subtle p-3 sm:grid-cols-4">
-            <input name={`metricKey_${i}`} placeholder={t.admin.manage.metricKeyLabel} className={inputClass} />
-            <input name={`metricLabelEn_${i}`} placeholder={t.admin.manage.metricLabelEnLabel} className={inputClass} />
-            <input name={`metricLabelAr_${i}`} dir="rtl" placeholder={t.admin.manage.metricLabelArLabel} className={inputClass} />
-            <select name={`metricDataType_${i}`} defaultValue="" className={inputClass}>
+          <div key={i} className="chamfer-br-sm grid grid-cols-1 gap-2 p-3 shadow-[var(--inner-line)] sm:grid-cols-4">
+            <Input name={`metricKey_${i}`} placeholder={t.admin.manage.metricKeyLabel} />
+            <Input name={`metricLabelEn_${i}`} placeholder={t.admin.manage.metricLabelEnLabel} />
+            <Input name={`metricLabelAr_${i}`} dir="rtl" placeholder={t.admin.manage.metricLabelArLabel} />
+            <Select name={`metricDataType_${i}`} defaultValue="">
               <option value="" disabled>{t.admin.manage.metricDataTypeLabel}</option>
               {METRIC_DATA_TYPES.map((dt) => (
                 <option key={dt} value={dt}>{dt}</option>
               ))}
-            </select>
+            </Select>
           </div>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={() => setMetricRowCount((n) => n + 1)}
-        className="w-fit rounded-md border border-control-border px-3 py-1.5 text-sm text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-      >
+      <Button type="button" variant="outline" className="w-fit" onClick={() => setMetricRowCount((n) => n + 1)}>
         {t.admin.manage.addMetricAction}
-      </button>
+      </Button>
 
       <FormMessage state={state} />
-      <button type="submit" disabled={isPending} className={`${submitButtonClass} w-fit`}>
+      <Button type="submit" disabled={isPending} className="w-fit">
         {t.admin.manage.submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -357,45 +349,45 @@ function CreateReportingCycleForm({
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="cy-company">{t.admin.manage.companyLabel}</label>
-        <select id="cy-company" name="companyId" required defaultValue="" className={inputClass}>
+        <Select id="cy-company" name="companyId" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           {companies.map((c) => (
             <option key={c.id} value={c.id}>{lang === "ar" ? c.nameAr : c.nameEn}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="cy-template">{t.admin.manage.templateLabel}</label>
-        <select id="cy-template" name="templateId" required defaultValue="" className={inputClass}>
+        <Select id="cy-template" name="templateId" required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           {templates.map((tpl) => (
             <option key={tpl.id} value={tpl.id}>{lang === "ar" ? tpl.nameAr : tpl.nameEn}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="cy-label">{t.admin.manage.periodLabelLabel}</label>
-        <input id="cy-label" name="periodLabel" required className={inputClass} />
+        <Input id="cy-label" name="periodLabel" required />
       </div>
       <div />
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="cy-start">{t.admin.manage.periodStartLabel}</label>
-        <input id="cy-start" name="periodStart" type="date" required className={inputClass} />
+        <Input id="cy-start" name="periodStart" type="date" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="cy-end">{t.admin.manage.periodEndLabel}</label>
-        <input id="cy-end" name="periodEnd" type="date" required className={inputClass} />
+        <Input id="cy-end" name="periodEnd" type="date" required />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="cy-deadline">{t.admin.manage.deadlineLabel}</label>
-        <input id="cy-deadline" name="deadline" type="date" required className={inputClass} />
+        <Input id="cy-deadline" name="deadline" type="date" required />
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />
       </div>
-      <button type="submit" disabled={isPending} className={`${submitButtonClass} sm:col-span-2 sm:w-fit`}>
+      <Button type="submit" disabled={isPending} className="sm:col-span-2 sm:w-fit">
         {t.admin.manage.submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -420,42 +412,43 @@ function InviteForm({ action, idPrefix, selectName, selectLabel, options }: Invi
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor={`${idPrefix}-org`}>{selectLabel}</label>
-        <select id={`${idPrefix}-org`} name={selectName} required defaultValue="" className={inputClass}>
+        <Select id={`${idPrefix}-org`} name={selectName} required defaultValue="">
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           {options.map((o) => (
             <option key={o.id} value={o.id}>{lang === "ar" ? o.nameAr : o.nameEn}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor={`${idPrefix}-email`}>{t.admin.manage.emailLabel}</label>
-        <input id={`${idPrefix}-email`} name="email" type="email" required className={inputClass} />
+        <Input id={`${idPrefix}-email`} name="email" type="email" required />
       </div>
       <div className="sm:col-span-2">
         {state.error ? (
           <p role="alert" className="text-xs font-medium text-foreground">{state.error}</p>
         ) : null}
         {fullUrl ? (
-          <div className="flex flex-col gap-2 rounded-md border border-border-subtle bg-surface-muted p-3">
+          <div className="chamfer-br-sm flex flex-col gap-2 bg-surface-muted p-3 shadow-[var(--inner-line)]">
             <p className="text-xs text-muted-foreground">{t.admin.manage.inviteCreatedMessage}</p>
             <div className="flex flex-wrap items-center gap-2">
-              <code className="break-all rounded bg-surface px-2 py-1 text-xs text-foreground">{fullUrl}</code>
-              <button
+              <code className="chamfer-br-sm break-all bg-surface px-2 py-1 text-xs text-foreground">{fullUrl}</code>
+              <Button
                 type="button"
+                variant="outline"
+                size="xs"
                 onClick={() => {
                   navigator.clipboard.writeText(fullUrl).then(() => setCopied(true));
                 }}
-                className="rounded border border-control-border px-2 py-1 text-xs font-medium text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
               >
                 {copied ? t.admin.manage.linkCopiedMessage : t.admin.manage.copyLinkAction}
-              </button>
+              </Button>
             </div>
           </div>
         ) : null}
       </div>
-      <button type="submit" disabled={isPending} className={`${submitButtonClass} sm:col-span-2 sm:w-fit`}>
+      <Button type="submit" disabled={isPending} className="sm:col-span-2 sm:w-fit">
         {t.admin.manage.submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -471,7 +464,7 @@ export function ManagePanel({ companies, vehicles, investors, templates }: Manag
   const { t } = useLanguage();
 
   return (
-    <section className="flex flex-col gap-6 rounded-xl border border-border-subtle bg-surface p-4">
+    <section className="chamfer-br-md flex flex-col gap-6 bg-surface p-4 shadow-[var(--inner-line)]">
       <h2 className="font-heading text-sm font-semibold text-foreground">{t.admin.manage.sectionTitle}</h2>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

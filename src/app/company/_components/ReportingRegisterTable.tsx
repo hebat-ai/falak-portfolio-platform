@@ -76,7 +76,7 @@ export function ReportingRegisterTable({ rows, periods, vehicles, ownershipLinks
                         <span key={v.id} className="inline-flex items-center gap-1">
                           <Link
                             href={`/vehicle/${v.slug}`}
-                            className="rounded text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                            className="chamfer-br-sm text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                           >
                             {lang === "ar" ? v.nameAr : v.nameEn}
                           </Link>
@@ -125,7 +125,7 @@ export function ReportingRegisterTable({ rows, periods, vehicles, ownershipLinks
                   <Link
                     href={`/company/${company.slug}?period=${periodKey}`}
                     aria-label={`${t.admin.table.viewCompanyAction} — ${lang === "ar" ? company.nameAr : company.nameEn} — ${period?.label ?? periodKey}`}
-                    className="inline-flex items-center gap-1 rounded text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                    className="chamfer-br-sm inline-flex items-center gap-1 text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                   >
                     {t.admin.table.viewCompanyAction}
                     <ChevronIcon aria-hidden="true" className="h-4 w-4" />

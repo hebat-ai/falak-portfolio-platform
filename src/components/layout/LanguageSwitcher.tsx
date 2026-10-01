@@ -14,7 +14,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
       type="button"
       onClick={() => setLang(nextLang)}
       aria-label={ariaLabel}
-      className={`inline-flex items-center gap-1.5 rounded-md border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${className}`}
+      className={`chamfer-br-sm inline-flex items-center gap-1.5 bg-surface px-3 py-1.5 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--control-border)] transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${className}`}
     >
       <Languages aria-hidden="true" className="h-4 w-4" />
       <span>{buttonText}</span>

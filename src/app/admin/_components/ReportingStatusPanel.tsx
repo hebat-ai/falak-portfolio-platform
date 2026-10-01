@@ -18,7 +18,7 @@ export function ReportingStatusPanel({ companies, period }: ReportingStatusPanel
   return (
     <section
       aria-label={t.admin.reportingStatusPanel.title}
-      className="rounded-xl border border-border-subtle bg-surface"
+      className="chamfer-br-md bg-surface shadow-[var(--inner-line)]"
     >
       <h2 className="font-heading border-b border-border-subtle px-4 py-3 text-sm font-semibold text-foreground">
         {t.admin.reportingStatusPanel.title} — {period.label}

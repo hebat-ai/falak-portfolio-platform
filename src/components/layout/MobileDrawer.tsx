@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { X } from "lucide-react";
+import { BrandIcon } from "@/components/ui/BrandIcon";
 
 interface MobileDrawerProps {
   id: string;
@@ -94,9 +94,9 @@ export function MobileDrawer({ id, open, onClose, titleId, title, closeLabel, ch
             type="button"
             onClick={onClose}
             aria-label={closeLabel}
-            className="rounded-md p-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nebula-aqua"
+            className="chamfer-br-sm p-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nebula-aqua"
           >
-            <X aria-hidden="true" className="h-5 w-5" />
+            <BrandIcon name="close" tone="white" size={20} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">{children}</div>
