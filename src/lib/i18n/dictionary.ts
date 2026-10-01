@@ -13,7 +13,9 @@ export interface Dictionary {
     appName: string;
   };
   nav: {
-    portfolioOverview: string;
+    portfolioDashboard: string;
+    companyList: string;
+    managePortfolio: string;
     investorDashboard: string;
     vehicleDashboard: string;
     companyReports: string;
@@ -43,6 +45,9 @@ export interface Dictionary {
   admin: {
     title: string;
     subtitle: string;
+    dashboardPeriodLabel: string;
+    companyListTitle: string;
+    companyListSubtitle: string;
     kpi: {
       companiesLabel: string;
       vehiclesLabel: string;
@@ -96,6 +101,9 @@ export interface Dictionary {
     emptyState: string;
     manage: {
       sectionTitle: string;
+      indexSubtitle: string;
+      invitesSectionTitle: string;
+      vehicleAssignmentTitle: string;
       nameEnLabel: string;
       nameArLabel: string;
       slugLabel: string;
@@ -298,7 +306,9 @@ export const en = {
     appName: "Falak Portfolio Platform",
   },
   nav: {
-    portfolioOverview: "Portfolio Overview",
+    portfolioDashboard: "Portfolio Dashboard",
+    companyList: "Company List",
+    managePortfolio: "Manage Portfolio",
     investorDashboard: "Investor Dashboard",
     vehicleDashboard: "Vehicle Dashboard",
     companyReports: "Company Reports",
@@ -359,8 +369,11 @@ export const en = {
     Individual: "Individual",
   },
   admin: {
-    title: "Falak Admin — Portfolio Overview",
+    title: "Falak Admin — Portfolio Dashboard",
     subtitle: "Org-wide visibility across all portfolio companies, vehicles, and reporting cycles.",
+    dashboardPeriodLabel: "Reporting Period",
+    companyListTitle: "Company List",
+    companyListSubtitle: "Every portfolio company, filterable by vehicle, period, currency, and status.",
     kpi: {
       companiesLabel: "Portfolio Companies",
       vehiclesLabel: "Investment Vehicles",
@@ -384,7 +397,7 @@ export const en = {
     },
     filters: {
       title: "Company List Filters",
-      scopeNote: "Filters apply to the company list below; portfolio summary remains portfolio-wide.",
+      scopeNote: "Filters apply to the company list below.",
       searchLabel: "Search",
       searchPlaceholder: "Search company, sector, or vehicle",
       clearSearchAriaLabel: "Clear search",
@@ -414,6 +427,9 @@ export const en = {
     emptyState: "No companies match the selected filters.",
     manage: {
       sectionTitle: "Manage Portfolio",
+      indexSubtitle: "Create and manage companies, vehicles, investors, reporting templates and cycles, and invites.",
+      invitesSectionTitle: "Investor & Company Invite",
+      vehicleAssignmentTitle: "Company Assignment to Vehicle",
       nameEnLabel: "Name (English)",
       nameArLabel: "Name (Arabic)",
       slugLabel: "Slug (used in URLs, e.g. my-company)",
@@ -621,7 +637,9 @@ export const ar = {
     appName: "منصة فلك لإدارة المحفظة",
   },
   nav: {
-    portfolioOverview: "نظرة عامة على المحفظة",
+    portfolioDashboard: "لوحة المحفظة",
+    companyList: "قائمة الشركات",
+    managePortfolio: "إدارة المحفظة",
     investorDashboard: "لوحة المستثمر",
     vehicleDashboard: "لوحة الأداة الاستثمارية",
     companyReports: "تقارير الشركات",
@@ -682,8 +700,11 @@ export const ar = {
     Individual: "مستثمر فردي",
   },
   admin: {
-    title: "إدارة فلك — نظرة عامة على المحفظة",
+    title: "إدارة فلك — لوحة المحفظة",
     subtitle: "رؤية شاملة على مستوى المؤسسة لجميع شركات المحفظة والأدوات الاستثمارية ودورات التقارير.",
+    dashboardPeriodLabel: "فترة التقرير",
+    companyListTitle: "قائمة الشركات",
+    companyListSubtitle: "جميع شركات المحفظة، قابلة للتصفية حسب الأداة الاستثمارية والفترة والعملة والحالة.",
     kpi: {
       companiesLabel: "شركات المحفظة",
       vehiclesLabel: "الأدوات الاستثمارية",
@@ -707,7 +728,7 @@ export const ar = {
     },
     filters: {
       title: "تصفية قائمة الشركات",
-      scopeNote: "تُطبق عوامل التصفية على قائمة الشركات أدناه، بينما يظل ملخص المحفظة شاملاً.",
+      scopeNote: "تُطبق عوامل التصفية على قائمة الشركات أدناه.",
       searchLabel: "بحث",
       searchPlaceholder: "ابحث عن شركة أو قطاع أو أداة استثمارية",
       clearSearchAriaLabel: "مسح البحث",
@@ -737,6 +758,9 @@ export const ar = {
     emptyState: "لا توجد شركات مطابقة لعوامل التصفية المحددة.",
     manage: {
       sectionTitle: "إدارة المحفظة",
+      indexSubtitle: "إنشاء وإدارة الشركات والأدوات الاستثمارية والمستثمرين وقوالب التقارير ودوراتها والدعوات.",
+      invitesSectionTitle: "دعوة المستثمرين والشركات",
+      vehicleAssignmentTitle: "تعيين شركة لأداة استثمارية",
       nameEnLabel: "الاسم (إنجليزي)",
       nameArLabel: "الاسم (عربي)",
       slugLabel: "المعرّف المختصر (يُستخدم في الروابط، مثال: my-company)",

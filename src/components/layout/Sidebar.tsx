@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  ListChecks,
+  Settings2,
   PieChart,
   Landmark,
   Building2,
@@ -19,7 +21,9 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 interface NavItemConfig {
   key: keyof Pick<
     Dictionary["nav"],
-    | "portfolioOverview"
+    | "portfolioDashboard"
+    | "companyList"
+    | "managePortfolio"
     | "investorDashboard"
     | "vehicleDashboard"
     | "companyReports"
@@ -32,7 +36,9 @@ interface NavItemConfig {
 }
 
 const NAV_ITEMS: NavItemConfig[] = [
-  { key: "portfolioOverview", href: "/admin", Icon: LayoutDashboard },
+  { key: "portfolioDashboard", href: "/admin", Icon: LayoutDashboard },
+  { key: "companyList", href: "/admin/companies", Icon: ListChecks },
+  { key: "managePortfolio", href: "/admin/manage", Icon: Settings2 },
   { key: "investorDashboard", href: "/investor", Icon: PieChart },
   { key: "vehicleDashboard", href: "/vehicle", Icon: Landmark },
   { key: "companyReports", href: "/company", Icon: Building2 },

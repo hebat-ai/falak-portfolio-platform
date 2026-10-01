@@ -2,9 +2,10 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getAdminPortfolioData } from "@/lib/admin/queries";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
-import { PortfolioDashboardClient } from "./PortfolioDashboardClient";
+import { ManageSubsectionShell } from "../_components/ManageSubsectionShell";
+import { LinkVehicleToCompanyForm } from "../_components/LinkVehicleToCompanyForm";
 
-export default async function PortfolioDashboardPage() {
+export default async function VehicleAssignmentPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
     redirect("/sign-in");
@@ -14,15 +15,15 @@ export default async function PortfolioDashboardPage() {
   try {
     data = await getAdminPortfolioData();
   } catch (error) {
-    // ForbiddenError: authenticated, but not FALAK_ADMIN/FALAK_OPERATIONS.
-    // UnauthenticatedError: defensive only (the getCurrentUser() check
-    // above already redirects this case) -- handled the same way in case
-    // the session changes between the two calls.
     if (error instanceof ForbiddenError || error instanceof UnauthenticatedError) {
       redirect("/account");
     }
     throw error;
   }
 
-  return <PortfolioDashboardClient {...data} />;
+  return (
+    <ManageSubsectionShell titleKey="vehicleAssignmentTitle">
+      <LinkVehicleToCompanyForm companies={data.companies} vehicles={data.vehicles} />
+    </ManageSubsectionShell>
+  );
 }
