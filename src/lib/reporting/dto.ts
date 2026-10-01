@@ -1,5 +1,27 @@
 import "server-only";
-import type { SubmissionStatus } from "@/generated/prisma/client";
+import type { SubmissionStatus, MetricDataType } from "@/generated/prisma/client";
+
+/**
+ * One MetricDefinition's current value (if any) for a given submission,
+ * shaped identically for the submit form and the company report page's
+ * read-only breakdown. `key` drives section grouping by prefix (fin_/
+ * health_/cust_/qual_, plus the reused revenue_b2b) -- a convention, not
+ * a schema column, so no migration was needed to add the 30 real fields.
+ * `value` is always a string here (the raw numericValue already
+ * .toNumber()'d-and-stringified or the raw textValue) -- the form parses
+ * it back per dataType itself; this DTO never leaks a Prisma Decimal.
+ */
+export interface SubmissionMetricFieldDTO {
+  metricDefinitionId: string;
+  key: string;
+  labelEn: string;
+  labelAr: string;
+  dataType: MetricDataType;
+  required: boolean;
+  sortOrder: number;
+  value: string | null;
+  isNa: boolean;
+}
 
 /**
  * Minimal, server-shaped view of a CompanySubmission -- never the raw
@@ -34,4 +56,8 @@ export interface SubmissionDTO {
    * requiredMetricsComplete -- the single flag the UI uses to decide
    * whether to render a functional Submit control at all. */
   canSubmit: boolean;
+  /** Every active MetricDefinition for this submission's template, with
+   * whatever value (if any) has been saved so far -- the real form data,
+   * not just the completeness hints above. */
+  metrics: SubmissionMetricFieldDTO[];
 }

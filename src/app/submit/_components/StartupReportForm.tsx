@@ -10,6 +10,7 @@ import { formatDate } from "@/lib/format";
 import type { Currency } from "@/generated/prisma/client";
 import type { SubmissionDTO } from "@/lib/reporting/dto";
 import { SubmitReportButton } from "./SubmitReportButton";
+import { MetricsEntryForm } from "./MetricsEntryForm";
 
 interface StartupReportFormCompany {
   id: string;
@@ -57,17 +58,25 @@ export function StartupReportForm({ company, submission }: StartupReportFormProp
               </time>
             </p>
 
-            {/* Metric-value entry (e.g. revenue) is deliberately not wired
-                to real data in this slice -- only the status-transition
-                action below is real. Three distinct, honest states below,
-                matching the SubmissionDTO's own completeness hints
-                (never the authoritative gate -- the Server Action
-                re-derives and re-checks all of this itself). */}
+            {/* The three states below are honest hints from the
+                SubmissionDTO's own completeness computation -- never the
+                authoritative gate. Both the Save action (saveMetricValues)
+                and the Submit action (submitCompanySubmission) re-derive
+                and re-check everything themselves, fresh, server-side. */}
             {!submission.hasApplicableMetrics ? (
               <p className="chamfer-br-sm bg-surface-muted p-3 text-xs text-muted-foreground shadow-[var(--inner-line)]">
                 {t.submitReport.metricsNotConfiguredMessage}
               </p>
-            ) : !submission.requiredMetricsComplete ? (
+            ) : (
+              <MetricsEntryForm
+                companyId={company.id}
+                submissionId={submission.id}
+                slug={company.slug}
+                metrics={submission.metrics}
+              />
+            )}
+
+            {submission.hasApplicableMetrics && !submission.requiredMetricsComplete ? (
               <p className="chamfer-br-sm bg-surface-muted p-3 text-xs text-muted-foreground shadow-[var(--inner-line)]">
                 {t.submitReport.metricsIncompleteMessage}
               </p>

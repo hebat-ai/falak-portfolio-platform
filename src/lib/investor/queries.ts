@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { requireCurrentUser } from "@/lib/auth/authorization";
+import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
 import type {
   InvestorPortfolioData,
   InvestorOrgOption,
@@ -8,10 +9,6 @@ import type {
   InvestorVisibleCompanyDTO,
   InvestorVehicleExposureDTO,
 } from "./dto";
-
-// Matches the key seeded in prisma/seed/fabricated-demo-data.ts -- same
-// constant src/lib/admin/queries.ts reads for its own revenue KPI/column.
-const REVENUE_METRIC_KEY = "revenue_b2b";
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -89,8 +86,8 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
               submission: {
                 select: {
                   metricValues: {
-                    where: { metricDefinition: { key: REVENUE_METRIC_KEY } },
-                    select: { numericValue: true, isNa: true },
+                    where: { metricDefinition: { key: { in: REVENUE_METRIC_KEYS } } },
+                    select: { metricDefinition: { select: { key: true } }, numericValue: true, isNa: true },
                   },
                 },
               },
@@ -144,11 +141,7 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
     // rather than trusted blindly, so a future scope-leakage bug skips
     // the row instead of crashing the dashboard.
     if (submissions.length !== 1) continue;
-    const metricValue = submissions[0].submission.metricValues[0];
-    const revenue =
-      metricValue && !metricValue.isNa && metricValue.numericValue !== null
-        ? metricValue.numericValue.toNumber()
-        : null;
+    const revenue = sumRevenueMetricValues(submissions[0].submission.metricValues);
 
     companies.push({
       id: company.id,

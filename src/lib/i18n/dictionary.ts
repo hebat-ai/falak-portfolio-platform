@@ -197,6 +197,33 @@ export interface Dictionary {
     valuationHistoryTitle: string;
     quarterlyToggleLabel: string;
     annuallyToggleLabel: string;
+    metricsTitle: string;
+    grossMarginLabel: string;
+    netMarginLabel: string;
+    naValueDisplay: string;
+  };
+  quarterlyReport: {
+    backToReport: string;
+    brandSubtitle: string;
+    reportedPeriodLabel: string;
+    publishedLabel: string;
+    printAction: string;
+    currentRevenueLabel: string;
+    priorRevenueLabel: string;
+    projectionLabel: string;
+    projectionHint: string;
+    chartTitle: string;
+    comparisonTitle: string;
+    comparisonCaption: string;
+    metricColumnLabel: string;
+    currentColumnLabel: string;
+    priorColumnLabel: string;
+    qoqGrowthColumnLabel: string;
+    growthIndicatorsTitle: string;
+    customerMetricsTitle: string;
+    disclaimerText: string;
+    viewFormattedReportLabel: string;
+    notPublishedMessage: string;
   };
   vehicleReport: {
     backToDirectory: string;
@@ -215,6 +242,14 @@ export interface Dictionary {
     noActiveCycleMessage: string;
     metricsNotConfiguredMessage: string;
     metricsIncompleteMessage: string;
+    sectionFinancial: string;
+    sectionHealth: string;
+    sectionCustomer: string;
+    sectionQualitative: string;
+    saveAction: string;
+    saving: string;
+    savedMessage: string;
+    naLabel: string;
   };
   reviewWorkspace: {
     subtitle: string;
@@ -558,6 +593,34 @@ export const en = {
     valuationHistoryTitle: "Valuation Over Time",
     quarterlyToggleLabel: "Quarterly",
     annuallyToggleLabel: "Annually",
+    metricsTitle: "Operating Metrics",
+    grossMarginLabel: "Gross Margin",
+    netMarginLabel: "Net Margin",
+    naValueDisplay: "N/A",
+  },
+  quarterlyReport: {
+    backToReport: "Back to Company Report",
+    brandSubtitle: "FALAK ANGELS · Powered by Falak Ventures",
+    reportedPeriodLabel: "Reported Period",
+    publishedLabel: "Published",
+    printAction: "Print / Save as PDF",
+    currentRevenueLabel: "Current Quarter Revenue",
+    priorRevenueLabel: "Prior Quarter Revenue",
+    projectionLabel: "Annualized Revenue Projection",
+    projectionHint: "Current quarter revenue × 4",
+    chartTitle: "Revenue Trend & Projection",
+    comparisonTitle: "Financial Comparison",
+    comparisonCaption: "Current period compared with the prior reporting period",
+    metricColumnLabel: "Metric",
+    currentColumnLabel: "Current",
+    priorColumnLabel: "Prior",
+    qoqGrowthColumnLabel: "QoQ Growth",
+    growthIndicatorsTitle: "Growth & Efficiency Indicators",
+    customerMetricsTitle: "Customer Metrics",
+    disclaimerText:
+      "Figures are self-reported by the company and compiled by Falak Ventures for informational purposes only. This document does not constitute investment advice.",
+    viewFormattedReportLabel: "View Formatted Report",
+    notPublishedMessage: "A formatted report is not yet available for this period.",
   },
   vehicleReport: {
     backToDirectory: "Back to Vehicles",
@@ -577,6 +640,14 @@ export const en = {
     metricsNotConfiguredMessage:
       "Report data entry is not yet connected — it depends on Falak's reporting template, which has not been defined yet.",
     metricsIncompleteMessage: "This report is missing required information and cannot be submitted yet.",
+    sectionFinancial: "Financial Performance",
+    sectionHealth: "Performance & Health",
+    sectionCustomer: "Customer & Growth Metrics",
+    sectionQualitative: "Qualitative",
+    saveAction: "Save",
+    saving: "Saving...",
+    savedMessage: "Saved.",
+    naLabel: "N/A",
   },
   reviewWorkspace: {
     subtitle: "Review submitted reports and manage their approval status.",
@@ -924,6 +995,34 @@ export const ar = {
     valuationHistoryTitle: "تطور التقييم عبر الزمن",
     quarterlyToggleLabel: "ربع سنوي",
     annuallyToggleLabel: "سنوي",
+    metricsTitle: "مؤشرات التشغيل",
+    grossMarginLabel: "هامش الربح الإجمالي",
+    netMarginLabel: "هامش الربح الصافي",
+    naValueDisplay: "غير متاح",
+  },
+  quarterlyReport: {
+    backToReport: "العودة إلى تقرير الشركة",
+    brandSubtitle: "فلك للاستثمار الملائكي · مُقدَّم من فلك فينتشرز",
+    reportedPeriodLabel: "الفترة المُقدَّم عنها التقرير",
+    publishedLabel: "تاريخ النشر",
+    printAction: "طباعة / حفظ كملف PDF",
+    currentRevenueLabel: "إيرادات الربع الحالي",
+    priorRevenueLabel: "إيرادات الربع السابق",
+    projectionLabel: "توقع الإيرادات السنوي",
+    projectionHint: "إيرادات الربع الحالي × 4",
+    chartTitle: "اتجاه الإيرادات والتوقعات",
+    comparisonTitle: "المقارنة المالية",
+    comparisonCaption: "مقارنة الفترة الحالية بالفترة السابقة لإعداد التقارير",
+    metricColumnLabel: "المؤشر",
+    currentColumnLabel: "الحالي",
+    priorColumnLabel: "السابق",
+    qoqGrowthColumnLabel: "النمو ربع السنوي",
+    growthIndicatorsTitle: "مؤشرات النمو والكفاءة",
+    customerMetricsTitle: "مؤشرات العملاء",
+    disclaimerText:
+      "الأرقام مُقدَّمة ذاتيًا من الشركة ومُجمَّعة من قِبل فلك فينتشرز لأغراض إعلامية فقط. لا يُشكّل هذا المستند نصيحة استثمارية.",
+    viewFormattedReportLabel: "عرض التقرير المنسّق",
+    notPublishedMessage: "التقرير المنسّق غير متاح بعد لهذه الفترة.",
   },
   vehicleReport: {
     backToDirectory: "العودة إلى الأدوات الاستثمارية",
@@ -943,6 +1042,14 @@ export const ar = {
     metricsNotConfiguredMessage:
       "لم يتم بعد ربط إدخال بيانات التقرير — فهو يعتمد على قالب التقارير الخاص بفلك، والذي لم يُحدَّد بعد.",
     metricsIncompleteMessage: "هذا التقرير يفتقد إلى معلومات مطلوبة ولا يمكن إرساله بعد.",
+    sectionFinancial: "الأداء المالي",
+    sectionHealth: "الأداء والسلامة المالية",
+    sectionCustomer: "مؤشرات العملاء والنمو",
+    sectionQualitative: "الجوانب النوعية",
+    saveAction: "حفظ",
+    saving: "جارٍ الحفظ...",
+    savedMessage: "تم الحفظ.",
+    naLabel: "لا ينطبق",
   },
   reviewWorkspace: {
     subtitle: "مراجعة التقارير المُقدَّمة وإدارة حالة اعتمادها.",

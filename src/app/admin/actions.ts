@@ -41,7 +41,10 @@ const FUNDING_STAGES: FundingStage[] = ["PreSeed", "Seed", "SeriesA", "SeriesB",
 const VEHICLE_TYPES: VehicleType[] = ["Fund", "SPV"];
 const INVESTOR_TYPES: InvestorType[] = ["Institutional", "FamilyOffice", "Individual"];
 const METRIC_DATA_TYPES: MetricDataType[] = ["Currency", "Percent", "Number", "Text", "Boolean"];
-const MAX_METRIC_ROWS = 20;
+// Bumped from 20 -- a comprehensive template (financial + health +
+// customer + qualitative fields, matching a real investor-reporting
+// spreadsheet) comfortably exceeds the old cap.
+const MAX_METRIC_ROWS = 40;
 const VALUATION_TYPES: CompanyValuationType[] = ["LastRound", "InternalMark", "ThirdPartyMark", "Exit", "WrittenOff"];
 const AMOUNT_PATTERN = /^\d+(\.\d{1,4})?$/;
 const MAX_SOURCE_LENGTH = 200;

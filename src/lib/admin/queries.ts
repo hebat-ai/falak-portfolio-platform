@@ -1,18 +1,13 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
+import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
 import type {
   AdminPortfolioData,
   AdminCompanyDTO,
   AdminCompanyPeriodData,
   AdminPeriodOption,
 } from "./dto";
-
-// The one metric this admin dashboard reads for its revenue KPI/columns --
-// matches the key seeded in prisma/seed/fabricated-demo-data.ts. A company
-// on a template without this key simply shows "no data" for revenue, same
-// as a period it hasn't submitted for yet.
-const REVENUE_METRIC_KEY = "revenue_b2b";
 
 // The shared formatDate()/StatusBadge <time> helpers across this app
 // expect a bare "YYYY-MM-DD" string (matching the mock fixtures' own
@@ -54,8 +49,8 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
             status: true,
             updatedAt: true,
             metricValues: {
-              where: { metricDefinition: { key: REVENUE_METRIC_KEY } },
-              select: { numericValue: true, isNa: true },
+              where: { metricDefinition: { key: { in: REVENUE_METRIC_KEYS } } },
+              select: { metricDefinition: { select: { key: true } }, numericValue: true, isNa: true },
             },
           },
         },
@@ -92,11 +87,7 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
     for (const cycle of cycles) {
       if (cycle.companyId !== company.id) continue;
       const submission = cycle.submission;
-      const revenueValue = submission?.metricValues[0];
-      const revenue =
-        revenueValue && !revenueValue.isNa && revenueValue.numericValue !== null
-          ? revenueValue.numericValue.toNumber()
-          : null;
+      const revenue = submission ? sumRevenueMetricValues(submission.metricValues) : null;
 
       periodsData[cycle.periodLabel] = {
         status: submission?.status ?? "draft",

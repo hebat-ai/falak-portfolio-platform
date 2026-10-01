@@ -26,6 +26,12 @@ export function formatPercent(value: number, locale: AppLocale): string {
   }).format(value);
 }
 
+export function formatNumber(value: number, locale: AppLocale): string {
+  return new Intl.NumberFormat(intlLocale(locale), {
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
 export function formatDate(iso: string, locale: AppLocale): string {
   return new Intl.DateTimeFormat(intlLocale(locale), {
     year: "numeric",

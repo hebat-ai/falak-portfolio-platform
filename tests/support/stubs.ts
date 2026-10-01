@@ -139,6 +139,11 @@ export interface MetricDefinitionFixture {
   templateId: string;
   isActive: boolean;
   required: boolean;
+  key?: string;
+  labelEn?: string;
+  labelAr?: string;
+  dataType?: string;
+  sortOrder?: number;
 }
 
 export interface SubmissionMetricValueFixture {
@@ -196,14 +201,41 @@ export function makeReportingDbStub(options: {
     },
     userRoleAssignment: { findMany: async () => [] },
     metricDefinition: {
-      findMany: async ({ where }: { where: { templateId: string; isActive: boolean } }) =>
-        metricDefinitions.filter((d) => d.templateId === where.templateId && d.isActive === where.isActive),
+      findMany: async ({ where }: { where: { templateId?: string; isActive?: boolean; id?: { in: string[] } } }) => {
+        let rows = metricDefinitions;
+        if (where.templateId !== undefined) rows = rows.filter((d) => d.templateId === where.templateId);
+        if (where.isActive !== undefined) rows = rows.filter((d) => d.isActive === where.isActive);
+        if (where.id) rows = rows.filter((d) => where.id!.in.includes(d.id));
+        return rows.map((d) => ({
+          id: d.id,
+          key: d.key ?? d.id,
+          labelEn: d.labelEn ?? d.id,
+          labelAr: d.labelAr ?? d.id,
+          dataType: d.dataType ?? "Currency",
+          required: d.required,
+          sortOrder: d.sortOrder ?? 0,
+        }));
+      },
     },
     submissionMetricValue: {
       findMany: async ({ where }: { where: { submissionId: string; metricDefinitionId: { in: string[] } } }) =>
-        submissionMetricValues.filter(
-          (v) => v.submissionId === where.submissionId && where.metricDefinitionId.in.includes(v.metricDefinitionId)
-        ),
+        submissionMetricValues
+          .filter((v) => v.submissionId === where.submissionId && where.metricDefinitionId.in.includes(v.metricDefinitionId))
+          .map((v) => ({
+            ...v,
+            numericValue: v.numericValue === null ? null : { toNumber: () => v.numericValue },
+          })),
+      upsert: async ({
+        where,
+        create,
+      }: {
+        where: { submissionId_metricDefinitionId: { submissionId: string; metricDefinitionId: string } };
+        update: Record<string, unknown>;
+        create: Record<string, unknown>;
+      }) => {
+        submissionMetricValues.push(create as unknown as SubmissionMetricValueFixture);
+        return { ...where.submissionId_metricDefinitionId, ...create };
+      },
     },
     companySubmission: {
       findFirst: async ({ where }: { where: { id?: string; cycle?: { companyId?: string } } }) => {
@@ -829,6 +861,7 @@ export function makeInvestorQueriesDbStub(options: {
                         ? []
                         : [
                             {
+                              metricDefinition: { key: "revenue_b2b" },
                               numericValue: g.revenue === null ? null : { toNumber: () => g.revenue },
                               isNa: g.isNa ?? false,
                             },
@@ -934,6 +967,15 @@ export function makeCompanyReportDbStub(options: {
           .map((r) => ({ role: r.role }));
       },
     },
+    // No fixture builder in this suite sets up metric-definition rows --
+    // these tests assert on status/revenue/narratives, never on
+    // `metrics`, so fetchSubmissionMetricFields just resolves to [].
+    metricDefinition: {
+      findMany: async () => [],
+    },
+    submissionMetricValue: {
+      findMany: async () => [],
+    },
     companyMembership: {
       findFirst: async ({ where }: { where: Record<string, unknown> }) => {
         const m = (options.companyMemberships ?? []).find(
@@ -981,6 +1023,7 @@ export function makeCompanyReportDbStub(options: {
                       ? []
                       : [
                           {
+                            metricDefinition: { key: "revenue_b2b" },
                             numericValue:
                               cy.submission.revenue === null ? null : { toNumber: () => cy.submission!.revenue },
                             isNa: cy.submission.isNa ?? false,
@@ -1077,6 +1120,7 @@ export function makeVehicleDbStub(options: { falakRoles?: FalakRoleFixture[]; ve
                 ? []
                 : [
                     {
+                      metricDefinition: { key: "revenue_b2b" },
                       numericValue: cy.submission.revenue === null ? null : { toNumber: () => cy.submission!.revenue },
                       isNa: cy.submission.isNa ?? false,
                     },

@@ -2,6 +2,8 @@ import "server-only";
 import { db } from "@/lib/db";
 import { requireCurrentUser, requireFalakRole, requireCompanyMembership } from "@/lib/auth/authorization";
 import { ForbiddenError } from "@/lib/auth/authorization-errors";
+import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
+import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import type {
   CompanyReportData,
   CompanyReportDTO,
@@ -11,10 +13,6 @@ import type {
   CompanyReportViewerRole,
   CompanyValuationPointDTO,
 } from "./dto";
-
-// Matches the key seeded in prisma/seed/fabricated-demo-data.ts -- same
-// constant src/lib/admin/queries.ts reads for its own revenue KPI/column.
-const REVENUE_METRIC_KEY = "revenue_b2b";
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -72,6 +70,7 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
       cycles: {
         select: {
           id: true,
+          templateId: true,
           periodLabel: true,
           periodStart: true,
           periodEnd: true,
@@ -82,8 +81,8 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
               status: true,
               updatedAt: true,
               metricValues: {
-                where: { metricDefinition: { key: REVENUE_METRIC_KEY } },
-                select: { numericValue: true, isNa: true },
+                where: { metricDefinition: { key: { in: REVENUE_METRIC_KEYS } } },
+                select: { metricDefinition: { select: { key: true } }, numericValue: true, isNa: true },
               },
             },
           },
@@ -129,28 +128,28 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
     .sort((a, b) => a.periodStart.localeCompare(b.periodStart));
 
   const periodsData: Record<string, CompanyReportPeriodData> = {};
-  for (const cycle of company.cycles) {
-    const submission = cycle.submission;
-    const revenueValue = submission?.metricValues[0];
-    const revenue =
-      revenueValue && !revenueValue.isNa && revenueValue.numericValue !== null
-        ? revenueValue.numericValue.toNumber()
-        : null;
+  await Promise.all(
+    company.cycles.map(async (cycle) => {
+      const submission = cycle.submission;
+      const revenue = submission ? sumRevenueMetricValues(submission.metricValues) : null;
+      const metrics = submission ? await fetchSubmissionMetricFields(db, submission.id, cycle.templateId) : [];
 
-    const matchingReport = company.reports.find(
-      (r) => toDateOnly(r.periodStart) === toDateOnly(cycle.periodStart) && toDateOnly(r.periodEnd) === toDateOnly(cycle.periodEnd)
-    );
+      const matchingReport = company.reports.find(
+        (r) => toDateOnly(r.periodStart) === toDateOnly(cycle.periodStart) && toDateOnly(r.periodEnd) === toDateOnly(cycle.periodEnd)
+      );
 
-    periodsData[cycle.periodLabel] = {
-      status: submission?.status ?? "draft",
-      revenue,
-      lastUpdated: submission ? toDateOnly(submission.updatedAt) : null,
-      cycleId: cycle.id,
-      submissionId: submission?.id ?? null,
-      currentDeadline: toDateOnly(cycle.currentDeadline),
-      narratives: matchingReport?.versions[0]?.narratives ?? [],
-    };
-  }
+      periodsData[cycle.periodLabel] = {
+        status: submission?.status ?? "draft",
+        revenue,
+        lastUpdated: submission ? toDateOnly(submission.updatedAt) : null,
+        cycleId: cycle.id,
+        submissionId: submission?.id ?? null,
+        currentDeadline: toDateOnly(cycle.currentDeadline),
+        narratives: matchingReport?.versions[0]?.narratives ?? [],
+        metrics,
+      };
+    })
+  );
 
   const linkedVehicles: CompanyReportVehicleDTO[] = company.ownershipPositions
     .filter((p): p is typeof p & { vehicle: NonNullable<(typeof p)["vehicle"]> } => p.vehicle !== null)

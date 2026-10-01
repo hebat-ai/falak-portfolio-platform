@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { submitCompanySubmission } from "@/lib/reporting/submissions";
+import { saveMetricValues, type MetricValueInput } from "@/lib/reporting/metrics";
 import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-errors";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 
@@ -42,6 +43,55 @@ export async function submitReportAction(
     }
     // Unexpected/infrastructure error -- never converted into a denial
     // message; let it propagate.
+    throw error;
+  }
+
+  revalidatePath(`/submit/${slug}`);
+  return { error: null, success: true };
+}
+
+export interface SaveMetricsState {
+  error: string | null;
+  success: boolean;
+}
+
+/**
+ * FormData field naming convention StartupReportForm.tsx's inputs use:
+ * `value_<metricDefinitionId>` for the entered value, `na_<metricDefinitionId>`
+ * for its "N/A" checkbox (checkbox presence, not its value, is what
+ * matters). metricDefinitionId itself is never trusted as proof of
+ * anything -- saveMetricValues() re-derives which ids are actually valid
+ * for this submission's template and each one's real dataType, fresh,
+ * server-side.
+ */
+export async function saveMetricValuesAction(
+  companyId: string,
+  submissionId: string,
+  slug: string,
+  _prevState: SaveMetricsState,
+  formData: FormData
+): Promise<SaveMetricsState> {
+  const values: MetricValueInput[] = [];
+  for (const key of formData.keys()) {
+    if (!key.startsWith("value_")) continue;
+    const metricDefinitionId = key.slice("value_".length);
+    const rawValue = formData.get(key);
+    values.push({
+      metricDefinitionId,
+      rawValue: typeof rawValue === "string" ? rawValue : "",
+      isNa: formData.get(`na_${metricDefinitionId}`) !== null,
+    });
+  }
+
+  try {
+    const result = await saveMetricValues(companyId, submissionId, values);
+    if (!result.success) {
+      return { error: result.error, success: false };
+    }
+  } catch (error) {
+    if (error instanceof UnauthenticatedError || error instanceof ForbiddenError) {
+      return { error: GENERIC_ACCESS_DENIED, success: false };
+    }
     throw error;
   }
 

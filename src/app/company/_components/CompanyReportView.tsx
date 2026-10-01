@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Select } from "@/components/ui/Select";
 import { CompanyKpis } from "./CompanyKpis";
+import { MetricsBreakdown } from "./MetricsBreakdown";
 import { ReportingHistoryList } from "./ReportingHistoryList";
 import { ValuationHistoryChart } from "./ValuationHistoryChart";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -107,6 +108,13 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
               previousPeriodLabel={previousPeriodOption?.label ?? null}
               latestValuation={latestValuation}
             />
+
+            <MetricsBreakdown
+              metrics={periodData.metrics}
+              currency={company.currency}
+              revenue={periodData.revenue}
+              previousRevenue={previousRevenue}
+            />
           </>
         ) : (
           <p className="text-sm text-muted-foreground">{t.companyReport.noReportingHistory}</p>
@@ -179,6 +187,15 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
               <ValuationHistoryChart valuations={data.valuations} currency={company.currency} />
             </div>
           </Card>
+        ) : null}
+
+        {periodData && isFalakStaff && periodData.narratives.length > 0 ? (
+          <Link
+            href={`/company/${company.slug}/report?period=${selectedPeriodKey}`}
+            className="chamfer-br-sm inline-flex w-fit items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            {t.quarterlyReport.viewFormattedReportLabel}
+          </Link>
         ) : null}
 
         {periodData && periodData.narratives.length > 0 ? (

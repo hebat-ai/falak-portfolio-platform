@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
+import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
 import type {
   VehicleDirectoryEntryDTO,
   VehicleDashboardData,
@@ -9,10 +10,6 @@ import type {
   VehicleCompanyPeriodData,
   VehicleInvestorDTO,
 } from "./dto";
-
-// Matches the key seeded in prisma/seed/fabricated-demo-data.ts -- same
-// constant admin/company/investor queries read for their revenue figures.
-const REVENUE_METRIC_KEY = "revenue_b2b";
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -109,8 +106,8 @@ export async function getVehicleDashboardData(slug: string): Promise<VehicleDash
                       status: true,
                       updatedAt: true,
                       metricValues: {
-                        where: { metricDefinition: { key: REVENUE_METRIC_KEY } },
-                        select: { numericValue: true, isNa: true },
+                        where: { metricDefinition: { key: { in: REVENUE_METRIC_KEYS } } },
+                        select: { metricDefinition: { select: { key: true } }, numericValue: true, isNa: true },
                       },
                     },
                   },
@@ -159,13 +156,9 @@ export async function getVehicleDashboardData(slug: string): Promise<VehicleDash
     }
     for (const cycle of company.cycles) {
       const submission = cycle.submission;
-      const revenueValue = submission?.metricValues[0];
       periodsData[cycle.periodLabel] = {
         status: submission?.status ?? "draft",
-        revenue:
-          revenueValue && !revenueValue.isNa && revenueValue.numericValue !== null
-            ? revenueValue.numericValue.toNumber()
-            : null,
+        revenue: submission ? sumRevenueMetricValues(submission.metricValues) : null,
         lastUpdated: submission ? toDateOnly(submission.updatedAt) : null,
         currentDeadline: toDateOnly(cycle.currentDeadline),
       };

@@ -8,6 +8,7 @@ import type {
   NarrativeKind,
   CompanyValuationType,
 } from "@/generated/prisma/client";
+import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
 
 export interface CompanyReportNarrativeDTO {
   kind: NarrativeKind;
@@ -29,6 +30,11 @@ export interface CompanyReportPeriodData {
   submissionId: string | null;
   currentDeadline: string;
   narratives: CompanyReportNarrativeDTO[];
+  // Every submitted metric for this period, Falak-staff AND
+  // company-member visible alike (unlike valuation below) -- these are
+  // the company's own reported operating numbers, not a fund-controlled
+  // mark.
+  metrics: SubmissionMetricFieldDTO[];
 }
 
 export interface CompanyReportPeriodOption {

@@ -4,11 +4,15 @@ import { db } from "@/lib/db";
 import { requireCompanyMembership, requireFalakRole } from "@/lib/auth/authorization";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { SUBMITTABLE_FROM_STATUSES } from "@/lib/reporting/submission-status";
+import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import type { SubmissionDTO } from "@/lib/reporting/dto";
 
-// Statuses a CompanySubmission may be submitted FROM. The /submit page's
-// "open for editing" hint (MyCompaniesClient) mirrors this same set.
-const SUBMITTABLE_FROM_STATUSES: SubmissionStatus[] = ["draft", "changes_requested"];
+// SUBMITTABLE_FROM_STATUSES lives in its own file (submission-status.ts)
+// so metrics.ts can import the same constant without a circular
+// dependency (metrics.ts needs the constant; this file needs metrics.ts's
+// fetchSubmissionMetricFields). The /submit page's "open for editing"
+// hint (MyCompaniesClient) mirrors this same set.
 
 interface SubmissionRow {
   id: string;
@@ -87,7 +91,8 @@ async function checkMetricCompleteness(
 
 function toSubmissionDTO(
   row: SubmissionRow,
-  completeness: { hasApplicableMetrics: boolean; requiredMetricsComplete: boolean }
+  completeness: { hasApplicableMetrics: boolean; requiredMetricsComplete: boolean },
+  metrics: SubmissionDTO["metrics"]
 ): SubmissionDTO {
   const canSubmit =
     SUBMITTABLE_FROM_STATUSES.includes(row.status) && completeness.hasApplicableMetrics && completeness.requiredMetricsComplete;
@@ -103,6 +108,7 @@ function toSubmissionDTO(
     hasApplicableMetrics: completeness.hasApplicableMetrics,
     requiredMetricsComplete: completeness.requiredMetricsComplete,
     canSubmit,
+    metrics,
   };
 }
 
@@ -127,7 +133,8 @@ export async function getCurrentSubmissionForCompanyMember(companyId: string): P
   if (!submission) return null;
 
   const completeness = await checkMetricCompleteness(db, submission.id, submission.cycle.templateId);
-  return toSubmissionDTO(submission, completeness);
+  const metrics = await fetchSubmissionMetricFields(db, submission.id, submission.cycle.templateId);
+  return toSubmissionDTO(submission, completeness, metrics);
 }
 
 /**
@@ -222,9 +229,11 @@ export async function submitCompanySubmission(companyId: string, submissionId: s
       targetId: submissionId,
     });
 
+    const metrics = await fetchSubmissionMetricFields(tx, submission.id, submission.cycle.templateId);
     return toSubmissionDTO(
       { ...submission, status: "submitted" },
-      { hasApplicableMetrics: true, requiredMetricsComplete: true }
+      { hasApplicableMetrics: true, requiredMetricsComplete: true },
+      metrics
     );
   });
 }
@@ -248,7 +257,8 @@ export async function listSubmissionsForFalakReview(): Promise<SubmissionDTO[]> 
   return Promise.all(
     submissions.map(async (s) => {
       const completeness = await checkMetricCompleteness(db, s.id, s.cycle.templateId);
-      return toSubmissionDTO(s, completeness);
+      const metrics = await fetchSubmissionMetricFields(db, s.id, s.cycle.templateId);
+      return toSubmissionDTO(s, completeness, metrics);
     })
   );
 }

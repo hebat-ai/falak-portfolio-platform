@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -10,9 +11,14 @@ import type { InvestorVisibleCompanyDTO } from "@/lib/investor/dto";
 // Archive/Review action column and a vehicle column this view
 // deliberately never shows). No status column -- every row here is, by
 // construction, a published version this investor org was actually
-// granted, so there is nothing to badge. No action column, no link to
-// /company/[slug], ever -- the internal Company Report page must not be
-// reachable from this read-only view.
+// granted, so there is nothing to badge. No link to the internal
+// /company/[slug] live report, ever -- that page must not be reachable
+// from this read-only view. The one link this table does carry is to
+// /company/[slug]/report (the separate, branded, published-only
+// one-pager) -- every row here already implies a non-revoked
+// ReportAccessGrant on a published version of exactly this company and
+// period, which is the same thing getQuarterlyReportData itself
+// re-checks, so there's no new access surface opened by linking it.
 interface InvestorCompanyTableProps {
   companies: InvestorVisibleCompanyDTO[];
   caption: string;
@@ -21,7 +27,7 @@ interface InvestorCompanyTableProps {
 
 export function InvestorCompanyTable({ companies, caption, emptyStateText }: InvestorCompanyTableProps) {
   const { t, lang } = useLanguage();
-  const columnCount = 7;
+  const columnCount = 8;
 
   return (
     <Table caption={caption}>
@@ -34,6 +40,9 @@ export function InvestorCompanyTable({ companies, caption, emptyStateText }: Inv
           <Th>{t.admin.table.currentStageColumn}</Th>
           <Th>{t.admin.table.revenueColumn}</Th>
           <Th>{t.admin.table.lastUpdatedColumn}</Th>
+          <Th>
+            <span className="sr-only">{t.quarterlyReport.viewFormattedReportLabel}</span>
+          </Th>
         </Tr>
       </THead>
       <TBody>
@@ -60,6 +69,14 @@ export function InvestorCompanyTable({ companies, caption, emptyStateText }: Inv
               </Td>
               <Td>
                 <time dateTime={company.lastUpdated}>{formatDate(company.lastUpdated, lang)}</time>
+              </Td>
+              <Td>
+                <Link
+                  href={`/company/${company.slug}/report?period=${company.periodKey}`}
+                  className="chamfer-br-sm inline-flex items-center px-2.5 py-1 text-xs font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
+                >
+                  {t.quarterlyReport.viewFormattedReportLabel}
+                </Link>
               </Td>
             </Tr>
           ))
