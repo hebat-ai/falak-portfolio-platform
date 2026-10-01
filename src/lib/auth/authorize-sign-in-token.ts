@@ -9,11 +9,13 @@ import { MAX_RAW_INVITE_TOKEN_LENGTH } from "@/lib/auth/utils";
  * (including under a plain Node test runner) without pulling in
  * next-auth's request-handling machinery (which itself imports
  * `next/server`, resolvable only inside Next.js's own bundler, never
- * under plain Node). src/auth.ts's Credentials provider references this
- * exact function. Replaces the former password-based authorizeCredentials
- * -- there is no password left to compare, so none of that file's bcrypt
- * timing-safety machinery carries forward; consumeSignInToken's own atomic
- * claim is the real security boundary here.
+ * under plain Node). src/auth.ts's first Credentials provider (default
+ * id "credentials") references this exact function; a second provider
+ * (id "password", see authorize-password.ts) now also exists alongside
+ * it for users who've set a password from /account -- the two are
+ * independent, optional sign-in paths, not a replacement of one by the
+ * other. consumeSignInToken's own atomic claim is the real security
+ * boundary for this path specifically.
  */
 export async function authorizeSignInToken(
   credentials: Partial<Record<"token", unknown>> | undefined

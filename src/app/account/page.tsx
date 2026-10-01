@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { resolveLandingPath } from "@/lib/auth/landing";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/Button";
+import { SetPasswordForm } from "./SetPasswordForm";
 import { signOutAction } from "./actions";
 
 // The fallback landing for a signed-in user with no granted access yet --
@@ -22,22 +24,33 @@ export default async function AccountPage() {
   const landingPath = await resolveLandingPath(user.id);
   const isPending = landingPath === "/account";
 
+  // Only the existence of a password is ever read here -- the hash
+  // itself never crosses into CurrentUser (see current-user.ts's own
+  // comment on why passwordHash is deliberately excluded from that
+  // shape) or into a client component prop.
+  const userRow = await db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
+  const hasPassword = Boolean(userRow?.passwordHash);
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-12">
-      <h1 className="mb-2 text-lg font-semibold text-foreground">{isPending ? "Pending approval" : "Signed in"}</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        {user.email}
-        {isPending ? (
-          <span className="mt-2 block">
-            Your access request is still under review. Falak will email you once it&apos;s approved.
-          </span>
-        ) : null}
-      </p>
-      <form action={signOutAction}>
-        <Button type="submit" variant="outline">
-          Sign out
-        </Button>
-      </form>
+    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4 py-12">
+      <div>
+        <h1 className="mb-2 text-lg font-semibold text-foreground">{isPending ? "Pending approval" : "Signed in"}</h1>
+        <p className="mb-6 text-sm text-muted-foreground">
+          {user.email}
+          {isPending ? (
+            <span className="mt-2 block">
+              Your access request is still under review. Falak will email you once it&apos;s approved.
+            </span>
+          ) : null}
+        </p>
+        <form action={signOutAction}>
+          <Button type="submit" variant="outline">
+            Sign out
+          </Button>
+        </form>
+      </div>
+
+      {!isPending ? <SetPasswordForm hasPassword={hasPassword} /> : null}
     </main>
   );
 }

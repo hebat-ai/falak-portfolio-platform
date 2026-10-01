@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authorizeSignInToken } from "@/lib/auth/authorize-sign-in-token";
+import { authorizePassword } from "@/lib/auth/authorize-password";
 
 declare module "next-auth" {
   interface Session {
@@ -12,13 +13,19 @@ declare module "next-auth" {
   }
 }
 
-// Deliberately short: this is a financial-reporting platform, and there is
-// no sliding-session/refresh mechanism built in this step, so this is a
-// hard cutoff, not an idle timeout. 15 minutes was chosen as a
-// conservative starting value; revisit alongside real usage patterns once
-// the app is actually used, and consider adding refresh/renewal UX before
-// treating 15 minutes as final product behavior.
-const SESSION_MAX_AGE_SECONDS = 15 * 60;
+// Deliberately long-lived: explicitly requested by the project owner --
+// stay signed in indefinitely rather than be cut off after a short
+// window. Implemented as a 10-year hard cutoff rather than a literal
+// unbounded session, since NextAuth's JWT strategy requires a concrete
+// maxAge; in practice this is "forever" for any real session.
+//
+// Security tradeoff, stated plainly (this replaces the previous
+// deliberately-short-15-minutes rationale, which this change is the
+// explicit revisit of): a session cookie, once issued, now stays valid
+// far longer than before -- a shared or compromised device/browser
+// profile has a correspondingly larger access window. Accepted as a
+// deliberate choice for this platform, not a default.
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 365 * 10;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: SESSION_MAX_AGE_SECONDS },
@@ -37,6 +44,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // (which imports next/server, resolvable only inside Next.js's
       // bundler), and so it's independently importable and testable.
       authorize: authorizeSignInToken,
+    }),
+    Credentials({
+      // A second, optional sign-in path alongside the magic link above,
+      // not a replacement -- an approved user can set a password from
+      // /account (src/app/account/SetPasswordForm.tsx) and use either
+      // path from then on. Explicit id so it never collides with the
+      // token provider's default id ("credentials"), which
+      // /api/sign-in/verify/route.ts's signIn("credentials", ...) call
+      // depends on staying unchanged.
+      id: "password",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      authorize: authorizePassword,
     }),
   ],
   callbacks: {

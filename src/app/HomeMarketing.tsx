@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Card } from "@/components/ui/Card";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
@@ -31,6 +32,9 @@ export function HomeMarketing() {
           <Card className="space-y-4">
             <h2 className="font-heading text-base font-semibold text-foreground">{t.home.signInHeading}</h2>
             <SignInForm />
+            <Link href="/sign-in" className="block text-xs text-link-foreground hover:underline">
+              Sign in with a password instead
+            </Link>
           </Card>
 
           <Card className="space-y-4">

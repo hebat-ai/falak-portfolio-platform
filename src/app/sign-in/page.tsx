@@ -1,4 +1,4 @@
-import { SignInForm } from "./SignInForm";
+import { SignInTabs } from "./SignInTabs";
 
 export default async function SignInPage({
   searchParams,
@@ -20,7 +20,7 @@ export default async function SignInPage({
           Account created. Enter your email below to sign in.
         </p>
       ) : null}
-      <SignInForm />
+      <SignInTabs />
     </main>
   );
 }

@@ -26,10 +26,13 @@ enum PlatformRole {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  // Nullable: password sign-in was replaced by email verification links
-  // (EmailVerificationToken below). Existing hash values are preserved but
-  // never read or written by any code path anymore; a new user is created
-  // with no passwordHash at all.
+  // Nullable: a user has no password until they set one themselves from
+  // /account (src/lib/auth/password.ts's scrypt-based hashPassword) --
+  // every account is still created with no passwordHash (invite accept,
+  // access-request approval, ...). Once set, it's a second, optional
+  // sign-in path alongside the email-link flow
+  // (EmailVerificationToken below), checked by
+  // src/lib/auth/authorize-password.ts -- never the only way in.
   passwordHash  String?
   deactivatedAt DateTime?
   createdAt     DateTime  @default(now())
