@@ -17,6 +17,7 @@ import type {
   VehicleType,
   InvestorType,
   MetricDataType,
+  CompanyValuationType,
 } from "@/generated/prisma/client";
 
 export interface ActionState {
@@ -41,6 +42,9 @@ const VEHICLE_TYPES: VehicleType[] = ["Fund", "SPV"];
 const INVESTOR_TYPES: InvestorType[] = ["Institutional", "FamilyOffice", "Individual"];
 const METRIC_DATA_TYPES: MetricDataType[] = ["Currency", "Percent", "Number", "Text", "Boolean"];
 const MAX_METRIC_ROWS = 20;
+const VALUATION_TYPES: CompanyValuationType[] = ["LastRound", "InternalMark", "ThirdPartyMark", "Exit", "WrittenOff"];
+const AMOUNT_PATTERN = /^\d+(\.\d{1,4})?$/;
+const MAX_SOURCE_LENGTH = 200;
 
 function readString(formData: FormData, field: string): string | null {
   const value = formData.get(field);
@@ -626,4 +630,144 @@ export async function createInvestorInviteAction(_prevState: InviteActionState, 
 
   // Returned exactly once for the admin to copy; only the hash is stored.
   return { error: null, inviteUrl: `/accept-investor-invite?token=${rawToken}` };
+}
+
+// ============================================================
+// Company valuation / vehicle NAV -- insert-only, same discipline as
+// every other financial-ledger table in this schema (a correction is a
+// new row, never an edit; app_runtime_grants.sql grants SELECT+INSERT
+// only on both tables, no UPDATE).
+// ============================================================
+
+export async function createCompanyValuationAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const companyId = readString(formData, "companyId");
+  const asOfDateRaw = readString(formData, "asOfDate");
+  const valuationAmount = readString(formData, "valuationAmount");
+  const currency = readString(formData, "currency");
+  const valuationType = readString(formData, "valuationType");
+  const sourceInput = readString(formData, "source");
+
+  if (
+    !companyId ||
+    !asOfDateRaw ||
+    !valuationAmount ||
+    !AMOUNT_PATTERN.test(valuationAmount) ||
+    !currency ||
+    !CURRENCIES.includes(currency as Currency) ||
+    !valuationType ||
+    !VALUATION_TYPES.includes(valuationType as CompanyValuationType)
+  ) {
+    return { error: "Fill in every field with a valid value." };
+  }
+  if (sourceInput && sourceInput.length > MAX_SOURCE_LENGTH) {
+    return { error: "Fill in every field with a valid value." };
+  }
+
+  const asOfDate = new Date(asOfDateRaw);
+  if (Number.isNaN(asOfDate.getTime())) {
+    return { error: "Enter a valid date." };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const snapshot = await tx.companyValuationSnapshot.create({
+        data: {
+          companyId,
+          asOfDate,
+          valuationAmount,
+          currency: currency as Currency,
+          valuationType: valuationType as CompanyValuationType,
+          source: sourceInput || null,
+          createdById: user.id,
+        },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "company_valuation.recorded",
+        targetType: "CompanyValuationSnapshot",
+        targetId: snapshot.id,
+      });
+    });
+  } catch {
+    // Covers the (companyId, asOfDate, valuationType) unique-constraint
+    // collision alike with any other write failure -- one generic
+    // message, never a raw Prisma error surfaced to the form.
+    return { error: "A valuation for this company on this date and type already exists." };
+  }
+
+  return { error: null, success: true };
+}
+
+export async function createVehicleNavAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const vehicleId = readString(formData, "vehicleId");
+  const asOfDateRaw = readString(formData, "asOfDate");
+  const navAmount = readString(formData, "navAmount");
+  const currency = readString(formData, "currency");
+  const sourceInput = readString(formData, "source");
+
+  if (
+    !vehicleId ||
+    !asOfDateRaw ||
+    !navAmount ||
+    !AMOUNT_PATTERN.test(navAmount) ||
+    !currency ||
+    !CURRENCIES.includes(currency as Currency)
+  ) {
+    return { error: "Fill in every field with a valid value." };
+  }
+  if (sourceInput && sourceInput.length > MAX_SOURCE_LENGTH) {
+    return { error: "Fill in every field with a valid value." };
+  }
+
+  const asOfDate = new Date(asOfDateRaw);
+  if (Number.isNaN(asOfDate.getTime())) {
+    return { error: "Enter a valid date." };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const snapshot = await tx.vehicleNavSnapshot.create({
+        data: {
+          vehicleId,
+          asOfDate,
+          navAmount,
+          currency: currency as Currency,
+          source: sourceInput || null,
+          createdById: user.id,
+        },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "vehicle_nav.recorded",
+        targetType: "VehicleNavSnapshot",
+        targetId: snapshot.id,
+      });
+    });
+  } catch {
+    // Covers the (vehicleId, asOfDate) unique-constraint collision alike
+    // with any other write failure -- one generic message.
+    return { error: "A NAV mark for this vehicle on this date already exists." };
+  }
+
+  return { error: null, success: true };
 }

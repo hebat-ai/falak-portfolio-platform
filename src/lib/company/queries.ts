@@ -9,6 +9,7 @@ import type {
   CompanyReportPeriodOption,
   CompanyReportVehicleDTO,
   CompanyReportViewerRole,
+  CompanyValuationPointDTO,
 } from "./dto";
 
 // Matches the key seeded in prisma/seed/fabricated-demo-data.ts -- same
@@ -107,6 +108,10 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
           },
         },
       },
+      valuations: {
+        orderBy: { asOfDate: "asc" },
+        select: { asOfDate: true, valuationAmount: true, valuationType: true },
+      },
     },
   });
 
@@ -167,5 +172,11 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
     periods: periodsData,
   };
 
-  return { company: companyDTO, periods, linkedVehicles, viewerRole };
+  const valuations: CompanyValuationPointDTO[] = company.valuations.map((v) => ({
+    asOfDate: toDateOnly(v.asOfDate),
+    amount: v.valuationAmount.toNumber(),
+    valuationType: v.valuationType,
+  }));
+
+  return { company: companyDTO, periods, linkedVehicles, viewerRole, valuations };
 }

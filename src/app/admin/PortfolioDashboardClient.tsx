@@ -9,16 +9,23 @@ import { DashboardViewSwitcher, type DashboardView } from "./_components/charts/
 import { CompaniesByStageBarChart } from "./_components/charts/CompaniesByStageBarChart";
 import { StatusBreakdownPieChart } from "./_components/charts/StatusBreakdownPieChart";
 import { RevenueOverdueScatterChart } from "./_components/charts/RevenueOverdueScatterChart";
+import { CompanyValuationsBarChart } from "./_components/charts/CompanyValuationsBarChart";
+import { VehicleValuationsBarChart } from "./_components/charts/VehicleValuationsBarChart";
+import { PortfolioValuationSummary } from "./_components/charts/PortfolioValuationSummary";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeRevenueByCurrency } from "@/lib/admin/revenue";
 import { getOverdueDays } from "@/lib/reportingStatus";
-import type { AdminPortfolioData } from "@/lib/admin/dto";
+import type { AdminPortfolioData, PortfolioValuationData } from "@/lib/admin/dto";
+
+interface PortfolioDashboardClientProps extends AdminPortfolioData {
+  valuationData: PortfolioValuationData;
+}
 
 // Portfolio-wide KPIs and the Reporting Status panel always reflect the
 // full portfolio for the selected period -- this page has no company
 // filters of its own (those live on /admin/companies now), only its own
 // period picker, independent from Company List's.
-export function PortfolioDashboardClient({ companies, vehicles, investors, periods }: AdminPortfolioData) {
+export function PortfolioDashboardClient({ companies, vehicles, investors, periods, valuationData }: PortfolioDashboardClientProps) {
   const { t } = useLanguage();
   const latestPeriodKey = periods.at(-1)?.key ?? "";
   const [periodKey, setPeriodKey] = useState(latestPeriodKey);
@@ -65,6 +72,9 @@ export function PortfolioDashboardClient({ companies, vehicles, investors, perio
         {view === "bar" ? <CompaniesByStageBarChart companies={companies} periodKey={periodKey} /> : null}
         {view === "pie" ? <StatusBreakdownPieChart companies={companies} periodKey={periodKey} /> : null}
         {view === "scatter" ? <RevenueOverdueScatterChart companies={companies} periodKey={periodKey} /> : null}
+        {view === "company-valuations" ? <CompanyValuationsBarChart companies={valuationData.companies} /> : null}
+        {view === "vehicle-valuations" ? <VehicleValuationsBarChart vehicles={valuationData.vehicles} /> : null}
+        {view === "portfolio-valuation" ? <PortfolioValuationSummary companies={valuationData.companies} /> : null}
         {selectedPeriod ? <ReportingStatusPanel companies={companies} period={selectedPeriod} /> : null}
       </div>
     </AppShell>

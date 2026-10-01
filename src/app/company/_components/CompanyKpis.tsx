@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { formatCurrency, formatPercent } from "@/lib/format";
+import { formatCurrency, formatPercent, formatDate } from "@/lib/format";
 import type { Currency } from "@/generated/prisma/client";
+import type { CompanyValuationPointDTO } from "@/lib/company/dto";
 
 interface CompanyKpisProps {
   currency: Currency;
@@ -17,6 +18,11 @@ interface CompanyKpisProps {
   // Already resolved to a display label by the caller -- this component
   // has no period lookup table of its own to resolve one from.
   previousPeriodLabel: string | null;
+  // Falak-staff-only -- the caller passes null both when there's
+  // genuinely no valuation recorded yet AND when the viewer shouldn't
+  // see one at all (same "caller decides visibility, this component
+  // just renders what it's given" pattern as every other prop here).
+  latestValuation: CompanyValuationPointDTO | null;
 }
 
 // Fraction, not a percentage-point number -- matches every other percent
@@ -31,7 +37,7 @@ function computeRevenueGrowth(current: number | null, previous: number | null): 
 
 const nullStateClass = "text-sm font-normal text-muted-foreground";
 
-export function CompanyKpis({ currency, currentRevenue, previousRevenue, previousPeriodLabel }: CompanyKpisProps) {
+export function CompanyKpis({ currency, currentRevenue, previousRevenue, previousPeriodLabel, latestValuation }: CompanyKpisProps) {
   const { t, lang } = useLanguage();
 
   const revenueValue: ReactNode =
@@ -60,9 +66,16 @@ export function CompanyKpis({ currency, currentRevenue, previousRevenue, previou
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <KpiCard label={t.companyReport.revenueLabel} value={revenueValue} />
       <KpiCard label={t.companyReport.revenueGrowthLabel} value={growthValue} hint={growthHint} />
+      {latestValuation ? (
+        <KpiCard
+          label={t.companyReport.latestValuationLabel}
+          value={<Num>{formatCurrency(latestValuation.amount, currency, lang)}</Num>}
+          hint={`${t.companyReport.valuationAsOfPrefix} ${formatDate(latestValuation.asOfDate, lang)} — ${t.valuationTypes[latestValuation.valuationType]}`}
+        />
+      ) : null}
     </div>
   );
 }

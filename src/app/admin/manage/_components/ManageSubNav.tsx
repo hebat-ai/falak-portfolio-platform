@@ -15,6 +15,8 @@ interface SubNavItem {
     | "createCycleTitle"
     | "invitesSectionTitle"
     | "vehicleAssignmentTitle"
+    | "recordCompanyValuationTitle"
+    | "recordVehicleValuationTitle"
   >;
   href: string;
 }
@@ -27,9 +29,11 @@ const SUB_NAV_ITEMS: SubNavItem[] = [
   { key: "createCycleTitle", href: "/admin/manage/new-reporting-cycle" },
   { key: "invitesSectionTitle", href: "/admin/manage/invites" },
   { key: "vehicleAssignmentTitle", href: "/admin/manage/vehicle-assignment" },
+  { key: "recordCompanyValuationTitle", href: "/admin/manage/company-valuation" },
+  { key: "recordVehicleValuationTitle", href: "/admin/manage/vehicle-valuation" },
 ];
 
-// Mirrors Sidebar.tsx's own activeHref pattern: these seven routes never
+// Mirrors Sidebar.tsx's own activeHref pattern: these nine routes never
 // nest inside one another, so a plain equality check is enough (no
 // longest-prefix-match needed the way the top-level Sidebar nav needs it
 // for /admin vs /admin/manage).

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getAdminPortfolioData } from "@/lib/admin/queries";
+import { getPortfolioValuationData } from "@/lib/admin/valuations";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { PortfolioDashboardClient } from "./PortfolioDashboardClient";
 
@@ -11,8 +12,9 @@ export default async function PortfolioDashboardPage() {
   }
 
   let data;
+  let valuationData;
   try {
-    data = await getAdminPortfolioData();
+    [data, valuationData] = await Promise.all([getAdminPortfolioData(), getPortfolioValuationData()]);
   } catch (error) {
     // ForbiddenError: authenticated, but not FALAK_ADMIN/FALAK_OPERATIONS.
     // UnauthenticatedError: defensive only (the getCurrentUser() check
@@ -24,5 +26,5 @@ export default async function PortfolioDashboardPage() {
     throw error;
   }
 
-  return <PortfolioDashboardClient {...data} />;
+  return <PortfolioDashboardClient {...data} valuationData={valuationData} />;
 }

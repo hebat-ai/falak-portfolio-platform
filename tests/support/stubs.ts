@@ -903,6 +903,7 @@ export interface CompanyReportCompanyFixture {
   cycles?: CompanyReportCycleFixture[];
   reports?: CompanyReportReportFixture[];
   vehicleLinks?: CompanyReportVehicleLinkFixture[];
+  valuations?: { asOfDate: Date; valuationAmount: number; valuationType: string }[];
 }
 
 /**
@@ -998,6 +999,11 @@ export function makeCompanyReportDbStub(options: {
           ownershipPositions: (c.vehicleLinks ?? [])
             .filter((l) => !l.vehicleArchived)
             .map((l) => ({ vehicle: l.vehicle })),
+          valuations: (c.valuations ?? []).map((v) => ({
+            asOfDate: v.asOfDate,
+            valuationAmount: { toNumber: () => v.valuationAmount },
+            valuationType: v.valuationType,
+          })),
         };
       },
     },

@@ -6,6 +6,7 @@ import type {
   VehicleType,
   SubmissionStatus,
   NarrativeKind,
+  CompanyValuationType,
 } from "@/generated/prisma/client";
 
 export interface CompanyReportNarrativeDTO {
@@ -68,9 +69,23 @@ export interface CompanyReportDTO {
   periods: Record<string, CompanyReportPeriodData>;
 }
 
+// Falak-staff-only visibility -- rendered by CompanyReportView only when
+// viewerRole === "FALAK_STAFF" (confirmed with the project owner: a
+// portfolio company's own members and investors don't see valuation
+// marks, which are a Falak-controlled fund decision, not something a
+// startup self-reports). Fetched regardless of viewer role (same cheap
+// query either way, same pattern narratives already follows) -- the
+// restriction is purely a rendering decision in the component.
+export interface CompanyValuationPointDTO {
+  asOfDate: string;
+  amount: number;
+  valuationType: CompanyValuationType;
+}
+
 export interface CompanyReportData {
   company: CompanyReportDTO;
   periods: CompanyReportPeriodOption[];
   linkedVehicles: CompanyReportVehicleDTO[];
   viewerRole: CompanyReportViewerRole;
+  valuations: CompanyValuationPointDTO[];
 }

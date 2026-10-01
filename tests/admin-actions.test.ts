@@ -36,6 +36,8 @@ const STATE_ACTIONS: { name: string; invoke: () => Promise<{ error: string | nul
   { name: "createReportingCycleAction", invoke: () => actions.createReportingCycleAction({ error: null }, new FormData()) },
   { name: "createCompanyInviteAction", invoke: () => actions.createCompanyInviteAction({ error: null }, new FormData()) },
   { name: "createInvestorInviteAction", invoke: () => actions.createInvestorInviteAction({ error: null }, new FormData()) },
+  { name: "createCompanyValuationAction", invoke: () => actions.createCompanyValuationAction({ error: null }, new FormData()) },
+  { name: "createVehicleNavAction", invoke: () => actions.createVehicleNavAction({ error: null }, new FormData()) },
 ];
 
 for (const { name, invoke } of STATE_ACTIONS) {
@@ -212,4 +214,149 @@ test("createInvestorInviteAction refuses an archived investor without creating a
   assert.ok(result.error);
   assert.equal(result.inviteUrl, undefined);
   assert.equal(createCalled, false);
+});
+
+// ============================================================
+// createCompanyValuationAction / createVehicleNavAction
+// ============================================================
+
+function valuationFormData(overrides: Record<string, string> = {}): FormData {
+  const fd = new FormData();
+  const defaults: Record<string, string> = {
+    companyId: "co_1",
+    asOfDate: "2026-09-30",
+    valuationAmount: "1000000",
+    currency: "SAR",
+    valuationType: "InternalMark",
+  };
+  for (const [k, v] of Object.entries({ ...defaults, ...overrides })) fd.set(k, v);
+  return fd;
+}
+
+function navFormData(overrides: Record<string, string> = {}): FormData {
+  const fd = new FormData();
+  const defaults: Record<string, string> = {
+    vehicleId: "veh_1",
+    asOfDate: "2026-09-30",
+    navAmount: "5000000",
+    currency: "SAR",
+  };
+  for (const [k, v] of Object.entries({ ...defaults, ...overrides })) fd.set(k, v);
+  return fd;
+}
+
+test("createCompanyValuationAction: success writes the row and one audit event", async () => {
+  setCurrentUser(REAL_USER);
+  const created: Record<string, unknown>[] = [];
+  const db = makeAdminActionDbStub({
+    falakRoles: [{ role: "FALAK_ADMIN" }],
+    models: {
+      companyValuationSnapshot: {
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          const row = { id: "cv_1", ...data };
+          created.push(row);
+          return row;
+        },
+      },
+    },
+  });
+  setDbStub(db);
+
+  const result = await actions.createCompanyValuationAction({ error: null }, valuationFormData());
+
+  assert.deepEqual(result, { error: null, success: true });
+  assert.equal(created.length, 1);
+  assert.equal(created[0].companyId, "co_1");
+  assert.equal(created[0].valuationAmount, "1000000");
+  assert.equal(created[0].currency, "SAR");
+  assert.equal(created[0].valuationType, "InternalMark");
+  assert.equal(created[0].createdById, REAL_USER.id);
+  const events = db.getAuditEvents();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].action, "company_valuation.recorded");
+  assert.equal(events[0].targetType, "CompanyValuationSnapshot");
+});
+
+test("createCompanyValuationAction: a unique-constraint collision (same company/date/type) gets a friendly error, not a raw throw", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      models: {
+        companyValuationSnapshot: {
+          create: async () => {
+            throw new Error("Unique constraint failed on the fields: (`companyId`,`asOfDate`,`valuationType`)");
+          },
+        },
+      },
+    })
+  );
+
+  const result = await actions.createCompanyValuationAction({ error: null }, valuationFormData());
+  assert.match(result.error ?? "", /already exists/);
+});
+
+test("createCompanyValuationAction: invalid amount/currency/type is rejected before any write", async () => {
+  setCurrentUser(REAL_USER);
+  let createCalled = false;
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      models: { companyValuationSnapshot: { create: async () => { createCalled = true; } } },
+    })
+  );
+
+  for (const overrides of [{ valuationAmount: "not-a-number" }, { currency: "EUR" }, { valuationType: "Bogus" }]) {
+    const result = await actions.createCompanyValuationAction({ error: null }, valuationFormData(overrides));
+    assert.ok(result.error);
+  }
+  assert.equal(createCalled, false);
+});
+
+test("createVehicleNavAction: success writes the row and one audit event", async () => {
+  setCurrentUser(REAL_USER);
+  const created: Record<string, unknown>[] = [];
+  const db = makeAdminActionDbStub({
+    falakRoles: [{ role: "FALAK_ADMIN" }],
+    models: {
+      vehicleNavSnapshot: {
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          const row = { id: "nav_1", ...data };
+          created.push(row);
+          return row;
+        },
+      },
+    },
+  });
+  setDbStub(db);
+
+  const result = await actions.createVehicleNavAction({ error: null }, navFormData());
+
+  assert.deepEqual(result, { error: null, success: true });
+  assert.equal(created.length, 1);
+  assert.equal(created[0].vehicleId, "veh_1");
+  assert.equal(created[0].navAmount, "5000000");
+  const events = db.getAuditEvents();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].action, "vehicle_nav.recorded");
+  assert.equal(events[0].targetType, "VehicleNavSnapshot");
+});
+
+test("createVehicleNavAction: a unique-constraint collision (same vehicle/date) gets a friendly error, not a raw throw", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      models: {
+        vehicleNavSnapshot: {
+          create: async () => {
+            throw new Error("Unique constraint failed on the fields: (`vehicleId`,`asOfDate`)");
+          },
+        },
+      },
+    })
+  );
+
+  const result = await actions.createVehicleNavAction({ error: null }, navFormData());
+  assert.match(result.error ?? "", /already exists/);
 });

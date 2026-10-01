@@ -15,6 +15,8 @@ const MANAGE_CARDS: { key: keyof Dictionary["admin"]["manage"]; href: string }[]
   { key: "createCycleTitle", href: "/admin/manage/new-reporting-cycle" },
   { key: "invitesSectionTitle", href: "/admin/manage/invites" },
   { key: "vehicleAssignmentTitle", href: "/admin/manage/vehicle-assignment" },
+  { key: "recordCompanyValuationTitle", href: "/admin/manage/company-valuation" },
+  { key: "recordVehicleValuationTitle", href: "/admin/manage/vehicle-valuation" },
 ];
 
 export function ManageIndexClient() {

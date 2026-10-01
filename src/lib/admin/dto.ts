@@ -6,6 +6,7 @@ import type {
   VehicleType,
   InvestorType,
   SubmissionStatus,
+  CompanyValuationType,
 } from "@/generated/prisma/client";
 
 // One entry per distinct ReportingCycle.periodLabel that exists anywhere in
@@ -90,4 +91,43 @@ export interface AdminPortfolioData {
   ownershipLinks: AdminOwnershipLinkDTO[];
   periods: AdminPeriodOption[];
   templates: AdminReportingTemplateDTO[];
+}
+
+// ============================================================
+// Valuations -- latest CompanyValuationSnapshot / VehicleNavSnapshot per
+// company/vehicle. `latest: null` for one with no mark recorded yet --
+// never coerced to 0, same discipline as periodData.revenue elsewhere in
+// this module.
+// ============================================================
+
+export interface LatestCompanyValuationDTO {
+  asOfDate: string;
+  amount: number;
+  currency: Currency;
+  valuationType: CompanyValuationType;
+}
+
+export interface AdminCompanyValuationDTO {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  latest: LatestCompanyValuationDTO | null;
+}
+
+export interface LatestVehicleNavDTO {
+  asOfDate: string;
+  amount: number;
+  currency: Currency;
+}
+
+export interface AdminVehicleValuationDTO {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  latest: LatestVehicleNavDTO | null;
+}
+
+export interface PortfolioValuationData {
+  companies: AdminCompanyValuationDTO[];
+  vehicles: AdminVehicleValuationDTO[];
 }

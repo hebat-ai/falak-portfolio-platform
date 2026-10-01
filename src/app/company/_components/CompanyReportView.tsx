@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Select } from "@/components/ui/Select";
 import { CompanyKpis } from "./CompanyKpis";
 import { ReportingHistoryList } from "./ReportingHistoryList";
+import { ValuationHistoryChart } from "./ValuationHistoryChart";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { CompanyReportData } from "@/lib/company/dto";
 
@@ -47,6 +48,12 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
   const selectedIndex = periods.findIndex((p) => p.key === selectedPeriodKey);
   const previousPeriodOption = selectedIndex > 0 ? periods[selectedIndex - 1] : null;
   const previousRevenue = previousPeriodOption ? company.periods[previousPeriodOption.key].revenue : null;
+
+  // Falak-staff-only (confirmed with the project owner) -- investors and
+  // company members never see valuation, so both the KPI card and the
+  // evolution chart below are gated on this, not just fetched-or-not.
+  const isFalakStaff = viewerRole === "FALAK_STAFF";
+  const latestValuation = isFalakStaff && data.valuations.length > 0 ? data.valuations[data.valuations.length - 1] : null;
 
   return (
     <AppShell title={lang === "ar" ? company.nameAr : company.nameEn} subtitle={lang === "ar" ? company.sectorAr : company.sectorEn}>
@@ -98,6 +105,7 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
               currentRevenue={periodData.revenue}
               previousRevenue={previousRevenue}
               previousPeriodLabel={previousPeriodOption?.label ?? null}
+              latestValuation={latestValuation}
             />
           </>
         ) : (
@@ -163,6 +171,15 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
             )}
           </Card>
         </div>
+
+        {isFalakStaff && data.valuations.length > 0 ? (
+          <Card className="min-w-0">
+            <h2 className="font-heading text-sm font-semibold text-foreground">{t.companyReport.valuationHistoryTitle}</h2>
+            <div className="mt-3">
+              <ValuationHistoryChart valuations={data.valuations} currency={company.currency} />
+            </div>
+          </Card>
+        ) : null}
 
         {periodData && periodData.narratives.length > 0 ? (
           <Card className="min-w-0">

@@ -6,6 +6,7 @@ import type {
   Currency,
   VehicleType,
   InvestorType,
+  CompanyValuationType,
 } from "@/generated/prisma/client";
 
 export interface Dictionary {
@@ -42,6 +43,7 @@ export interface Dictionary {
   currencyNames: Record<Currency, string>;
   vehicleTypes: Record<VehicleType, string>;
   investorTypes: Record<InvestorType, string>;
+  valuationTypes: Record<CompanyValuationType, string>;
   admin: {
     title: string;
     subtitle: string;
@@ -109,12 +111,24 @@ export interface Dictionary {
       currencyLabel: string;
       overdueDaysAxisLabel: string;
       revenueAxisLabel: string;
+      companyValuationsViewLabel: string;
+      vehicleValuationsViewLabel: string;
+      portfolioValuationViewLabel: string;
+      valuationAxisLabel: string;
+      excludesNoValuationSuffix: string;
     };
     manage: {
       sectionTitle: string;
       indexSubtitle: string;
       invitesSectionTitle: string;
       vehicleAssignmentTitle: string;
+      recordCompanyValuationTitle: string;
+      recordVehicleValuationTitle: string;
+      valuationAmountLabel: string;
+      navAmountLabel: string;
+      valuationTypeLabel: string;
+      asOfDateLabel: string;
+      sourceLabel: string;
       nameEnLabel: string;
       nameArLabel: string;
       slugLabel: string;
@@ -178,6 +192,11 @@ export interface Dictionary {
     revenueGrowthVsPrefix: string;
     revenueGrowthNoPriorPeriod: string;
     revenueGrowthInsufficientData: string;
+    latestValuationLabel: string;
+    valuationAsOfPrefix: string;
+    valuationHistoryTitle: string;
+    quarterlyToggleLabel: string;
+    annuallyToggleLabel: string;
   };
   vehicleReport: {
     backToDirectory: string;
@@ -379,6 +398,13 @@ export const en = {
     FamilyOffice: "Family Office",
     Individual: "Individual",
   },
+  valuationTypes: {
+    LastRound: "Last Round",
+    InternalMark: "Internal Mark",
+    ThirdPartyMark: "Third-Party Mark",
+    Exit: "Exit",
+    WrittenOff: "Written Off",
+  },
   admin: {
     title: "Falak Admin — Portfolio Dashboard",
     subtitle: "Org-wide visibility across all portfolio companies, vehicles, and reporting cycles.",
@@ -446,12 +472,24 @@ export const en = {
       currencyLabel: "Currency",
       overdueDaysAxisLabel: "Days Overdue",
       revenueAxisLabel: "Revenue",
+      companyValuationsViewLabel: "Company Valuations",
+      vehicleValuationsViewLabel: "Vehicle Valuations",
+      portfolioValuationViewLabel: "Portfolio Valuation",
+      valuationAxisLabel: "Valuation",
+      excludesNoValuationSuffix: "companies with no valuation recorded yet",
     },
     manage: {
       sectionTitle: "Manage Portfolio",
       indexSubtitle: "Create and manage companies, vehicles, investors, reporting templates and cycles, and invites.",
       invitesSectionTitle: "Investor & Company Invite",
       vehicleAssignmentTitle: "Company Assignment to Vehicle",
+      recordCompanyValuationTitle: "Record Company Valuation",
+      recordVehicleValuationTitle: "Record Vehicle Valuation",
+      valuationAmountLabel: "Valuation Amount",
+      navAmountLabel: "NAV Amount",
+      valuationTypeLabel: "Valuation Type",
+      asOfDateLabel: "As of Date",
+      sourceLabel: "Source (optional)",
       nameEnLabel: "Name (English)",
       nameArLabel: "Name (Arabic)",
       slugLabel: "Slug (used in URLs, e.g. my-company)",
@@ -515,6 +553,11 @@ export const en = {
     revenueGrowthVsPrefix: "vs.",
     revenueGrowthNoPriorPeriod: "No prior period to compare",
     revenueGrowthInsufficientData: "Insufficient comparable revenue data",
+    latestValuationLabel: "Latest Valuation",
+    valuationAsOfPrefix: "As of",
+    valuationHistoryTitle: "Valuation Over Time",
+    quarterlyToggleLabel: "Quarterly",
+    annuallyToggleLabel: "Annually",
   },
   vehicleReport: {
     backToDirectory: "Back to Vehicles",
@@ -721,6 +764,13 @@ export const ar = {
     FamilyOffice: "مكتب عائلي",
     Individual: "مستثمر فردي",
   },
+  valuationTypes: {
+    LastRound: "آخر جولة تمويل",
+    InternalMark: "تقييم داخلي",
+    ThirdPartyMark: "تقييم من طرف ثالث",
+    Exit: "خروج",
+    WrittenOff: "مشطوب",
+  },
   admin: {
     title: "إدارة فلك — لوحة المحفظة",
     subtitle: "رؤية شاملة على مستوى المؤسسة لجميع شركات المحفظة والأدوات الاستثمارية ودورات التقارير.",
@@ -788,12 +838,24 @@ export const ar = {
       currencyLabel: "العملة",
       overdueDaysAxisLabel: "أيام التأخير",
       revenueAxisLabel: "الإيرادات",
+      companyValuationsViewLabel: "تقييمات الشركات",
+      vehicleValuationsViewLabel: "تقييمات الأدوات الاستثمارية",
+      portfolioValuationViewLabel: "تقييم المحفظة",
+      valuationAxisLabel: "التقييم",
+      excludesNoValuationSuffix: "شركات بلا تقييم مسجل بعد",
     },
     manage: {
       sectionTitle: "إدارة المحفظة",
       indexSubtitle: "إنشاء وإدارة الشركات والأدوات الاستثمارية والمستثمرين وقوالب التقارير ودوراتها والدعوات.",
       invitesSectionTitle: "دعوة المستثمرين والشركات",
       vehicleAssignmentTitle: "تعيين شركة لأداة استثمارية",
+      recordCompanyValuationTitle: "تسجيل تقييم شركة",
+      recordVehicleValuationTitle: "تسجيل تقييم أداة استثمارية",
+      valuationAmountLabel: "مبلغ التقييم",
+      navAmountLabel: "صافي قيمة الأصول",
+      valuationTypeLabel: "نوع التقييم",
+      asOfDateLabel: "بتاريخ",
+      sourceLabel: "المصدر (اختياري)",
       nameEnLabel: "الاسم (إنجليزي)",
       nameArLabel: "الاسم (عربي)",
       slugLabel: "المعرّف المختصر (يُستخدم في الروابط، مثال: my-company)",
@@ -857,6 +919,11 @@ export const ar = {
     revenueGrowthVsPrefix: "مقارنة بـ",
     revenueGrowthNoPriorPeriod: "لا توجد فترة سابقة للمقارنة",
     revenueGrowthInsufficientData: "بيانات إيرادات غير كافية للمقارنة",
+    latestValuationLabel: "آخر تقييم",
+    valuationAsOfPrefix: "بتاريخ",
+    valuationHistoryTitle: "تطور التقييم عبر الزمن",
+    quarterlyToggleLabel: "ربع سنوي",
+    annuallyToggleLabel: "سنوي",
   },
   vehicleReport: {
     backToDirectory: "العودة إلى الأدوات الاستثمارية",
