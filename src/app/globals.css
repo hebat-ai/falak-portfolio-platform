@@ -13,6 +13,17 @@
   --brand-dark-green: #001410;
   --brand-starlight: #efefef;
 
+  /* Chart series colors -- fixed (non theme-flipping), like every other
+     categorical/series color in this app (see e.g. StatusBadge's icon
+     colors). One color per SubmissionStatus, built from the same five
+     raw brand hues above so chart legends stay on-brand without
+     inventing new colors. */
+  --chart-draft: var(--brand-dark-nebula);
+  --chart-submitted: var(--brand-nebula-aqua);
+  --chart-under-review: var(--brand-lime-green);
+  --chart-changes-requested: color-mix(in srgb, var(--brand-dark-nebula) 50%, var(--brand-lime-green) 50%);
+  --chart-approved: var(--brand-nebula-mint);
+
   /* semantic surface/text tokens built from the palette above */
   --background: var(--brand-starlight);
   --foreground: var(--brand-dark-nebula);

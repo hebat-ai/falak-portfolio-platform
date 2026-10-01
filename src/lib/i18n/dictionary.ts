@@ -99,6 +99,17 @@ export interface Dictionary {
       noDataValue: string;
     };
     emptyState: string;
+    charts: {
+      viewSwitcherLabel: string;
+      kpiViewLabel: string;
+      barViewLabel: string;
+      pieViewLabel: string;
+      scatterViewLabel: string;
+      stackedToggleLabel: string;
+      currencyLabel: string;
+      overdueDaysAxisLabel: string;
+      revenueAxisLabel: string;
+    };
     manage: {
       sectionTitle: string;
       indexSubtitle: string;
@@ -425,6 +436,17 @@ export const en = {
       noDataValue: "No data submitted",
     },
     emptyState: "No companies match the selected filters.",
+    charts: {
+      viewSwitcherLabel: "Dashboard view",
+      kpiViewLabel: "KPI Summary",
+      barViewLabel: "Bar Chart",
+      pieViewLabel: "Pie Chart",
+      scatterViewLabel: "Scatter Plot",
+      stackedToggleLabel: "Stacked",
+      currencyLabel: "Currency",
+      overdueDaysAxisLabel: "Days Overdue",
+      revenueAxisLabel: "Revenue",
+    },
     manage: {
       sectionTitle: "Manage Portfolio",
       indexSubtitle: "Create and manage companies, vehicles, investors, reporting templates and cycles, and invites.",
@@ -756,6 +778,17 @@ export const ar = {
       noDataValue: "لا توجد بيانات مُقدَّمة",
     },
     emptyState: "لا توجد شركات مطابقة لعوامل التصفية المحددة.",
+    charts: {
+      viewSwitcherLabel: "عرض لوحة المعلومات",
+      kpiViewLabel: "ملخص المؤشرات",
+      barViewLabel: "مخطط شريطي",
+      pieViewLabel: "مخطط دائري",
+      scatterViewLabel: "مخطط التشتت",
+      stackedToggleLabel: "تراكمي",
+      currencyLabel: "العملة",
+      overdueDaysAxisLabel: "أيام التأخير",
+      revenueAxisLabel: "الإيرادات",
+    },
     manage: {
       sectionTitle: "إدارة المحفظة",
       indexSubtitle: "إنشاء وإدارة الشركات والأدوات الاستثمارية والمستثمرين وقوالب التقارير ودوراتها والدعوات.",

@@ -5,6 +5,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Select } from "@/components/ui/Select";
 import { PortfolioSummaryKpis } from "./_components/PortfolioSummaryKpis";
 import { ReportingStatusPanel } from "./_components/ReportingStatusPanel";
+import { DashboardViewSwitcher, type DashboardView } from "./_components/charts/DashboardViewSwitcher";
+import { CompaniesByStageBarChart } from "./_components/charts/CompaniesByStageBarChart";
+import { StatusBreakdownPieChart } from "./_components/charts/StatusBreakdownPieChart";
+import { RevenueOverdueScatterChart } from "./_components/charts/RevenueOverdueScatterChart";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeRevenueByCurrency } from "@/lib/admin/revenue";
 import { getOverdueDays } from "@/lib/reportingStatus";
@@ -18,6 +22,7 @@ export function PortfolioDashboardClient({ companies, vehicles, investors, perio
   const { t } = useLanguage();
   const latestPeriodKey = periods.at(-1)?.key ?? "";
   const [periodKey, setPeriodKey] = useState(latestPeriodKey);
+  const [view, setView] = useState<DashboardView>("kpi");
   const selectedPeriod = periods.find((p) => p.key === periodKey) ?? periods[0];
 
   const summary = useMemo(() => {
@@ -55,7 +60,11 @@ export function PortfolioDashboardClient({ companies, vehicles, investors, perio
             </Select>
           </div>
         ) : null}
-        <PortfolioSummaryKpis {...summary} />
+        <DashboardViewSwitcher view={view} onChange={setView} />
+        {view === "kpi" ? <PortfolioSummaryKpis {...summary} /> : null}
+        {view === "bar" ? <CompaniesByStageBarChart companies={companies} periodKey={periodKey} /> : null}
+        {view === "pie" ? <StatusBreakdownPieChart companies={companies} periodKey={periodKey} /> : null}
+        {view === "scatter" ? <RevenueOverdueScatterChart companies={companies} periodKey={periodKey} /> : null}
         {selectedPeriod ? <ReportingStatusPanel companies={companies} period={selectedPeriod} /> : null}
       </div>
     </AppShell>
