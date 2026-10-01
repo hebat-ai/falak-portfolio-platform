@@ -102,7 +102,9 @@ export async function load(url, context, nextLoad) {
     return {
       format: "module",
       shortCircuit: true,
-      source: "export const sendSignInEmail = (...args) => globalThis.__TEST_SEND_EMAIL_STUB__(...args);",
+      source:
+        "export const sendSignInEmail = (...args) => globalThis.__TEST_SEND_EMAIL_STUB__(...args);\n" +
+        "export const sendAccessApprovedEmail = (...args) => globalThis.__TEST_SEND_ACCESS_APPROVED_EMAIL_STUB__(...args);",
     };
   }
   if (url === "mock:next-navigation") {

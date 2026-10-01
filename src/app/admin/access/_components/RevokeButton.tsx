@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 
 interface RevokeButtonProps {
   action: (formData: FormData) => Promise<void>;
-  fieldName: "membershipId" | "inviteId";
+  fieldName: "membershipId" | "inviteId" | "requestId";
   id: string;
   label: string;
   confirmMessage: string;

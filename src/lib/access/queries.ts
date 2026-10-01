@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
-import type { AccessData, AccessOrgDTO } from "./dto";
+import type { AccessData, AccessOrgDTO, AccessRequestDTO } from "./dto";
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -60,14 +60,29 @@ export async function getAccessData(): Promise<AccessData> {
     },
   };
 
-  const [companies, investors] = await Promise.all([
+  const [companies, investors, pendingRequests] = await Promise.all([
     db.company.findMany({ where: { archivedAt: null }, orderBy: { nameEn: "asc" }, select: orgSelect }),
     db.investor.findMany({ where: { archivedAt: null }, orderBy: { nameEn: "asc" }, select: orgSelect }),
+    db.accessRequest.findMany({
+      where: { status: "Pending" },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, email: true, requestedRole: true, organizationName: true, message: true, createdAt: true },
+    }),
   ]);
 
   return {
     companies: companies.map(toOrgDTO),
     investors: investors.map(toOrgDTO),
+    pendingRequests: pendingRequests.map(
+      (r): AccessRequestDTO => ({
+        id: r.id,
+        email: r.email,
+        requestedRole: r.requestedRole,
+        organizationName: r.organizationName,
+        message: r.message,
+        createdAt: toDateOnly(r.createdAt),
+      })
+    ),
     canRevoke: role === "FALAK_ADMIN",
   };
 }

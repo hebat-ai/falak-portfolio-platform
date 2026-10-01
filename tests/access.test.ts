@@ -41,6 +41,7 @@ function makeQueryStub(falakRoles: { role: string }[]) {
     models: {
       company: { findMany: async (args: FindManyArgs) => ((calls.company = args), [orgRow("co_1")]) },
       investor: { findMany: async (args: FindManyArgs) => ((calls.investor = args), [orgRow("inv_1")]) },
+      accessRequest: { findMany: async () => [] },
     },
   });
   return { db, calls };

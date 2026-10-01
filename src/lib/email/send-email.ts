@@ -36,3 +36,29 @@ export async function sendSignInEmail(to: string, verifyUrl: string): Promise<vo
     throw new Error(`Failed to send sign-in email: ${error.message}`);
   }
 }
+
+/**
+ * Sent once, right after an admin approves an AccessRequest -- same
+ * network I/O boundary and never-swallow-a-real-failure discipline as
+ * sendSignInEmail above. Points at /sign-in rather than carrying a token
+ * itself: approval only grants access, it does not authenticate the
+ * person, so they still go through the normal passwordless sign-in flow.
+ */
+export async function sendAccessApprovedEmail(to: string): Promise<void> {
+  const resend = getClient();
+  const baseUrl = process.env.APP_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("APP_BASE_URL is not set.");
+  }
+  const signInUrl = `${baseUrl}/sign-in`;
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: "Your Falak Portfolio Platform access has been approved",
+    html: `<p>Your access request has been approved. Sign in below to get started.</p><p><a href="${signInUrl}">${signInUrl}</a></p>`,
+    text: `Your access request has been approved. Sign in to get started.\n\n${signInUrl}`,
+  });
+  if (error) {
+    throw new Error(`Failed to send access-approved email: ${error.message}`);
+  }
+}

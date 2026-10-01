@@ -4,13 +4,15 @@ import { AppShell } from "@/components/layout/AppShell";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
 import { RevokeButton } from "./RevokeButton";
+import { ApproveRequestForm } from "./ApproveRequestForm";
 import {
   revokeCompanyMembershipAction,
   revokeInvestorMembershipAction,
   revokeCompanyInviteAction,
   revokeInvestorInviteAction,
+  rejectAccessRequestAction,
 } from "../actions";
-import type { AccessData, AccessOrgDTO } from "@/lib/access/dto";
+import type { AccessData, AccessOrgDTO, AccessRequestDTO } from "@/lib/access/dto";
 
 interface OrgListProps {
   orgs: AccessOrgDTO[];
@@ -106,13 +108,67 @@ function OrgList({ orgs, canRevoke, revokeMember, revokeInvite }: OrgListProps) 
   );
 }
 
-export function AccessClient({ companies, investors, canRevoke }: AccessData) {
+function PendingRequestsList({ requests, canRevoke }: { requests: AccessRequestDTO[]; canRevoke: boolean }) {
+  const { t, lang } = useLanguage();
+
+  if (requests.length === 0) {
+    return <p className="text-sm text-muted-foreground">{t.access.noPendingRequests}</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {requests.map((req) => (
+        <div key={req.id} className="chamfer-br-md flex flex-col gap-3 bg-surface p-4 shadow-[var(--inner-line)]">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0 break-all text-sm font-medium text-foreground">{req.email}</span>
+            <span className="text-xs text-muted-foreground">
+              {t.access.requestedLabel}: {t.signUp.roleOptions[req.requestedRole]} ·{" "}
+              <time dateTime={req.createdAt}>{formatDate(req.createdAt, lang)}</time>
+            </span>
+          </div>
+          {req.organizationName ? (
+            <p className="text-xs text-muted-foreground">
+              {t.access.organizationRequestedLabel}: {req.organizationName}
+            </p>
+          ) : null}
+          {req.message ? (
+            <p className="text-xs text-muted-foreground">
+              {t.access.messageLabel}: {req.message}
+            </p>
+          ) : null}
+
+          {canRevoke ? (
+            <div className="flex flex-wrap items-end gap-3">
+              <ApproveRequestForm requestId={req.id} requestedRole={req.requestedRole} organizationName={req.organizationName} />
+              <RevokeButton
+                action={rejectAccessRequestAction}
+                fieldName="requestId"
+                id={req.id}
+                label={t.access.rejectAction}
+                confirmMessage={t.access.confirmReject.replace("{email}", req.email)}
+              />
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AccessClient({ companies, investors, pendingRequests, canRevoke }: AccessData) {
   const { t } = useLanguage();
 
   return (
     <AppShell title={t.nav.access} subtitle={t.access.subtitle}>
       <div className="space-y-6">
         {!canRevoke ? <p className="text-sm text-muted-foreground">{t.access.viewOnlyNote}</p> : null}
+
+        <section aria-labelledby="access-pending-requests" className="space-y-3">
+          <h2 id="access-pending-requests" className="font-heading text-sm font-semibold text-foreground">
+            {t.access.pendingRequestsTitle}
+          </h2>
+          <PendingRequestsList requests={pendingRequests} canRevoke={canRevoke} />
+        </section>
 
         <section aria-labelledby="access-companies" className="space-y-3">
           <h2 id="access-companies" className="font-heading text-sm font-semibold text-foreground">

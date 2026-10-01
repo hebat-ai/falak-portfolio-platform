@@ -237,10 +237,43 @@ export interface Dictionary {
     title: string;
     subtitle: string;
     openAdmin: string;
+    tagline: string;
+    signInHeading: string;
+    signUpHeading: string;
+    signUpPrompt: string;
+  };
+  signUp: {
+    pageTitle: string;
+    emailLabel: string;
+    roleLabel: string;
+    roleOptions: { MANAGEMENT: string; INVESTMENT_PROFESSIONAL: string; INVESTOR: string };
+    organizationLabel: string;
+    organizationHint: string;
+    messageLabel: string;
+    submitAction: string;
+    submitting: string;
+    successMessage: string;
+    existingAccountError: string;
+    alreadyPendingError: string;
+    genericError: string;
+  };
+  pendingApproval: {
+    title: string;
+    description: string;
   };
   access: {
     subtitle: string;
     viewOnlyNote: string;
+    pendingRequestsTitle: string;
+    noPendingRequests: string;
+    requestedLabel: string;
+    organizationRequestedLabel: string;
+    messageLabel: string;
+    approveAction: string;
+    rejectAction: string;
+    approveGrantLabel: string;
+    approveOrgLabel: string;
+    confirmReject: string;
     companiesTitle: string;
     investorsTitle: string;
     noOrgs: string;
@@ -523,10 +556,47 @@ export const en = {
     title: "Falak Portfolio Platform",
     subtitle: "Portfolio reporting for Falak, its portfolio companies, and investors.",
     openAdmin: "Open Portfolio Overview",
+    tagline: "Quarterly reporting, review, and investor access for Falak's portfolio — in one place.",
+    signInHeading: "Sign in",
+    signUpHeading: "Request access",
+    signUpPrompt: "New here? Submit a request and Falak will grant access once it's approved.",
+  },
+  signUp: {
+    pageTitle: "Request access",
+    emailLabel: "Email",
+    roleLabel: "I am a...",
+    roleOptions: {
+      MANAGEMENT: "Falak Management",
+      INVESTMENT_PROFESSIONAL: "Falak Investment Professional",
+      INVESTOR: "Investor",
+    },
+    organizationLabel: "Investor organization",
+    organizationHint: "The fund, SPV, or firm you represent.",
+    messageLabel: "Message (optional)",
+    submitAction: "Submit request",
+    submitting: "Submitting...",
+    successMessage: "Your request has been received. Falak will email you once it's approved.",
+    existingAccountError: "An account already exists for this email. Sign in instead.",
+    alreadyPendingError: "A request for this email is already pending review.",
+    genericError: "Something went wrong. Try again in a moment.",
+  },
+  pendingApproval: {
+    title: "Pending approval",
+    description: "Your access request is still under review. Falak will email you once it's approved.",
   },
   access: {
     subtitle: "Who can access each company and investor organization, plus invites that haven't been used yet.",
     viewOnlyNote: "View only — only Falak Admins can revoke access or cancel invites.",
+    pendingRequestsTitle: "Pending Sign-Up Requests",
+    noPendingRequests: "No pending requests.",
+    requestedLabel: "Requested",
+    organizationRequestedLabel: "Organization",
+    messageLabel: "Message",
+    approveAction: "Approve",
+    rejectAction: "Reject",
+    approveGrantLabel: "Grant role",
+    approveOrgLabel: "Investor organization",
+    confirmReject: "Reject the access request from {email}?",
     companiesTitle: "Companies",
     investorsTitle: "Investor Organizations",
     noOrgs: "No organizations yet.",
@@ -809,10 +879,47 @@ export const ar = {
     title: "منصة فلك لإدارة المحفظة",
     subtitle: "تقارير المحفظة لفلك وشركات محفظتها ومستثمريها.",
     openAdmin: "فتح نظرة عامة على المحفظة",
+    tagline: "التقارير الفصلية والمراجعة ووصول المستثمرين لمحفظة فلك — في مكان واحد.",
+    signInHeading: "تسجيل الدخول",
+    signUpHeading: "طلب الوصول",
+    signUpPrompt: "جديد هنا؟ أرسل طلبًا وستمنحك فلك الوصول بعد الموافقة عليه.",
+  },
+  signUp: {
+    pageTitle: "طلب الوصول",
+    emailLabel: "البريد الإلكتروني",
+    roleLabel: "أنا...",
+    roleOptions: {
+      MANAGEMENT: "إدارة فلك",
+      INVESTMENT_PROFESSIONAL: "أخصائي استثمار في فلك",
+      INVESTOR: "مستثمر",
+    },
+    organizationLabel: "المؤسسة الاستثمارية",
+    organizationHint: "الصندوق أو الأداة الاستثمارية أو الجهة التي تمثلها.",
+    messageLabel: "رسالة (اختياري)",
+    submitAction: "إرسال الطلب",
+    submitting: "جارٍ الإرسال...",
+    successMessage: "تم استلام طلبك. ستُرسل لك فلك بريدًا إلكترونيًا عند الموافقة عليه.",
+    existingAccountError: "يوجد حساب بالفعل لهذا البريد الإلكتروني. سجّل الدخول بدلاً من ذلك.",
+    alreadyPendingError: "يوجد طلب معلّق بالفعل لهذا البريد الإلكتروني.",
+    genericError: "حدث خطأ ما. حاول مرة أخرى بعد قليل.",
+  },
+  pendingApproval: {
+    title: "بانتظار الموافقة",
+    description: "لا يزال طلب الوصول الخاص بك قيد المراجعة. ستُرسل لك فلك بريدًا إلكترونيًا عند الموافقة عليه.",
   },
   access: {
     subtitle: "من يمكنه الوصول إلى كل شركة ومؤسسة استثمارية، إضافة إلى الدعوات التي لم تُستخدم بعد.",
     viewOnlyNote: "للعرض فقط — يمكن لمسؤولي فلك فقط إلغاء الوصول أو إلغاء الدعوات.",
+    pendingRequestsTitle: "طلبات التسجيل المعلّقة",
+    noPendingRequests: "لا توجد طلبات معلّقة.",
+    requestedLabel: "الطلب",
+    organizationRequestedLabel: "المؤسسة",
+    messageLabel: "الرسالة",
+    approveAction: "موافقة",
+    rejectAction: "رفض",
+    approveGrantLabel: "منح الدور",
+    approveOrgLabel: "المؤسسة الاستثمارية",
+    confirmReject: "رفض طلب الوصول من {email}؟",
     companiesTitle: "الشركات",
     investorsTitle: "المؤسسات الاستثمارية",
     noOrgs: "لا توجد مؤسسات بعد.",

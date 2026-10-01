@@ -23,5 +23,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in?error=1", request.url));
   }
 
-  return NextResponse.redirect(new URL("/account", request.url));
+  return NextResponse.redirect(new URL("/", request.url));
 }

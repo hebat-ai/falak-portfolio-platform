@@ -133,4 +133,10 @@ GRANT SELECT, INSERT ON agreement_cash_flows, investor_capital_transactions,
 -- Audit log: append-only, no exceptions.
 GRANT SELECT, INSERT ON audit_events TO app_runtime;
 
+-- Access requests: narrow UPDATE to the decision fields only -- email/
+-- requestedRole/organizationName/message are the request's own identity,
+-- set once at submission and never mutated afterward.
+GRANT SELECT, INSERT ON access_requests TO app_runtime;
+GRANT UPDATE ("status", "decidedAt", "decidedById") ON access_requests TO app_runtime;
+
 -- No table in this schema receives a DELETE grant.

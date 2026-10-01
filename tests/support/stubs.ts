@@ -39,6 +39,19 @@ export function setSendEmailSpy(): SentEmail[] {
   return calls;
 }
 
+/**
+ * Installs a spy in place of sendAccessApprovedEmail -- same shape as
+ * setSendEmailSpy above, kept separate since it's a different real
+ * function with a different (single-argument) signature.
+ */
+export function setSendAccessApprovedEmailSpy(): string[] {
+  const calls: string[] = [];
+  (globalThis as Record<string, unknown>).__TEST_SEND_ACCESS_APPROVED_EMAIL_STUB__ = async (to: string) => {
+    calls.push(to);
+  };
+  return calls;
+}
+
 export const REAL_USER: StubUser = { id: "user_1", email: "a@b.com" };
 
 interface MembershipFixture {

@@ -1,4 +1,4 @@
-import type { CompanyMembershipRole, InvestorMembershipRole } from "@/generated/prisma/client";
+import type { CompanyMembershipRole, InvestorMembershipRole, AccessRequestedRole } from "@/generated/prisma/client";
 
 export interface AccessMemberDTO {
   id: string;
@@ -24,10 +24,20 @@ export interface AccessOrgDTO {
   invites: AccessInviteDTO[];
 }
 
+export interface AccessRequestDTO {
+  id: string;
+  email: string;
+  requestedRole: AccessRequestedRole;
+  organizationName: string | null;
+  message: string | null;
+  createdAt: string;
+}
+
 export interface AccessData {
   companies: AccessOrgDTO[];
   investors: AccessOrgDTO[];
-  // FALAK_OPERATIONS may view; only FALAK_ADMIN may revoke. A UI hint
-  // only -- each revoke action re-checks FALAK_ADMIN itself.
+  pendingRequests: AccessRequestDTO[];
+  // FALAK_OPERATIONS may view; only FALAK_ADMIN may revoke/approve/reject.
+  // A UI hint only -- each action re-checks FALAK_ADMIN itself.
   canRevoke: boolean;
 }

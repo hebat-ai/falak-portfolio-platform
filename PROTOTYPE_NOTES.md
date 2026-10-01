@@ -17,7 +17,7 @@
 - Placeholder in use until approved: **Cairo**, via next/font/google, OFL-licensed
 
 ## Logos & patterns
-- Not copied into the app. A placeholder brand mark (`src/components/brand/BrandMark.tsx`) is in use pending approval; the original logo artwork remains only in `references/`.
+- The real Falak Ventures logo is in use (`src/components/brand/BrandMark.tsx`, PNGs in `public/brand/`), approved directly by the project owner on 2026-10-01 and sourced from the owner's own "Falak Ventures Design System" project — not from the old colleague `references/` path, which remains untouched.
 
 ## Prototype scope and limitations
 - Frontend-only MVP prototype. All data is synthetic mock data in `src/lib/mock`. The project owner confirms that `references/` was not used to seed it.

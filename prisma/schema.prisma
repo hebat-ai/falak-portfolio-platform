@@ -57,8 +57,50 @@ model User {
   reviewCommentsAuthored     ReviewComment[]                   @relation("ReviewCommentAuthor")
   reviewCommentsResolved     ReviewComment[]                   @relation("ReviewCommentResolvedBy")
   deadlineExtensionsMade     ReportingCycleDeadlineExtension[]
+  accessRequestsDecided      AccessRequest[]
 
   @@map("users")
+}
+
+enum AccessRequestedRole {
+  MANAGEMENT
+  INVESTMENT_PROFESSIONAL
+  INVESTOR
+}
+
+enum AccessRequestStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+// Self-service sign-up, gated by admin approval. Deliberately has NO
+// relation to a User at creation time -- no User row exists yet, only
+// this request. requestSignInLink (src/lib/auth/request-sign-in.ts)
+// already silently no-ops for an email with no User row, which is
+// exactly correct for "signed up, not yet approved": no extra code
+// needed to keep that case from leaking a sign-in link early.
+// organizationName is free text, only meaningful when requestedRole =
+// INVESTOR -- resolved to a real Investor (matched or created) by the
+// approving admin, never trusted as an existing org's exact identity on
+// its own. "At most one Pending request per email" is enforced by a
+// partial unique index in the migration SQL, not expressible as a flat
+// @@unique here -- same convention as UserRoleAssignment's "one active
+// assignment per (userId, role)" rule above.
+model AccessRequest {
+  id               String               @id @default(cuid())
+  email            String
+  requestedRole    AccessRequestedRole
+  organizationName String?
+  message          String?
+  status           AccessRequestStatus  @default(Pending)
+  createdAt        DateTime             @default(now())
+  decidedAt        DateTime?
+  decidedBy        User?                @relation(fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedById      String?
+
+  @@index([status])
+  @@map("access_requests")
 }
 
 model UserRoleAssignment {
