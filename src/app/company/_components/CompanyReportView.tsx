@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Select } from "@/components/ui/Select";
 import { CompanyKpis } from "./CompanyKpis";
 import { MetricsBreakdown } from "./MetricsBreakdown";
+import { CompanyMetricsTrendChart } from "./CompanyMetricsTrendChart";
 import { ReportingHistoryList } from "./ReportingHistoryList";
 import { ValuationHistoryChart } from "./ValuationHistoryChart";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -115,6 +116,15 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: C
               revenue={periodData.revenue}
               previousRevenue={previousRevenue}
             />
+
+            {periods.length > 1 ? (
+              <Card className="min-w-0">
+                <h2 className="font-heading text-sm font-semibold text-foreground">{t.companyReport.trendTitle}</h2>
+                <div className="mt-3">
+                  <CompanyMetricsTrendChart periods={periods} periodsData={company.periods} currency={company.currency} />
+                </div>
+              </Card>
+            ) : null}
           </>
         ) : (
           <p className="text-sm text-muted-foreground">{t.companyReport.noReportingHistory}</p>

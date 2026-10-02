@@ -1602,3 +1602,69 @@ export function makeTrendDbStub(options: {
     ...makeMetricLookupModels(options.metricsBySubmissionId ?? {}),
   };
 }
+
+/**
+ * Installs a spy in place of uploadAttachment that returns a fixed
+ * pathname/size -- same "never a real network call" discipline as
+ * setSendEmailSpy, backing src/lib/storage/blob.ts's one real I/O
+ * boundary for file storage.
+ */
+export function setUploadAttachmentSpy(result?: { pathname?: string; size?: number }) {
+  const calls: { pathname: string; contentType: string }[] = [];
+  (globalThis as Record<string, unknown>).__TEST_UPLOAD_ATTACHMENT_STUB__ = async (
+    pathname: string,
+    body: { size?: number },
+    contentType: string
+  ) => {
+    calls.push({ pathname, contentType });
+    return { pathname: result?.pathname ?? pathname, size: result?.size ?? body.size ?? 0, contentType };
+  };
+  return calls;
+}
+
+export function setUploadAttachmentFailureSpy() {
+  (globalThis as Record<string, unknown>).__TEST_UPLOAD_ATTACHMENT_STUB__ = async () => {
+    throw new Error("upload failed");
+  };
+}
+
+/** Backs uploadSubmissionAttachment (src/lib/reporting/attachments.ts). */
+export function makeAttachmentUploadDbStub(options: {
+  membership: MembershipFixture | null;
+  submission: { id: string; cycleCompanyId: string; status: string; companyArchived?: boolean } | null;
+}) {
+  const createdAttachments: Record<string, unknown>[] = [];
+  return {
+    companyMembership: {
+      findFirst: async ({ where }: { where: Record<string, unknown> }) => {
+        const m = options.membership;
+        if (!m) return null;
+        if (where.userId !== m.userId) return null;
+        if (where.companyId !== m.companyId) return null;
+        if (m.revoked) return null;
+        if (m.archived) return null;
+        const roleFilter = where.role as { in: string[] };
+        if (!roleFilter.in.includes(m.role)) return null;
+        return { role: m.role };
+      },
+    },
+    companySubmission: {
+      findFirst: async ({ where }: { where: { id?: string; cycle?: { companyId?: string } } }) => {
+        const s = options.submission;
+        if (!s) return null;
+        if (where.id && where.id !== s.id) return null;
+        if (where.cycle?.companyId && where.cycle.companyId !== s.cycleCompanyId) return null;
+        if (s.companyArchived) return null;
+        return { id: s.id, status: s.status };
+      },
+    },
+    attachment: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: `att_${createdAttachments.length + 1}`, ...data };
+        createdAttachments.push(row);
+        return row;
+      },
+    },
+    getCreatedAttachments: () => createdAttachments,
+  };
+}

@@ -217,6 +217,7 @@ export interface Dictionary {
     grossMarginLabel: string;
     netMarginLabel: string;
     naValueDisplay: string;
+    trendTitle: string;
   };
   quarterlyReport: {
     backToReport: string;
@@ -266,6 +267,11 @@ export interface Dictionary {
     saving: string;
     savedMessage: string;
     naLabel: string;
+    attachmentsTitle: string;
+    uploadAction: string;
+    uploading: string;
+    noAttachmentsMessage: string;
+    uploadErrorMessage: string;
   };
   reviewWorkspace: {
     subtitle: string;
@@ -629,6 +635,7 @@ export const en = {
     grossMarginLabel: "Gross Margin",
     netMarginLabel: "Net Margin",
     naValueDisplay: "N/A",
+    trendTitle: "Revenue & Burn Trend",
   },
   quarterlyReport: {
     backToReport: "Back to Company Report",
@@ -680,6 +687,11 @@ export const en = {
     saving: "Saving...",
     savedMessage: "Saved.",
     naLabel: "N/A",
+    attachmentsTitle: "Attachments",
+    uploadAction: "Upload File",
+    uploading: "Uploading...",
+    noAttachmentsMessage: "No files uploaded yet.",
+    uploadErrorMessage: "Choose a file to upload.",
   },
   reviewWorkspace: {
     subtitle: "Review submitted reports and manage their approval status.",
@@ -1047,6 +1059,7 @@ export const ar = {
     grossMarginLabel: "هامش الربح الإجمالي",
     netMarginLabel: "هامش الربح الصافي",
     naValueDisplay: "غير متاح",
+    trendTitle: "اتجاه الإيرادات والحرق النقدي",
   },
   quarterlyReport: {
     backToReport: "العودة إلى تقرير الشركة",
@@ -1098,6 +1111,11 @@ export const ar = {
     saving: "جارٍ الحفظ...",
     savedMessage: "تم الحفظ.",
     naLabel: "لا ينطبق",
+    attachmentsTitle: "المرفقات",
+    uploadAction: "رفع ملف",
+    uploading: "جارٍ الرفع...",
+    noAttachmentsMessage: "لم يتم رفع أي ملفات بعد.",
+    uploadErrorMessage: "اختر ملفًا لرفعه.",
   },
   reviewWorkspace: {
     subtitle: "مراجعة التقارير المُقدَّمة وإدارة حالة اعتمادها.",

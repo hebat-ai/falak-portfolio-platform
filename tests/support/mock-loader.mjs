@@ -70,6 +70,9 @@ export async function resolve(specifier, context, nextResolve) {
   if (specifier === "@/lib/email/send-email") {
     return { url: "mock:send-email", shortCircuit: true };
   }
+  if (specifier === "@/lib/storage/blob") {
+    return { url: "mock:storage-blob", shortCircuit: true };
+  }
   if (specifier === "next/navigation") {
     return { url: "mock:next-navigation", shortCircuit: true };
   }
@@ -108,6 +111,16 @@ export async function load(url, context, nextLoad) {
         "export const sendDeadlineReminderEmail = (...args) => globalThis.__TEST_SEND_DEADLINE_REMINDER_EMAIL_STUB__(...args);\n" +
         "export const sendOverdueReminderEmail = (...args) => globalThis.__TEST_SEND_OVERDUE_REMINDER_EMAIL_STUB__(...args);\n" +
         "export const sendReportPublishedEmail = (...args) => globalThis.__TEST_SEND_REPORT_PUBLISHED_EMAIL_STUB__(...args);",
+    };
+  }
+  if (url === "mock:storage-blob") {
+    return {
+      format: "module",
+      shortCircuit: true,
+      source:
+        "export const uploadAttachment = (...args) => globalThis.__TEST_UPLOAD_ATTACHMENT_STUB__(...args);\n" +
+        "export const deleteAttachment = (...args) => globalThis.__TEST_DELETE_ATTACHMENT_STUB__(...args);\n" +
+        "export const getAttachmentStream = (...args) => globalThis.__TEST_GET_ATTACHMENT_STREAM_STUB__(...args);",
     };
   }
   if (url === "mock:next-navigation") {
