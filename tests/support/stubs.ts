@@ -1724,3 +1724,63 @@ export function makeInvestorDocumentsDbStub(options: {
     },
   };
 }
+
+export interface AuditEventFixture {
+  id: string;
+  actorEmail: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  createdAt: Date;
+}
+
+/** Backs getAuditEvents (src/lib/admin/audit.ts). */
+export function makeAuditEventsDbStub(options: { falakRoles?: FalakRoleFixture[]; events?: AuditEventFixture[] }) {
+  const events = [...(options.events ?? [])].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    auditEvent: {
+      findMany: async ({
+        where,
+        skip,
+        take,
+        distinct,
+      }: {
+        where?: { action?: string };
+        skip?: number;
+        take?: number;
+        distinct?: string[];
+      }) => {
+        if (distinct) {
+          const seen = new Set<string>();
+          return events
+            .filter((e) => {
+              if (seen.has(e.action)) return false;
+              seen.add(e.action);
+              return true;
+            })
+            .map((e) => ({ action: e.action }))
+            .sort((a, b) => a.action.localeCompare(b.action));
+        }
+        const filtered = where?.action ? events.filter((e) => e.action === where.action) : events;
+        const sliced = filtered.slice(skip ?? 0, (skip ?? 0) + (take ?? filtered.length));
+        return sliced.map((e) => ({
+          id: e.id,
+          action: e.action,
+          targetType: e.targetType,
+          targetId: e.targetId,
+          createdAt: e.createdAt,
+          actor: e.actorEmail === null ? null : { email: e.actorEmail },
+        }));
+      },
+    },
+  };
+}

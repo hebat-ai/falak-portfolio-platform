@@ -188,6 +188,16 @@ export interface Dictionary {
       investorsListTitle: string;
       successMessage: string;
       inviteCreatedMessage: string;
+      auditLogTitle: string;
+      auditActorColumn: string;
+      auditActionColumn: string;
+      auditTargetColumn: string;
+      auditWhenColumn: string;
+      auditFilterLabel: string;
+      auditAllActionsOption: string;
+      auditNoEventsMessage: string;
+      auditPreviousPageAction: string;
+      auditNextPageAction: string;
       copyLinkAction: string;
       linkCopiedMessage: string;
     };
@@ -609,6 +619,16 @@ export const en = {
       investorsListTitle: "Investors",
       successMessage: "Saved.",
       inviteCreatedMessage: "Invite created. Copy this link and send it to the company yourself — email delivery isn't wired up yet.",
+      auditLogTitle: "Audit Log",
+      auditActorColumn: "Actor",
+      auditActionColumn: "Action",
+      auditTargetColumn: "Target",
+      auditWhenColumn: "When",
+      auditFilterLabel: "Action",
+      auditAllActionsOption: "All actions",
+      auditNoEventsMessage: "No audit events found.",
+      auditPreviousPageAction: "Previous",
+      auditNextPageAction: "Next",
       copyLinkAction: "Copy link",
       linkCopiedMessage: "Copied.",
     },
@@ -1036,6 +1056,16 @@ export const ar = {
       investorsListTitle: "المستثمرون",
       successMessage: "تم الحفظ.",
       inviteCreatedMessage: "تم إنشاء الدعوة. انسخ هذا الرابط وأرسله إلى الشركة بنفسك — إرسال البريد الإلكتروني التلقائي غير مُفعّل بعد.",
+      auditLogTitle: "سجل التدقيق",
+      auditActorColumn: "المستخدم",
+      auditActionColumn: "الإجراء",
+      auditTargetColumn: "الهدف",
+      auditWhenColumn: "الوقت",
+      auditFilterLabel: "الإجراء",
+      auditAllActionsOption: "جميع الإجراءات",
+      auditNoEventsMessage: "لا توجد أحداث تدقيق.",
+      auditPreviousPageAction: "السابق",
+      auditNextPageAction: "التالي",
       copyLinkAction: "نسخ الرابط",
       linkCopiedMessage: "تم النسخ.",
     },
