@@ -62,3 +62,79 @@ export async function sendAccessApprovedEmail(to: string): Promise<void> {
     throw new Error(`Failed to send access-approved email: ${error.message}`);
   }
 }
+
+/**
+ * Sent by the daily reminder sweep (src/lib/reporting/reminders.ts) to a
+ * company member while a reporting deadline is still upcoming. Same
+ * network I/O boundary and never-swallow-a-real-failure discipline as
+ * every other function here.
+ */
+export async function sendDeadlineReminderEmail(
+  to: string,
+  companyName: string,
+  periodLabel: string,
+  deadline: string,
+  formUrl: string
+): Promise<void> {
+  const resend = getClient();
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `Reminder: ${periodLabel} report due ${deadline} -- ${companyName}`,
+    html: `<p>Your ${periodLabel} report for ${companyName} is due on ${deadline}.</p><p><a href="${formUrl}">${formUrl}</a></p>`,
+    text: `Your ${periodLabel} report for ${companyName} is due on ${deadline}.\n\n${formUrl}`,
+  });
+  if (error) {
+    throw new Error(`Failed to send deadline-reminder email: ${error.message}`);
+  }
+}
+
+/**
+ * Sent once a reporting deadline has already passed without a submission.
+ * Distinct subject/tone from the upcoming reminder so an inbox can tell
+ * the two apart at a glance.
+ */
+export async function sendOverdueReminderEmail(
+  to: string,
+  companyName: string,
+  periodLabel: string,
+  deadline: string,
+  formUrl: string
+): Promise<void> {
+  const resend = getClient();
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `Overdue: ${periodLabel} report -- ${companyName}`,
+    html: `<p>The ${periodLabel} report for ${companyName} was due on ${deadline} and has not yet been submitted.</p><p><a href="${formUrl}">${formUrl}</a></p>`,
+    text: `The ${periodLabel} report for ${companyName} was due on ${deadline} and has not yet been submitted.\n\n${formUrl}`,
+  });
+  if (error) {
+    throw new Error(`Failed to send overdue-reminder email: ${error.message}`);
+  }
+}
+
+/**
+ * Sent to an investor once a company's report is published and they've
+ * been granted access to it -- fired from the review action AFTER
+ * publishSubmission's transaction commits, never from inside it (see
+ * publish-workflow.ts's own comment on why).
+ */
+export async function sendReportPublishedEmail(
+  to: string,
+  companyName: string,
+  periodLabel: string,
+  reportUrl: string
+): Promise<void> {
+  const resend = getClient();
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `New report available: ${companyName} -- ${periodLabel}`,
+    html: `<p>A new ${periodLabel} report for ${companyName} has been published and is available for you to view.</p><p><a href="${reportUrl}">${reportUrl}</a></p>`,
+    text: `A new ${periodLabel} report for ${companyName} has been published and is available for you to view.\n\n${reportUrl}`,
+  });
+  if (error) {
+    throw new Error(`Failed to send report-published email: ${error.message}`);
+  }
+}

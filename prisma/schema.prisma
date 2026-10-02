@@ -606,6 +606,14 @@ model ReportingCycle {
   openedAt         DateTime          @default(now())
   closedAt         DateTime?
   createdAt        DateTime          @default(now())
+  // Reminder dedup: the kind ("upcoming" | "overdue") and timestamp of the
+  // last deadline-reminder email the cron job sent for this cycle, so a
+  // daily sweep never re-sends the same reminder twice. Null until the
+  // first reminder fires. Not a full log -- see ReportingCycleReminder-
+  // style history if per-reminder audit ever becomes necessary; this is
+  // deliberately just "what's the latest state" for dedup purposes.
+  lastReminderSentAt DateTime?
+  lastReminderKind   String?
 
   obligationCoverage ReportingCycleObligation[]
   deadlineExtensions ReportingCycleDeadlineExtension[]

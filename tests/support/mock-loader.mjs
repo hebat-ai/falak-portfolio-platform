@@ -104,7 +104,10 @@ export async function load(url, context, nextLoad) {
       shortCircuit: true,
       source:
         "export const sendSignInEmail = (...args) => globalThis.__TEST_SEND_EMAIL_STUB__(...args);\n" +
-        "export const sendAccessApprovedEmail = (...args) => globalThis.__TEST_SEND_ACCESS_APPROVED_EMAIL_STUB__(...args);",
+        "export const sendAccessApprovedEmail = (...args) => globalThis.__TEST_SEND_ACCESS_APPROVED_EMAIL_STUB__(...args);\n" +
+        "export const sendDeadlineReminderEmail = (...args) => globalThis.__TEST_SEND_DEADLINE_REMINDER_EMAIL_STUB__(...args);\n" +
+        "export const sendOverdueReminderEmail = (...args) => globalThis.__TEST_SEND_OVERDUE_REMINDER_EMAIL_STUB__(...args);\n" +
+        "export const sendReportPublishedEmail = (...args) => globalThis.__TEST_SEND_REPORT_PUBLISHED_EMAIL_STUB__(...args);",
     };
   }
   if (url === "mock:next-navigation") {

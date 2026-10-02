@@ -1,7 +1,7 @@
 "use server";
 
 import { startReview, requestChanges, approveSubmission } from "@/lib/reporting/review-workflow";
-import { publishSubmission, type NarrativeInputs } from "@/lib/reporting/publish-workflow";
+import { publishSubmission, sendPublishNotifications, type NarrativeInputs } from "@/lib/reporting/publish-workflow";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
 import type { NarrativeKind } from "@/generated/prisma/client";
@@ -119,8 +119,9 @@ export async function publishSubmissionAction(_prevState: ReviewActionState, for
     narratives[kind] = { textEn, textAr };
   }
 
+  let result;
   try {
-    await publishSubmission(submissionId, narratives);
+    result = await publishSubmission(submissionId, narratives);
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -130,6 +131,13 @@ export async function publishSubmissionAction(_prevState: ReviewActionState, for
     }
     throw error;
   }
+
+  // Deliberately outside the try/catch above -- the publish itself already
+  // succeeded by this point, and sendPublishNotifications never throws
+  // (per-recipient failures are recorded on their own ReportDistribution
+  // row instead), so there is nothing here for this action to report as
+  // an error.
+  await sendPublishNotifications(result);
 
   return { error: null };
 }

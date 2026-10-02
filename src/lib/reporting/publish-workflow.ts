@@ -4,6 +4,7 @@ import type { Prisma, NarrativeKind } from "@/generated/prisma/client";
 import { requireFalakRole } from "@/lib/auth/authorization";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { sendReportPublishedEmail } from "@/lib/email/send-email";
 
 export interface NarrativeInput {
   textEn: string;
@@ -77,10 +78,25 @@ async function resolveInvestorExposure(tx: Prisma.TransactionClient, companyId: 
  * CompanySubmission's own status (there is no "published" value for it --
  * publishing is an act on Report/ReportVersion, not the submission).
  */
-export async function publishSubmission(
-  submissionId: string,
-  narratives: NarrativeInputs
-): Promise<{ reportId: string; versionNo: number }> {
+export interface PublishNotification {
+  reportDistributionId: string;
+  recipientEmail: string;
+}
+
+export interface PublishResult {
+  reportId: string;
+  versionNo: number;
+  companySlug: string;
+  companyNameEn: string;
+  periodLabel: string;
+  // One row per (granted investor, that investor's active member) -- the
+  // caller sends the actual email AFTER this transaction commits (see
+  // this function's own comment on why), then flips each
+  // ReportDistribution's status/sentAt by this id.
+  notifications: PublishNotification[];
+}
+
+export async function publishSubmission(submissionId: string, narratives: NarrativeInputs): Promise<PublishResult> {
   const { user } = await requireFalakRole("FALAK_ADMIN");
 
   return db.$transaction(async (tx) => {
@@ -95,7 +111,7 @@ export async function publishSubmission(
             periodLabel: true,
             periodStart: true,
             periodEnd: true,
-            company: { select: { archivedAt: true } },
+            company: { select: { archivedAt: true, slug: true, nameEn: true } },
           },
         },
       },
@@ -150,8 +166,34 @@ export async function publishSubmission(
     }
 
     const investorIds = await resolveInvestorExposure(tx, companyId);
+    const notifications: PublishNotification[] = [];
     for (const investorId of investorIds) {
       await tx.reportAccessGrant.create({ data: { reportVersionId: version.id, investorId } });
+
+      // One ReportDistribution + one notification per active member of
+      // this investor org, mirroring the same "every member, not just an
+      // org-level contact" choice reminders.ts makes for company members
+      // -- there is no single "primary contact" field on Investor/Company
+      // in this schema, so the whole active membership is the recipient
+      // list. The actual email send happens after this transaction
+      // commits (see publishSubmissionAction) -- this only reserves the
+      // delivery records.
+      const activeMembers = await tx.investorMembership.findMany({
+        where: { investorId, revokedAt: null },
+        select: { user: { select: { email: true } } },
+      });
+      for (const member of activeMembers) {
+        const distribution = await tx.reportDistribution.create({
+          data: {
+            reportVersionId: version.id,
+            investorId,
+            recipientEmail: member.user.email,
+            channel: "Email",
+            status: "Pending",
+          },
+        });
+        notifications.push({ reportDistributionId: distribution.id, recipientEmail: member.user.email });
+      }
     }
 
     await writeAuditEvent(tx, {
@@ -161,6 +203,45 @@ export async function publishSubmission(
       targetId: version.id,
     });
 
-    return { reportId: report.id, versionNo: version.versionNo };
+    return {
+      reportId: report.id,
+      versionNo: version.versionNo,
+      companySlug: submission.cycle.company.slug,
+      companyNameEn: submission.cycle.company.nameEn,
+      periodLabel,
+      notifications,
+    };
   });
+}
+
+/**
+ * Sends the actual "report published" emails and flips each
+ * ReportDistribution's status -- deliberately called AFTER
+ * publishSubmission's transaction has committed, never from inside it,
+ * since a slow/failed email provider call must never hold open or roll
+ * back the publish transaction itself. A single recipient's send failure
+ * is recorded on their own ReportDistribution row (status Failed +
+ * failureReason) and does not affect any other recipient or the
+ * already-successful publish -- this function never throws.
+ */
+export async function sendPublishNotifications(result: PublishResult): Promise<void> {
+  const baseUrl = process.env.APP_BASE_URL;
+  if (!baseUrl) return;
+
+  const reportUrl = `${baseUrl}/company/${result.companySlug}/report?period=${encodeURIComponent(result.periodLabel)}`;
+
+  for (const notification of result.notifications) {
+    try {
+      await sendReportPublishedEmail(notification.recipientEmail, result.companyNameEn, result.periodLabel, reportUrl);
+      await db.reportDistribution.update({
+        where: { id: notification.reportDistributionId },
+        data: { status: "Sent", sentAt: new Date() },
+      });
+    } catch (error) {
+      await db.reportDistribution.update({
+        where: { id: notification.reportDistributionId },
+        data: { status: "Failed", failureReason: error instanceof Error ? error.message : "Unknown error" },
+      });
+    }
+  }
 }

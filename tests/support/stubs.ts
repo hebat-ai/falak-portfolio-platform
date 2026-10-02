@@ -52,6 +52,57 @@ export function setSendAccessApprovedEmailSpy(): string[] {
   return calls;
 }
 
+export interface SentReminderEmail {
+  to: string;
+  companyName: string;
+  periodLabel: string;
+  deadline: string;
+  formUrl: string;
+}
+
+/** Shared by both reminder kinds -- same signature, different real function. */
+function installReminderSpy(stubKey: string): SentReminderEmail[] {
+  const calls: SentReminderEmail[] = [];
+  (globalThis as Record<string, unknown>)[stubKey] = async (
+    to: string,
+    companyName: string,
+    periodLabel: string,
+    deadline: string,
+    formUrl: string
+  ) => {
+    calls.push({ to, companyName, periodLabel, deadline, formUrl });
+  };
+  return calls;
+}
+
+export function setSendDeadlineReminderEmailSpy(): SentReminderEmail[] {
+  return installReminderSpy("__TEST_SEND_DEADLINE_REMINDER_EMAIL_STUB__");
+}
+
+export function setSendOverdueReminderEmailSpy(): SentReminderEmail[] {
+  return installReminderSpy("__TEST_SEND_OVERDUE_REMINDER_EMAIL_STUB__");
+}
+
+export interface SentPublishedEmail {
+  to: string;
+  companyName: string;
+  periodLabel: string;
+  reportUrl: string;
+}
+
+export function setSendReportPublishedEmailSpy(): SentPublishedEmail[] {
+  const calls: SentPublishedEmail[] = [];
+  (globalThis as Record<string, unknown>).__TEST_SEND_REPORT_PUBLISHED_EMAIL_STUB__ = async (
+    to: string,
+    companyName: string,
+    periodLabel: string,
+    reportUrl: string
+  ) => {
+    calls.push({ to, companyName, periodLabel, reportUrl });
+  };
+  return calls;
+}
+
 export const REAL_USER: StubUser = { id: "user_1", email: "a@b.com" };
 
 interface MembershipFixture {
@@ -494,9 +545,17 @@ export interface PublishSubmissionFixture {
   status: string;
   companyArchived?: boolean;
   companyId: string;
+  companySlug?: string;
+  companyNameEn?: string;
   periodLabel: string;
   periodStart: Date;
   periodEnd: Date;
+}
+
+export interface InvestorMembershipFixture {
+  investorId: string;
+  email: string;
+  revoked?: boolean;
 }
 
 export interface OwnershipPositionFixture {
@@ -534,6 +593,7 @@ export function makePublishWorkflowDbStub(options: {
   ownershipPositions?: OwnershipPositionFixture[];
   investorVehiclePositions?: InvestorVehiclePositionFixture[];
   investors?: InvestorFixture[];
+  investorMemberships?: InvestorMembershipFixture[];
 }) {
   let nextId = 0;
   const genId = (prefix: string) => `${prefix}_${++nextId}`;
@@ -544,6 +604,7 @@ export function makePublishWorkflowDbStub(options: {
     reportVersionSubmissions: [] as Record<string, unknown>[],
     narrativeSections: [] as Record<string, unknown>[],
     reportAccessGrants: [] as Record<string, unknown>[],
+    reportDistributions: [] as Record<string, unknown>[],
     auditEvents: [] as Record<string, unknown>[],
   };
 
@@ -568,7 +629,11 @@ export function makePublishWorkflowDbStub(options: {
             periodLabel: s.periodLabel,
             periodStart: s.periodStart,
             periodEnd: s.periodEnd,
-            company: { archivedAt: s.companyArchived ? new Date() : null },
+            company: {
+              archivedAt: s.companyArchived ? new Date() : null,
+              slug: s.companySlug ?? "co-slug",
+              nameEn: s.companyNameEn ?? "Co Name",
+            },
           },
         };
       },
@@ -663,6 +728,19 @@ export function makePublishWorkflowDbStub(options: {
         return row;
       },
     },
+    investorMembership: {
+      findMany: async ({ where }: { where: { investorId: string; revokedAt: null } }) =>
+        (options.investorMemberships ?? [])
+          .filter((m) => m.investorId === where.investorId && !m.revoked)
+          .map((m) => ({ user: { email: m.email } })),
+    },
+    reportDistribution: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: genId("distribution"), ...data };
+        state.reportDistributions.push(row);
+        return row;
+      },
+    },
     auditEvent: {
       create: async ({ data }: { data: Record<string, unknown> }) => {
         const row = { id: genId("audit"), ...data };
@@ -676,6 +754,7 @@ export function makePublishWorkflowDbStub(options: {
     getReportVersionSubmissions: () => state.reportVersionSubmissions,
     getNarrativeSections: () => state.narrativeSections,
     getReportAccessGrants: () => state.reportAccessGrants,
+    getReportDistributions: () => state.reportDistributions,
     getAuditEvents: () => state.auditEvents,
   };
   return stub;
@@ -1221,5 +1300,66 @@ export function makeMyCompaniesDbStub(options: { memberships?: MyCompaniesMember
             },
           })),
     },
+  };
+}
+
+export interface ReminderCycleFixture {
+  id: string;
+  periodLabel: string;
+  currentDeadline: Date;
+  lastReminderSentAt?: Date | null;
+  companySlug: string;
+  companyNameEn: string;
+  memberEmails: string[];
+  submissionStatus: string | null;
+}
+
+/**
+ * Backs sendDueReminders (src/lib/reporting/reminders.ts). Only
+ * `reportingCycle.findMany`/`.update` are needed -- the function never
+ * touches any other model. `findMany`'s `where` is accepted but not
+ * re-validated here (unlike the richer stubs above): every fixture this
+ * factory is handed is assumed to already match the production query's
+ * `status: "Open"` + `company.archivedAt: null` shape, so the stub just
+ * returns them filtered by the one thing the function's own logic (not
+ * its Prisma query) actually varies on in tests -- nothing, it returns
+ * every fixture and lets sendDueReminders' own date/cooldown math decide
+ * what to act on, which is the real behavior under test.
+ */
+export function makeRemindersDbStub(cycles: ReminderCycleFixture[]) {
+  const state = cycles.map((c) => ({ ...c }));
+  const updates: { id: string; lastReminderSentAt: Date; lastReminderKind: string }[] = [];
+
+  return {
+    reportingCycle: {
+      findMany: async () =>
+        state
+          .filter((c) => c.submissionStatus === null || c.submissionStatus === "draft" || c.submissionStatus === "changes_requested")
+          .map((c) => ({
+            id: c.id,
+            periodLabel: c.periodLabel,
+            currentDeadline: c.currentDeadline,
+            lastReminderSentAt: c.lastReminderSentAt ?? null,
+            company: {
+              slug: c.companySlug,
+              nameEn: c.companyNameEn,
+              memberships: c.memberEmails.map((email) => ({ user: { email } })),
+            },
+          })),
+      update: async ({
+        where,
+        data,
+      }: {
+        where: { id: string };
+        data: { lastReminderSentAt: Date; lastReminderKind: string };
+      }) => {
+        const row = state.find((c) => c.id === where.id);
+        if (!row) throw new Error("cycle not found");
+        row.lastReminderSentAt = data.lastReminderSentAt;
+        updates.push({ id: where.id, ...data });
+        return row;
+      },
+    },
+    getUpdates: () => updates,
   };
 }
