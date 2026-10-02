@@ -71,6 +71,17 @@ export interface Dictionary {
       daysOverdueSuffix: string;
       withinDeadline: string;
     };
+    alerts: {
+      title: string;
+      noAlerts: string;
+      severityHigh: string;
+      severityMedium: string;
+      reportingOverduePrefix: string;
+      lowRunwaySingular: string;
+      lowRunwayPlural: string;
+      overduePayables: string;
+      overdueReceivables: string;
+    };
     filters: {
       title: string;
       scopeNote: string;
@@ -466,6 +477,17 @@ export const en = {
       neverSubmitted: "Not yet submitted",
       daysOverdueSuffix: "days overdue",
       withinDeadline: "Within deadline",
+    },
+    alerts: {
+      title: "Portfolio Alerts",
+      noAlerts: "No open alerts across the portfolio.",
+      severityHigh: "High",
+      severityMedium: "Medium",
+      reportingOverduePrefix: "Reporting deadline passed",
+      lowRunwaySingular: "month of runway",
+      lowRunwayPlural: "months of runway",
+      overduePayables: "Overdue payables reported",
+      overdueReceivables: "Overdue receivables reported",
     },
     filters: {
       title: "Company List Filters",
@@ -868,6 +890,17 @@ export const ar = {
       neverSubmitted: "لم يتم التقديم بعد",
       daysOverdueSuffix: "يوم تأخير",
       withinDeadline: "ضمن الموعد النهائي",
+    },
+    alerts: {
+      title: "تنبيهات المحفظة",
+      noAlerts: "لا توجد تنبيهات مفتوحة في المحفظة.",
+      severityHigh: "مرتفعة",
+      severityMedium: "متوسطة",
+      reportingOverduePrefix: "تجاوز الموعد النهائي للتقرير",
+      lowRunwaySingular: "شهر من الاستمرارية",
+      lowRunwayPlural: "أشهر من الاستمرارية",
+      overduePayables: "مستحقات دفع متأخرة",
+      overdueReceivables: "مستحقات قبض متأخرة",
     },
     filters: {
       title: "تصفية قائمة الشركات",

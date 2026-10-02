@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Select } from "@/components/ui/Select";
 import { PortfolioSummaryKpis } from "./_components/PortfolioSummaryKpis";
+import { PortfolioAlertsPanel } from "./_components/PortfolioAlertsPanel";
 import { ReportingStatusPanel } from "./_components/ReportingStatusPanel";
 import { DashboardViewSwitcher, type DashboardView } from "./_components/charts/DashboardViewSwitcher";
 import { CompaniesByStageBarChart } from "./_components/charts/CompaniesByStageBarChart";
@@ -16,16 +17,18 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeRevenueByCurrency } from "@/lib/admin/revenue";
 import { getOverdueDays } from "@/lib/reportingStatus";
 import type { AdminPortfolioData, PortfolioValuationData } from "@/lib/admin/dto";
+import type { PortfolioAlert } from "@/lib/admin/alerts";
 
 interface PortfolioDashboardClientProps extends AdminPortfolioData {
   valuationData: PortfolioValuationData;
+  alerts: PortfolioAlert[];
 }
 
 // Portfolio-wide KPIs and the Reporting Status panel always reflect the
 // full portfolio for the selected period -- this page has no company
 // filters of its own (those live on /admin/companies now), only its own
 // period picker, independent from Company List's.
-export function PortfolioDashboardClient({ companies, vehicles, investors, periods, valuationData }: PortfolioDashboardClientProps) {
+export function PortfolioDashboardClient({ companies, vehicles, investors, periods, valuationData, alerts }: PortfolioDashboardClientProps) {
   const { t } = useLanguage();
   const latestPeriodKey = periods.at(-1)?.key ?? "";
   const [periodKey, setPeriodKey] = useState(latestPeriodKey);
@@ -67,6 +70,7 @@ export function PortfolioDashboardClient({ companies, vehicles, investors, perio
             </Select>
           </div>
         ) : null}
+        <PortfolioAlertsPanel alerts={alerts} />
         <DashboardViewSwitcher view={view} onChange={setView} />
         {view === "kpi" ? <PortfolioSummaryKpis {...summary} /> : null}
         {view === "bar" ? <CompaniesByStageBarChart companies={companies} periodKey={periodKey} /> : null}

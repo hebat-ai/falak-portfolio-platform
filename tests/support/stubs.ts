@@ -1363,3 +1363,103 @@ export function makeRemindersDbStub(cycles: ReminderCycleFixture[]) {
     getUpdates: () => updates,
   };
 }
+
+export interface AlertCycleFixture {
+  templateId: string;
+  currentDeadline: Date;
+  submissionId: string | null;
+  submissionStatus: string | null;
+}
+
+export interface AlertCompanyFixture {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  archivedAt?: Date | null;
+  cycles: AlertCycleFixture[];
+}
+
+export interface AlertMetricValueFixture {
+  key: string;
+  value: string | number | null;
+  isNa?: boolean;
+  dataType?: string;
+}
+
+/**
+ * Backs getPortfolioAlerts (src/lib/admin/alerts.ts). Each company
+ * fixture's LATEST cycle with a non-null submissionId gets its metric
+ * values looked up from `metricsBySubmissionId` -- the same
+ * fetchSubmissionMetricFields helper the real function calls, backed
+ * here by a plain lookup table rather than re-deriving MetricDefinition
+ * rows, since alerts.ts only ever reads three specific keys regardless
+ * of what else a real template defines.
+ */
+export function makePortfolioAlertsDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  companies: AlertCompanyFixture[];
+  metricsBySubmissionId?: Record<string, AlertMetricValueFixture[]>;
+}) {
+  const metricsBySubmissionId = options.metricsBySubmissionId ?? {};
+
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    company: {
+      findMany: async () =>
+        options.companies
+          .filter((c) => !c.archivedAt)
+          .map((c) => ({
+            id: c.id,
+            slug: c.slug,
+            nameEn: c.nameEn,
+            nameAr: c.nameAr,
+            cycles: c.cycles.map((cy) => ({
+              templateId: cy.templateId,
+              currentDeadline: cy.currentDeadline,
+              submission: cy.submissionId === null ? null : { id: cy.submissionId, status: cy.submissionStatus },
+            })),
+          })),
+    },
+    metricDefinition: {
+      // templateId isn't actually distinguishing in this stub -- every
+      // submission fixture supplies its own metric list keyed by
+      // submissionId instead (see submissionMetricValue.findMany below)
+      // -- so this just returns one definition row per unique key seen
+      // across all fixtures, enough for fetchSubmissionMetricFields to
+      // resolve ids and dataTypes from.
+      findMany: async () => {
+        const allRows = Object.values(metricsBySubmissionId).flat();
+        const byKey = new Map<string, AlertMetricValueFixture>();
+        for (const row of allRows) if (!byKey.has(row.key)) byKey.set(row.key, row);
+        return [...byKey.entries()].map(([key, row]) => ({
+          id: `def_${key}`,
+          key,
+          labelEn: key,
+          labelAr: key,
+          dataType: row.dataType ?? "Number",
+          required: false,
+          sortOrder: 0,
+        }));
+      },
+    },
+    submissionMetricValue: {
+      findMany: async ({ where }: { where: { submissionId: string } }) => {
+        const rows = metricsBySubmissionId[where.submissionId] ?? [];
+        return rows.map((r) => ({
+          metricDefinitionId: `def_${r.key}`,
+          numericValue: typeof r.value === "number" ? { toNumber: () => r.value } : null,
+          textValue: typeof r.value === "string" ? r.value : null,
+          isNa: r.isNa ?? false,
+        }));
+      },
+    },
+  };
+}
