@@ -1784,3 +1784,83 @@ export function makeAuditEventsDbStub(options: { falakRoles?: FalakRoleFixture[]
     },
   };
 }
+
+export interface ReturnsMembershipFixture {
+  userId: string;
+  investorId: string;
+  role: string;
+  revoked?: boolean;
+  investorArchived?: boolean;
+}
+
+export interface ReturnsTransactionFixture {
+  type: string;
+  amount: number;
+  currency: string;
+  transactionDate: Date;
+}
+
+export interface ReturnsVehiclePositionFixture {
+  vehicleId: string;
+  ownershipPct: number | null;
+  currency: string;
+}
+
+export interface ReturnsNavSnapshotFixture {
+  vehicleId: string;
+  asOfDate: Date;
+  navAmount: number;
+  currency: string;
+}
+
+/** Backs getInvestorReturns (src/lib/investor/returns.ts). */
+export function makeInvestorReturnsDbStub(options: {
+  membership?: ReturnsMembershipFixture | null;
+  transactions?: ReturnsTransactionFixture[];
+  vehiclePositions?: ReturnsVehiclePositionFixture[];
+  navSnapshots?: ReturnsNavSnapshotFixture[];
+}) {
+  const transactions = options.transactions ?? [];
+  const vehiclePositions = options.vehiclePositions ?? [];
+  const navSnapshots = [...(options.navSnapshots ?? [])].sort((a, b) => b.asOfDate.getTime() - a.asOfDate.getTime());
+
+  return {
+    investorMembership: {
+      findFirst: async ({ where }: { where: Record<string, unknown> }) => {
+        const m = options.membership;
+        if (!m) return null;
+        if (where.userId !== m.userId) return null;
+        if (where.investorId !== m.investorId) return null;
+        if (m.revoked) return null;
+        if (m.investorArchived) return null;
+        const roleFilter = where.role as { in: string[] };
+        if (!roleFilter.in.includes(m.role)) return null;
+        return { role: m.role };
+      },
+    },
+    investorCapitalTransaction: {
+      findMany: async () =>
+        transactions.map((t) => ({
+          type: t.type,
+          amount: { toNumber: () => t.amount },
+          currency: t.currency,
+          transactionDate: t.transactionDate,
+        })),
+    },
+    investorVehiclePosition: {
+      findMany: async () =>
+        vehiclePositions.map((p) => ({
+          vehicleId: p.vehicleId,
+          ownershipPct: p.ownershipPct === null ? null : { toNumber: () => p.ownershipPct },
+          currency: p.currency,
+        })),
+    },
+    vehicleNavSnapshot: {
+      findFirst: async ({ where }: { where: { vehicleId: string } }) => {
+        const match = navSnapshots.find((n) => n.vehicleId === where.vehicleId);
+        if (!match) return null;
+        return { navAmount: { toNumber: () => match.navAmount }, currency: match.currency };
+      },
+    },
+  };
+}

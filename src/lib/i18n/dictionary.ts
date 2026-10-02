@@ -7,6 +7,7 @@ import type {
   VehicleType,
   InvestorType,
   CompanyValuationType,
+  InvestorCapitalTransactionType,
 } from "@/generated/prisma/client";
 
 export interface Dictionary {
@@ -44,6 +45,7 @@ export interface Dictionary {
   vehicleTypes: Record<VehicleType, string>;
   investorTypes: Record<InvestorType, string>;
   valuationTypes: Record<CompanyValuationType, string>;
+  capitalTransactionTypes: Record<InvestorCapitalTransactionType, string>;
   admin: {
     title: string;
     subtitle: string;
@@ -140,6 +142,10 @@ export interface Dictionary {
       vehicleAssignmentTitle: string;
       recordCompanyValuationTitle: string;
       recordVehicleValuationTitle: string;
+      recordCapitalTransactionTitle: string;
+      amountLabel: string;
+      transactionDateLabel: string;
+      descriptionLabel: string;
       valuationAmountLabel: string;
       navAmountLabel: string;
       valuationTypeLabel: string;
@@ -317,6 +323,14 @@ export interface Dictionary {
     documentsTitle: string;
     noDocumentsMessage: string;
     attachmentsLabel: string;
+    returnsTitle: string;
+    noReturnsMessage: string;
+    contributedLabel: string;
+    distributedLabel: string;
+    currentValueLabel: string;
+    moicLabel: string;
+    irrLabel: string;
+    irrNotAvailableLabel: string;
   };
   companyRegister: {
     subtitle: string;
@@ -475,6 +489,12 @@ export const en = {
     Exit: "Exit",
     WrittenOff: "Written Off",
   },
+  capitalTransactionTypes: {
+    CapitalCall: "Capital Call",
+    Contribution: "Contribution",
+    Distribution: "Distribution",
+    ManagementFee: "Management Fee",
+  },
   admin: {
     title: "Falak Admin — Portfolio Dashboard",
     subtitle: "Org-wide visibility across all portfolio companies, vehicles, and reporting cycles.",
@@ -571,6 +591,10 @@ export const en = {
       vehicleAssignmentTitle: "Company Assignment to Vehicle",
       recordCompanyValuationTitle: "Record Company Valuation",
       recordVehicleValuationTitle: "Record Vehicle Valuation",
+      recordCapitalTransactionTitle: "Record Capital Transaction",
+      amountLabel: "Amount",
+      transactionDateLabel: "Transaction Date",
+      descriptionLabel: "Description",
       valuationAmountLabel: "Valuation Amount",
       navAmountLabel: "NAV Amount",
       valuationTypeLabel: "Valuation Type",
@@ -750,6 +774,14 @@ export const en = {
     documentsTitle: "Documents",
     noDocumentsMessage: "No documents available yet.",
     attachmentsLabel: "Attachments",
+    returnsTitle: "Returns",
+    noReturnsMessage: "No capital transactions recorded yet for this organization.",
+    contributedLabel: "Contributed",
+    distributedLabel: "Distributed",
+    currentValueLabel: "Current Value",
+    moicLabel: "MOIC",
+    irrLabel: "IRR",
+    irrNotAvailableLabel: "Not available",
   },
   companyRegister: {
     subtitle: "Every company's reporting record across all periods, browsable and filterable.",
@@ -912,6 +944,12 @@ export const ar = {
     Exit: "خروج",
     WrittenOff: "مشطوب",
   },
+  capitalTransactionTypes: {
+    CapitalCall: "طلب رأس مال",
+    Contribution: "مساهمة",
+    Distribution: "توزيع",
+    ManagementFee: "رسوم إدارة",
+  },
   admin: {
     title: "إدارة فلك — لوحة المحفظة",
     subtitle: "رؤية شاملة على مستوى المؤسسة لجميع شركات المحفظة والأدوات الاستثمارية ودورات التقارير.",
@@ -1008,6 +1046,10 @@ export const ar = {
       vehicleAssignmentTitle: "تعيين شركة لأداة استثمارية",
       recordCompanyValuationTitle: "تسجيل تقييم شركة",
       recordVehicleValuationTitle: "تسجيل تقييم أداة استثمارية",
+      recordCapitalTransactionTitle: "تسجيل حركة رأس مال",
+      amountLabel: "المبلغ",
+      transactionDateLabel: "تاريخ الحركة",
+      descriptionLabel: "الوصف",
       valuationAmountLabel: "مبلغ التقييم",
       navAmountLabel: "صافي قيمة الأصول",
       valuationTypeLabel: "نوع التقييم",
@@ -1187,6 +1229,14 @@ export const ar = {
     documentsTitle: "المستندات",
     noDocumentsMessage: "لا توجد مستندات متاحة بعد.",
     attachmentsLabel: "المرفقات",
+    returnsTitle: "العوائد",
+    noReturnsMessage: "لا توجد حركات رأس مال مسجلة لهذه المؤسسة بعد.",
+    contributedLabel: "المساهمات",
+    distributedLabel: "التوزيعات",
+    currentValueLabel: "القيمة الحالية",
+    moicLabel: "مضاعف رأس المال (MOIC)",
+    irrLabel: "معدل العائد الداخلي (IRR)",
+    irrNotAvailableLabel: "غير متاح",
   },
   companyRegister: {
     subtitle: "سجل تقارير كل شركة عبر جميع الفترات، قابل للتصفح والتصفية.",

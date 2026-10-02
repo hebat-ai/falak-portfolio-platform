@@ -17,6 +17,7 @@ interface SubNavItem {
     | "vehicleAssignmentTitle"
     | "recordCompanyValuationTitle"
     | "recordVehicleValuationTitle"
+    | "recordCapitalTransactionTitle"
     | "auditLogTitle"
   >;
   href: string;
@@ -32,6 +33,7 @@ const SUB_NAV_ITEMS: SubNavItem[] = [
   { key: "vehicleAssignmentTitle", href: "/admin/manage/vehicle-assignment" },
   { key: "recordCompanyValuationTitle", href: "/admin/manage/company-valuation" },
   { key: "recordVehicleValuationTitle", href: "/admin/manage/vehicle-valuation" },
+  { key: "recordCapitalTransactionTitle", href: "/admin/manage/capital-transaction" },
   { key: "auditLogTitle", href: "/admin/manage/audit-log" },
 ];
 

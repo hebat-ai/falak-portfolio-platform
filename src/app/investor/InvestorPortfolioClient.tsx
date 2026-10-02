@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { InvestorCompanyTable } from "./_components/InvestorCompanyTable";
 import { InvestorKpis } from "./_components/InvestorKpis";
+import { InvestorReturnsPanel } from "./_components/InvestorReturnsPanel";
 import { Num } from "@/components/ui/Num";
 import { Select } from "@/components/ui/Select";
 import { formatDate } from "@/lib/format";
@@ -12,12 +13,21 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeInvestorRevenueByCurrency } from "@/lib/investor/revenue";
 import type { InvestorPortfolioData } from "@/lib/investor/dto";
 import type { InvestorDocumentDTO } from "@/lib/investor/documents";
+import type { InvestorReturnSummary } from "@/lib/investor/returns";
 
 interface InvestorPortfolioClientProps extends InvestorPortfolioData {
   documents: InvestorDocumentDTO[];
+  returnsByOrgId: Record<string, InvestorReturnSummary[]>;
 }
 
-export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExposures, documents }: InvestorPortfolioClientProps) {
+export function InvestorPortfolioClient({
+  orgs,
+  periods,
+  companies,
+  vehicleExposures,
+  documents,
+  returnsByOrgId,
+}: InvestorPortfolioClientProps) {
   const { t, lang } = useLanguage();
   const [orgId, setOrgId] = useState(orgs[0]?.id ?? "");
   const [periodKey, setPeriodKey] = useState(periods[periods.length - 1]?.key ?? "");
@@ -100,6 +110,8 @@ export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExpos
           companiesInScopeCount={scope.companiesInScopeCount}
           revenueByCurrency={scope.revenueByCurrency}
         />
+
+        <InvestorReturnsPanel returns={returnsByOrgId[orgId] ?? []} />
 
         <section aria-labelledby="investor-vehicle-exposure-heading" className="space-y-3">
           <h2 id="investor-vehicle-exposure-heading" className="font-heading text-sm font-semibold text-foreground">

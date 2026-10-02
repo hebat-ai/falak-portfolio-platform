@@ -18,6 +18,7 @@ import type {
   InvestorType,
   MetricDataType,
   CompanyValuationType,
+  InvestorCapitalTransactionType,
 } from "@/generated/prisma/client";
 
 export interface ActionState {
@@ -770,6 +771,86 @@ export async function createVehicleNavAction(_prevState: ActionState, formData: 
     // Covers the (vehicleId, asOfDate) unique-constraint collision alike
     // with any other write failure -- one generic message.
     return { error: "A NAV mark for this vehicle on this date already exists." };
+  }
+
+  return { error: null, success: true };
+}
+
+// ============================================================
+// Investor capital transactions (capital calls, contributions,
+// distributions, management fees) -- backfills the dated cash-flow
+// history getInvestorReturns' IRR/MOIC calculation needs. Insert-only,
+// same discipline as every other financial ledger in this schema (a
+// correction is a new row, never an edit; app_runtime_grants.sql grants
+// SELECT+INSERT only, no UPDATE).
+// ============================================================
+
+const CAPITAL_TRANSACTION_TYPES: InvestorCapitalTransactionType[] = ["CapitalCall", "Contribution", "Distribution", "ManagementFee"];
+const MAX_DESCRIPTION_LENGTH = 500;
+
+export async function recordInvestorCapitalTransactionAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const investorId = readString(formData, "investorId");
+  const vehicleIdInput = readString(formData, "vehicleId");
+  const type = readString(formData, "type");
+  const amount = readString(formData, "amount");
+  const currency = readString(formData, "currency");
+  const transactionDateRaw = readString(formData, "transactionDate");
+  const descriptionInput = readString(formData, "description");
+
+  if (
+    !investorId ||
+    !type ||
+    !CAPITAL_TRANSACTION_TYPES.includes(type as InvestorCapitalTransactionType) ||
+    !amount ||
+    !AMOUNT_PATTERN.test(amount) ||
+    !currency ||
+    !CURRENCIES.includes(currency as Currency) ||
+    !transactionDateRaw
+  ) {
+    return { error: "Fill in every field with a valid value." };
+  }
+  if (descriptionInput && descriptionInput.length > MAX_DESCRIPTION_LENGTH) {
+    return { error: "Fill in every field with a valid value." };
+  }
+
+  const transactionDate = new Date(transactionDateRaw);
+  if (Number.isNaN(transactionDate.getTime())) {
+    return { error: "Enter a valid date." };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const transaction = await tx.investorCapitalTransaction.create({
+        data: {
+          investorId,
+          vehicleId: vehicleIdInput || null,
+          type: type as InvestorCapitalTransactionType,
+          amount,
+          currency: currency as Currency,
+          transactionDate,
+          description: descriptionInput || null,
+          createdById: user.id,
+        },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "investor_capital_transaction.recorded",
+        targetType: "InvestorCapitalTransaction",
+        targetId: transaction.id,
+      });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
   }
 
   return { error: null, success: true };
