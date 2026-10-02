@@ -5,6 +5,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { ArrowRight, ArrowLeft, Printer } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Card } from "@/components/ui/Card";
+import { ReportAttachmentsPanel } from "./ReportAttachmentsPanel";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Num } from "@/components/ui/Num";
 import { Button } from "@/components/ui/Button";
@@ -311,6 +312,14 @@ export function QuarterlyReportDocument({ data }: QuarterlyReportDocumentProps) 
             </p>
           </Card>
         ) : null}
+
+        <ReportAttachmentsPanel
+          reportVersionId={data.reportVersionId}
+          companySlug={company.slug}
+          periodLabel={data.periodLabel}
+          attachments={data.attachments}
+          canManage={data.canManageAttachments}
+        />
 
         <p className="text-center text-xs text-muted-foreground">{t.quarterlyReport.disclaimerText}</p>
       </div>

@@ -304,6 +304,9 @@ export interface Dictionary {
     companiesTableCaption: string;
     noApprovedReports: string;
     noOrgAccess: string;
+    documentsTitle: string;
+    noDocumentsMessage: string;
+    attachmentsLabel: string;
   };
   companyRegister: {
     subtitle: string;
@@ -724,6 +727,9 @@ export const en = {
     companiesTableCaption: "Companies visible to this investor for the selected period, approved only",
     noApprovedReports: "No published reports for this organization and period yet.",
     noOrgAccess: "You don't have access to any investor organization yet.",
+    documentsTitle: "Documents",
+    noDocumentsMessage: "No documents available yet.",
+    attachmentsLabel: "Attachments",
   },
   companyRegister: {
     subtitle: "Every company's reporting record across all periods, browsable and filterable.",
@@ -1148,6 +1154,9 @@ export const ar = {
     companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة فقط",
     noApprovedReports: "لا توجد تقارير منشورة لهذه المؤسسة والفترة بعد.",
     noOrgAccess: "ليس لديك وصول إلى أي مؤسسة استثمارية بعد.",
+    documentsTitle: "المستندات",
+    noDocumentsMessage: "لا توجد مستندات متاحة بعد.",
+    attachmentsLabel: "المرفقات",
   },
   companyRegister: {
     subtitle: "سجل تقارير كل شركة عبر جميع الفترات، قابل للتصفح والتصفية.",

@@ -1668,3 +1668,59 @@ export function makeAttachmentUploadDbStub(options: {
     getCreatedAttachments: () => createdAttachments,
   };
 }
+
+export interface DocumentGrantFixture {
+  investorId: string;
+  revoked?: boolean;
+  reportId: string;
+  versionNo: number;
+  reportVersionId: string;
+  publishedAt: Date | null;
+  companySlug: string;
+  companyNameEn: string;
+  companyNameAr: string;
+  companyArchived?: boolean;
+  periodLabel: string;
+  attachments?: { id: string; fileName: string }[];
+}
+
+export interface DocumentMembershipFixture {
+  userId: string;
+  investorId: string;
+  revoked?: boolean;
+  investorArchived?: boolean;
+}
+
+/** Backs getInvestorDocuments (src/lib/investor/documents.ts). */
+export function makeInvestorDocumentsDbStub(options: {
+  memberships?: DocumentMembershipFixture[];
+  grants?: DocumentGrantFixture[];
+}) {
+  const memberships = options.memberships ?? [];
+  const grants = options.grants ?? [];
+
+  return {
+    investorMembership: {
+      findMany: async ({ where }: { where: { userId: string } }) =>
+        memberships.filter((m) => m.userId === where.userId && !m.revoked && !m.investorArchived).map((m) => ({ investorId: m.investorId })),
+    },
+    reportAccessGrant: {
+      findMany: async ({ where }: { where: { investorId: { in: string[] } } }) =>
+        grants
+          .filter((g) => where.investorId.in.includes(g.investorId) && !g.revoked && !g.companyArchived)
+          .map((g) => ({
+            reportVersion: {
+              id: g.reportVersionId,
+              versionNo: g.versionNo,
+              publishedAt: g.publishedAt,
+              report: {
+                id: g.reportId,
+                periodLabel: g.periodLabel,
+                company: { slug: g.companySlug, nameEn: g.companyNameEn, nameAr: g.companyNameAr },
+              },
+              attachments: g.attachments ?? [],
+            },
+          })),
+    },
+  };
+}

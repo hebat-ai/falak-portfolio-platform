@@ -1,16 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { InvestorCompanyTable } from "./_components/InvestorCompanyTable";
 import { InvestorKpis } from "./_components/InvestorKpis";
 import { Num } from "@/components/ui/Num";
 import { Select } from "@/components/ui/Select";
+import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeInvestorRevenueByCurrency } from "@/lib/investor/revenue";
 import type { InvestorPortfolioData } from "@/lib/investor/dto";
+import type { InvestorDocumentDTO } from "@/lib/investor/documents";
 
-export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExposures }: InvestorPortfolioData) {
+interface InvestorPortfolioClientProps extends InvestorPortfolioData {
+  documents: InvestorDocumentDTO[];
+}
+
+export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExposures, documents }: InvestorPortfolioClientProps) {
   const { t, lang } = useLanguage();
   const [orgId, setOrgId] = useState(orgs[0]?.id ?? "");
   const [periodKey, setPeriodKey] = useState(periods[periods.length - 1]?.key ?? "");
@@ -124,6 +131,54 @@ export function InvestorPortfolioClient({ orgs, periods, companies, vehicleExpos
             caption={t.investorDashboard.companiesTableCaption}
             emptyStateText={t.investorDashboard.noApprovedReports}
           />
+        </section>
+
+        <section aria-labelledby="investor-documents-heading" className="space-y-3">
+          <h2 id="investor-documents-heading" className="font-heading text-sm font-semibold text-foreground">
+            {t.investorDashboard.documentsTitle}
+          </h2>
+          {documents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t.investorDashboard.noDocumentsMessage}</p>
+          ) : (
+            <ul className="space-y-2">
+              {documents.map((doc, i) => (
+                <li key={i} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-foreground">{lang === "ar" ? doc.companyNameAr : doc.companyNameEn}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {doc.periodLabel}
+                        {doc.publishedAt ? ` · ${formatDate(doc.publishedAt.slice(0, 10), lang)}` : ""}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/company/${doc.companySlug}/report?period=${encodeURIComponent(doc.periodLabel)}`}
+                      className="chamfer-br-sm inline-flex items-center px-2.5 py-1 text-xs font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
+                    >
+                      {t.quarterlyReport.viewFormattedReportLabel}
+                    </Link>
+                  </div>
+                  {doc.attachments.length > 0 ? (
+                    <div className="mt-2 border-t border-border-subtle pt-2">
+                      <p className="text-xs font-medium text-muted-foreground">{t.investorDashboard.attachmentsLabel}</p>
+                      <ul className="mt-1 space-y-1">
+                        {doc.attachments.map((a) => (
+                          <li key={a.id}>
+                            <a
+                              href={`/api/attachments/${a.id}`}
+                              className="chamfer-br-sm text-sm text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+                            >
+                              {a.fileName}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </AppShell>

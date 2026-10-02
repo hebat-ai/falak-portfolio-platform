@@ -42,6 +42,12 @@ export interface QuarterlyReportData {
   previousRevenue: number | null;
   previousPeriodLabel: string | null;
   narratives: QuarterlyReportNarrativeDTO[];
+  reportVersionId: string;
+  attachments: { id: string; fileName: string }[];
+  // Whether THIS viewer is Falak staff -- controls the attach-a-file
+  // control, which only staff may use (an investor sees the same
+  // attachments list read-only).
+  canManageAttachments: boolean;
 }
 
 function toDateOnly(date: Date): string {
@@ -119,6 +125,7 @@ export async function getQuarterlyReportData(slug: string, periodKey: string): P
               id: true,
               publishedAt: true,
               narratives: { select: { kind: true, textEn: true, textAr: true } },
+              attachments: { select: { id: true, fileName: true } },
             },
           },
         },
@@ -196,5 +203,8 @@ export async function getQuarterlyReportData(slug: string, periodKey: string): P
     previousRevenue,
     previousPeriodLabel: previousCycle?.periodLabel ?? null,
     narratives: version.narratives,
+    reportVersionId: version.id,
+    attachments: version.attachments,
+    canManageAttachments: isAuthorized,
   };
 }

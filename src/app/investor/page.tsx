@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getInvestorPortfolioData } from "@/lib/investor/queries";
+import { getInvestorDocuments } from "@/lib/investor/documents";
 import { InvestorPortfolioClient } from "./InvestorPortfolioClient";
 
 export default async function InvestorDashboardPage() {
@@ -9,11 +10,10 @@ export default async function InvestorDashboardPage() {
     redirect("/sign-in");
   }
 
-  // getInvestorPortfolioData() re-derives the user itself
-  // (requireCurrentUser) and never throws ForbiddenError -- zero investor
-  // memberships is a valid empty state the client component renders,
-  // not a denial.
-  const data = await getInvestorPortfolioData();
+  // Both re-derive the user themselves (requireCurrentUser) and never
+  // throw ForbiddenError -- zero investor memberships is a valid empty
+  // state the client component renders, not a denial.
+  const [data, documents] = await Promise.all([getInvestorPortfolioData(), getInvestorDocuments()]);
 
-  return <InvestorPortfolioClient {...data} />;
+  return <InvestorPortfolioClient {...data} documents={documents} />;
 }
