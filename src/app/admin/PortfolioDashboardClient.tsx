@@ -13,22 +13,37 @@ import { RevenueOverdueScatterChart } from "./_components/charts/RevenueOverdueS
 import { CompanyValuationsBarChart } from "./_components/charts/CompanyValuationsBarChart";
 import { VehicleValuationsBarChart } from "./_components/charts/VehicleValuationsBarChart";
 import { PortfolioValuationSummary } from "./_components/charts/PortfolioValuationSummary";
+import { PortfolioTrendChart } from "./_components/charts/PortfolioTrendChart";
+import { BenchmarksView } from "./_components/charts/BenchmarksView";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeRevenueByCurrency } from "@/lib/admin/revenue";
 import { getOverdueDays } from "@/lib/reportingStatus";
 import type { AdminPortfolioData, PortfolioValuationData } from "@/lib/admin/dto";
 import type { PortfolioAlert } from "@/lib/admin/alerts";
+import type { CompanyBenchmark } from "@/lib/admin/benchmarking";
+import type { PortfolioTrendPoint } from "@/lib/admin/portfolio-trend";
 
 interface PortfolioDashboardClientProps extends AdminPortfolioData {
   valuationData: PortfolioValuationData;
   alerts: PortfolioAlert[];
+  trend: PortfolioTrendPoint[];
+  benchmarksByPeriod: Record<string, CompanyBenchmark[]>;
 }
 
 // Portfolio-wide KPIs and the Reporting Status panel always reflect the
 // full portfolio for the selected period -- this page has no company
 // filters of its own (those live on /admin/companies now), only its own
 // period picker, independent from Company List's.
-export function PortfolioDashboardClient({ companies, vehicles, investors, periods, valuationData, alerts }: PortfolioDashboardClientProps) {
+export function PortfolioDashboardClient({
+  companies,
+  vehicles,
+  investors,
+  periods,
+  valuationData,
+  alerts,
+  trend,
+  benchmarksByPeriod,
+}: PortfolioDashboardClientProps) {
   const { t } = useLanguage();
   const latestPeriodKey = periods.at(-1)?.key ?? "";
   const [periodKey, setPeriodKey] = useState(latestPeriodKey);
@@ -79,6 +94,8 @@ export function PortfolioDashboardClient({ companies, vehicles, investors, perio
         {view === "company-valuations" ? <CompanyValuationsBarChart companies={valuationData.companies} /> : null}
         {view === "vehicle-valuations" ? <VehicleValuationsBarChart vehicles={valuationData.vehicles} /> : null}
         {view === "portfolio-valuation" ? <PortfolioValuationSummary companies={valuationData.companies} /> : null}
+        {view === "trend" ? <PortfolioTrendChart points={trend} /> : null}
+        {view === "benchmarks" ? <BenchmarksView benchmarks={benchmarksByPeriod[periodKey] ?? []} /> : null}
         {selectedPeriod ? <ReportingStatusPanel companies={companies} period={selectedPeriod} /> : null}
       </div>
     </AppShell>

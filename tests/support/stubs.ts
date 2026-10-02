@@ -1463,3 +1463,142 @@ export function makePortfolioAlertsDbStub(options: {
     },
   };
 }
+
+/**
+ * Shared by makeBenchmarksDbStub/makeTrendDbStub below (and conceptually
+ * the same shape makePortfolioAlertsDbStub's own metricDefinition/
+ * submissionMetricValue pair already hand-rolled) -- backs
+ * fetchSubmissionMetricFields for any test that only cares about a
+ * handful of metric keys, keyed by submissionId rather than by a real
+ * MetricDefinition/templateId relationship.
+ */
+function makeMetricLookupModels(metricsBySubmissionId: Record<string, AlertMetricValueFixture[]>) {
+  return {
+    metricDefinition: {
+      findMany: async () => {
+        const allRows = Object.values(metricsBySubmissionId).flat();
+        const byKey = new Map<string, AlertMetricValueFixture>();
+        for (const row of allRows) if (!byKey.has(row.key)) byKey.set(row.key, row);
+        return [...byKey.entries()].map(([key, row]) => ({
+          id: `def_${key}`,
+          key,
+          labelEn: key,
+          labelAr: key,
+          dataType: row.dataType ?? "Number",
+          required: false,
+          sortOrder: 0,
+        }));
+      },
+    },
+    submissionMetricValue: {
+      findMany: async ({ where }: { where: { submissionId: string } }) => {
+        const rows = metricsBySubmissionId[where.submissionId] ?? [];
+        return rows.map((r) => ({
+          metricDefinitionId: `def_${r.key}`,
+          numericValue: typeof r.value === "number" ? { toNumber: () => r.value } : null,
+          textValue: typeof r.value === "string" ? r.value : null,
+          isNa: r.isNa ?? false,
+        }));
+      },
+    },
+  };
+}
+
+export interface BenchmarkCycleFixture {
+  periodLabel: string;
+  templateId: string;
+  submissionId: string | null;
+}
+
+export interface BenchmarkCompanyFixture {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  archivedAt?: Date | null;
+  cycles: BenchmarkCycleFixture[];
+}
+
+/** Backs getPortfolioBenchmarks (src/lib/admin/benchmarking.ts). */
+export function makeBenchmarksDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  companies: BenchmarkCompanyFixture[];
+  metricsBySubmissionId?: Record<string, AlertMetricValueFixture[]>;
+}) {
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    company: {
+      findMany: async ({ select }: { select: { cycles: { where: { periodLabel: string } } } }) => {
+        const periodLabel = select.cycles.where.periodLabel;
+        return options.companies
+          .filter((c) => !c.archivedAt)
+          .map((c) => ({
+            id: c.id,
+            slug: c.slug,
+            nameEn: c.nameEn,
+            nameAr: c.nameAr,
+            cycles: c.cycles
+              .filter((cy) => cy.periodLabel === periodLabel)
+              .map((cy) => ({
+                templateId: cy.templateId,
+                submission: cy.submissionId === null ? null : { id: cy.submissionId },
+              })),
+          }));
+      },
+    },
+    ...makeMetricLookupModels(options.metricsBySubmissionId ?? {}),
+  };
+}
+
+export interface TrendCycleFixture {
+  periodLabel: string;
+  periodStart: Date;
+  templateId: string;
+  submissionId: string | null;
+  revenueMetricValues?: { key: string; value: number | null; isNa?: boolean }[];
+}
+
+/** Backs getPortfolioTrend (src/lib/admin/portfolio-trend.ts). */
+export function makeTrendDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  cycles: TrendCycleFixture[];
+  metricsBySubmissionId?: Record<string, AlertMetricValueFixture[]>;
+}) {
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    reportingCycle: {
+      findMany: async () =>
+        options.cycles.map((cy) => ({
+          periodLabel: cy.periodLabel,
+          periodStart: cy.periodStart,
+          templateId: cy.templateId,
+          submission:
+            cy.submissionId === null
+              ? null
+              : {
+                  id: cy.submissionId,
+                  metricValues: (cy.revenueMetricValues ?? []).map((v) => ({
+                    metricDefinition: { key: v.key },
+                    numericValue: v.value === null ? null : { toNumber: () => v.value },
+                    isNa: v.isNa ?? false,
+                  })),
+                },
+        })),
+    },
+    ...makeMetricLookupModels(options.metricsBySubmissionId ?? {}),
+  };
+}

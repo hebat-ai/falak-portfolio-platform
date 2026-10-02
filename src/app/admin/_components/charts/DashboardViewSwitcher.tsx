@@ -3,7 +3,16 @@
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export type DashboardView = "kpi" | "bar" | "pie" | "scatter" | "company-valuations" | "vehicle-valuations" | "portfolio-valuation";
+export type DashboardView =
+  | "kpi"
+  | "bar"
+  | "pie"
+  | "scatter"
+  | "company-valuations"
+  | "vehicle-valuations"
+  | "portfolio-valuation"
+  | "trend"
+  | "benchmarks";
 
 const VIEW_OPTIONS: { key: DashboardView; labelKey: keyof Dictionary["admin"]["charts"] }[] = [
   { key: "kpi", labelKey: "kpiViewLabel" },
@@ -13,6 +22,8 @@ const VIEW_OPTIONS: { key: DashboardView; labelKey: keyof Dictionary["admin"]["c
   { key: "company-valuations", labelKey: "companyValuationsViewLabel" },
   { key: "vehicle-valuations", labelKey: "vehicleValuationsViewLabel" },
   { key: "portfolio-valuation", labelKey: "portfolioValuationViewLabel" },
+  { key: "trend", labelKey: "trendViewLabel" },
+  { key: "benchmarks", labelKey: "benchmarksViewLabel" },
 ];
 
 interface DashboardViewSwitcherProps {

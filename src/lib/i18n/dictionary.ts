@@ -127,6 +127,11 @@ export interface Dictionary {
       portfolioValuationViewLabel: string;
       valuationAxisLabel: string;
       excludesNoValuationSuffix: string;
+      trendViewLabel: string;
+      benchmarksViewLabel: string;
+      burnLabel: string;
+      percentileLabel: string;
+      notEnoughPeersLabel: string;
     };
     manage: {
       sectionTitle: string;
@@ -534,6 +539,11 @@ export const en = {
       portfolioValuationViewLabel: "Portfolio Valuation",
       valuationAxisLabel: "Valuation",
       excludesNoValuationSuffix: "companies with no valuation recorded yet",
+      trendViewLabel: "Portfolio Trend",
+      benchmarksViewLabel: "Benchmarks",
+      burnLabel: "Burn",
+      percentileLabel: "percentile",
+      notEnoughPeersLabel: "Not enough peers to compare",
     },
     manage: {
       sectionTitle: "Manage Portfolio",
@@ -947,6 +957,11 @@ export const ar = {
       portfolioValuationViewLabel: "تقييم المحفظة",
       valuationAxisLabel: "التقييم",
       excludesNoValuationSuffix: "شركات بلا تقييم مسجل بعد",
+      trendViewLabel: "اتجاه المحفظة",
+      benchmarksViewLabel: "المقارنات المعيارية",
+      burnLabel: "الحرق النقدي",
+      percentileLabel: "الشريحة المئينية",
+      notEnoughPeersLabel: "لا توجد شركات مماثلة كافية للمقارنة",
     },
     manage: {
       sectionTitle: "إدارة المحفظة",
