@@ -15,8 +15,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useViewerNavFlags } from "@/lib/auth/ViewerNavFlagsProvider";
 import { BrandMark } from "@/components/brand/BrandMark";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { ViewerNavFlags } from "@/lib/auth/viewer-roles";
+
+type NavRequirement = keyof ViewerNavFlags;
 
 interface NavItemConfig {
   key: keyof Pick<
@@ -33,18 +37,24 @@ interface NavItemConfig {
   >;
   href: string;
   Icon: LucideIcon;
+  // Every route behind each of these items is already gated server-side
+  // to exactly this requirement (requireFalakRole("FALAK_OPERATIONS") for
+  // every /admin* + /vehicle + /company + /review route, real company/
+  // investor membership for /submit + /investor) -- this only decides
+  // whether to even show the link, never the real access decision.
+  requires: NavRequirement;
 }
 
 const NAV_ITEMS: NavItemConfig[] = [
-  { key: "portfolioDashboard", href: "/admin", Icon: LayoutDashboard },
-  { key: "companyList", href: "/admin/companies", Icon: ListChecks },
-  { key: "managePortfolio", href: "/admin/manage", Icon: Settings2 },
-  { key: "investorDashboard", href: "/investor", Icon: PieChart },
-  { key: "vehicleDashboard", href: "/vehicle", Icon: Landmark },
-  { key: "companyReports", href: "/company", Icon: Building2 },
-  { key: "startupForm", href: "/submit", Icon: ClipboardList },
-  { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck },
-  { key: "access", href: "/admin/access", Icon: KeyRound },
+  { key: "portfolioDashboard", href: "/admin", Icon: LayoutDashboard, requires: "isFalakStaff" },
+  { key: "companyList", href: "/admin/companies", Icon: ListChecks, requires: "isFalakStaff" },
+  { key: "managePortfolio", href: "/admin/manage", Icon: Settings2, requires: "isFalakStaff" },
+  { key: "investorDashboard", href: "/investor", Icon: PieChart, requires: "isInvestorMember" },
+  { key: "vehicleDashboard", href: "/vehicle", Icon: Landmark, requires: "isFalakStaff" },
+  { key: "companyReports", href: "/company", Icon: Building2, requires: "isFalakStaff" },
+  { key: "startupForm", href: "/submit", Icon: ClipboardList, requires: "isCompanyMember" },
+  { key: "reviewWorkspace", href: "/review", Icon: ShieldCheck, requires: "isFalakStaff" },
+  { key: "access", href: "/admin/access", Icon: KeyRound, requires: "isFalakStaff" },
 ];
 
 // The single item whose href is the longest segment-wise prefix of the
@@ -59,11 +69,13 @@ function activeHref(pathname: string | null): string | null {
 export function SidebarNavList({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useLanguage();
   const pathname = usePathname();
+  const flags = useViewerNavFlags();
   const current = activeHref(pathname);
+  const visibleItems = NAV_ITEMS.filter((item) => flags[item.requires]);
 
   return (
     <nav aria-label={t.common.appName} className="flex flex-col gap-1 p-3">
-      {NAV_ITEMS.map((item) => {
+      {visibleItems.map((item) => {
         const isActive = item.href === current;
         const label = t.nav[item.key];
 

@@ -92,6 +92,8 @@ export function VehicleDashboardView({ vehicle, periods, companies, investors }:
               <ul className="mt-3 space-y-2">
                 {investors.map((investor) => (
                   <li key={investor.id} className="flex items-center justify-between gap-3 text-sm">
+                    {/* Plain text, not a Link -- there is no investor-org
+                        detail page in this app yet to link to. */}
                     <span className="min-w-0 break-words text-start text-foreground">
                       {lang === "ar" ? investor.nameAr : investor.nameEn}
                     </span>

@@ -95,7 +95,7 @@ export function PortfolioDashboardClient({
         {view === "vehicle-valuations" ? <VehicleValuationsBarChart vehicles={valuationData.vehicles} /> : null}
         {view === "portfolio-valuation" ? <PortfolioValuationSummary companies={valuationData.companies} /> : null}
         {view === "trend" ? <PortfolioTrendChart points={trend} /> : null}
-        {view === "benchmarks" ? <BenchmarksView benchmarks={benchmarksByPeriod[periodKey] ?? []} /> : null}
+        {view === "benchmarks" ? <BenchmarksView benchmarks={benchmarksByPeriod[periodKey] ?? []} periodKey={periodKey} /> : null}
         {selectedPeriod ? <ReportingStatusPanel companies={companies} period={selectedPeriod} /> : null}
       </div>
     </AppShell>

@@ -120,6 +120,14 @@ export function InvestorPortfolioClient({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {scope.vehicleCards.map(({ vehicle, visibleCount }) => (
               <div key={vehicle.id} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
+                {/* Deliberately plain text, not a Link to /vehicle/[slug]
+                    -- that page is Falak-staff-only (getVehicleDashboardData
+                    requires FALAK_OPERATIONS) and shows other investors'
+                    exposure alongside internal figures; an investor-scoped
+                    vehicle view would need its own page and auth branch,
+                    which is out of scope here. Linking to a page this
+                    viewer would just be redirected away from is worse
+                    than no link at all. */}
                 <p className="font-heading text-sm font-semibold text-foreground">
                   {lang === "ar" ? vehicle.nameAr : vehicle.nameEn}
                 </p>

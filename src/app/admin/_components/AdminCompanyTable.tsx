@@ -111,7 +111,7 @@ export function AdminCompanyTable({ companies, period, vehicles, vehicleLinks, o
                 </Td>
                 <Td>
                   <Link
-                    href={`/company/${company.slug}`}
+                    href={`/company/${company.slug}?period=${encodeURIComponent(period)}${onSelectForReview ? "" : "&from=companies"}`}
                     className="chamfer-br-sm inline-flex items-center gap-1 text-sm font-medium text-link-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                   >
                     {t.admin.table.viewCompanyAction}

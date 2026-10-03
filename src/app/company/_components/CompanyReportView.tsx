@@ -21,30 +21,53 @@ interface CompanyReportViewProps {
   // Set when the report was opened from a vehicle dashboard's companies
   // table, so the back link returns there instead of the register.
   fromVehicleSlug: string | null;
+  // Set when opened from the Falak admin dashboard or Company List, so
+  // the back link returns there instead of the register -- the same
+  // "remember where staff came from" idea as fromVehicleSlug, just for
+  // the two other staff-side entry points. Never resource-scoped (no
+  // slug to validate), so unlike fromVehicleSlug this needs no
+  // linkedVehicles-style lookup -- the page.tsx caller already narrows
+  // it to exactly "admin" | "companies" | null.
+  from: "admin" | "companies" | null;
 }
 
-export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug }: CompanyReportViewProps) {
+export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, from }: CompanyReportViewProps) {
   const { company, periods, linkedVehicles, viewerRole } = data;
   const { t, lang } = useLanguage();
   const [selectedPeriodKey, setSelectedPeriodKey] = useState(initialPeriodKey);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
   // Company members go back to their own "My Companies" page (they can't
-  // see the register or vehicles). Falak staff go back to the vehicle the
-  // report was opened from -- only honored for a vehicle actually linked
-  // to this company, so a hand-edited ?fromVehicle= can't point elsewhere
-  // -- or to the register.
+  // see the register, vehicles, or admin views). Falak staff go back to
+  // the vehicle the report was opened from -- only honored for a vehicle
+  // actually linked to this company, so a hand-edited ?fromVehicle= can't
+  // point elsewhere -- then to the admin dashboard or Company List if
+  // that's where they came from, or to the register as the final
+  // fallback.
   const fromVehicle =
     viewerRole === "FALAK_STAFF" && fromVehicleSlug
       ? linkedVehicles.find((v) => v.slug === fromVehicleSlug)
       : undefined;
-  const backHref = viewerRole === "COMPANY_MEMBER" ? "/submit" : fromVehicle ? `/vehicle/${fromVehicle.slug}` : "/company";
+  const backHref =
+    viewerRole === "COMPANY_MEMBER"
+      ? "/submit"
+      : fromVehicle
+        ? `/vehicle/${fromVehicle.slug}`
+        : from === "admin"
+          ? "/admin"
+          : from === "companies"
+            ? "/admin/companies"
+            : "/company";
   const backLabel =
     viewerRole === "COMPANY_MEMBER"
       ? t.companyReport.backToMyCompanies
       : fromVehicle
         ? `${t.companyReport.backToPrefix} ${lang === "ar" ? fromVehicle.nameAr : fromVehicle.nameEn}`
-        : t.companyReport.backToRegister;
+        : from === "admin"
+          ? `${t.companyReport.backToPrefix} ${t.nav.portfolioDashboard}`
+          : from === "companies"
+            ? `${t.companyReport.backToPrefix} ${t.nav.companyList}`
+            : t.companyReport.backToRegister;
 
   const periodData = company.periods[selectedPeriodKey];
   const selectedIndex = periods.findIndex((p) => p.key === selectedPeriodKey);

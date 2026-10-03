@@ -75,7 +75,7 @@ export function CompanyCardGrid({ companies, period, vehicles, vehicleLinks }: C
             </dl>
 
             <Link
-              href={`/company/${company.slug}`}
+              href={`/company/${company.slug}?period=${encodeURIComponent(period)}&from=companies`}
               className="chamfer-br-sm mt-auto inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
             >
               {t.admin.table.viewCompanyAction}

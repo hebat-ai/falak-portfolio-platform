@@ -1864,3 +1864,22 @@ export function makeInvestorReturnsDbStub(options: {
     },
   };
 }
+
+/** Backs getViewerNavFlags (src/lib/auth/viewer-roles.ts). */
+export function makeViewerNavFlagsDbStub(options: {
+  hasFalakRole?: boolean;
+  hasCompanyMembership?: boolean;
+  hasInvestorMembership?: boolean;
+}) {
+  return {
+    userRoleAssignment: {
+      findFirst: async () => (options.hasFalakRole ? { id: "role_1" } : null),
+    },
+    companyMembership: {
+      findFirst: async () => (options.hasCompanyMembership ? { id: "cm_1" } : null),
+    },
+    investorMembership: {
+      findFirst: async () => (options.hasInvestorMembership ? { id: "im_1" } : null),
+    },
+  };
+}

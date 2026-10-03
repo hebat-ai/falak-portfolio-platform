@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -8,9 +9,13 @@ import type { CompanyBenchmark } from "@/lib/admin/benchmarking";
 
 interface BenchmarksViewProps {
   benchmarks: CompanyBenchmark[];
+  // The period this benchmark set was computed for -- threaded through
+  // to the company link, same `?period=` convention every other
+  // admin-side company link now uses (AdminCompanyTable/CompanyCardGrid).
+  periodKey: string;
 }
 
-export function BenchmarksView({ benchmarks }: BenchmarksViewProps) {
+export function BenchmarksView({ benchmarks, periodKey }: BenchmarksViewProps) {
   const { t, lang } = useLanguage();
   const metricColumns = new Map<string, { labelEn: string; labelAr: string }>();
   for (const b of benchmarks) {
@@ -35,7 +40,14 @@ export function BenchmarksView({ benchmarks }: BenchmarksViewProps) {
       <TBody>
         {benchmarks.map((benchmark) => (
           <Tr key={benchmark.companyId}>
-            <Td className="font-medium">{lang === "ar" ? benchmark.companyNameAr : benchmark.companyNameEn}</Td>
+            <Td className="font-medium">
+              <Link
+                href={`/company/${benchmark.companySlug}?period=${encodeURIComponent(periodKey)}&from=admin`}
+                className="chamfer-br-sm text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
+              >
+                {lang === "ar" ? benchmark.companyNameAr : benchmark.companyNameEn}
+              </Link>
+            </Td>
             {metricKeys.map((key) => {
               const metric = benchmark.metrics.find((m) => m.key === key);
               if (!metric) return <Td key={key} className="text-end text-muted-foreground">—</Td>;

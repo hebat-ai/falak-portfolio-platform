@@ -9,7 +9,7 @@ export default async function CompanyReportPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ period?: string | string[]; fromVehicle?: string | string[] }>;
+  searchParams: Promise<{ period?: string | string[]; fromVehicle?: string | string[]; from?: string | string[] }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
@@ -48,6 +48,13 @@ export default async function CompanyReportPage({
       : (data.periods[data.periods.length - 1]?.key ?? "");
 
   const fromVehicle = Array.isArray(sp.fromVehicle) ? sp.fromVehicle[0] : sp.fromVehicle;
+  const fromRaw = Array.isArray(sp.from) ? sp.from[0] : sp.from;
+  // Not a security-relevant value (unlike fromVehicle, never used to
+  // decide what data to show) -- just which back-link label/href to
+  // render, so an unrecognized value simply falls through to the
+  // existing default ("/company" register) rather than needing its own
+  // validation.
+  const from = fromRaw === "admin" || fromRaw === "companies" ? fromRaw : null;
 
   return (
     <CompanyReportView
@@ -55,6 +62,7 @@ export default async function CompanyReportPage({
       data={data}
       initialPeriodKey={initialPeriodKey}
       fromVehicleSlug={fromVehicle ?? null}
+      from={from}
     />
   );
 }

@@ -48,7 +48,7 @@ export function PortfolioAlertsPanel({ alerts }: PortfolioAlertsPanelProps) {
                   {alert.severity === "high" ? t.admin.alerts.severityHigh : t.admin.alerts.severityMedium}
                 </span>
                 <Link
-                  href={`/company/${alert.companySlug}`}
+                  href={`/company/${alert.companySlug}?from=admin`}
                   className="chamfer-br-sm min-w-0 truncate font-medium text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                 >
                   {lang === "ar" ? alert.companyNameAr : alert.companyNameEn}
