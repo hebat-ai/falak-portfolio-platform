@@ -26,6 +26,7 @@ export interface Dictionary {
     access: string;
     openMenu: string;
     closeMenu: string;
+    signOut: string;
   };
   language: {
     ariaSwitchToArabic: string;
@@ -441,6 +442,7 @@ export const en = {
     access: "Access Management",
     openMenu: "Open menu",
     closeMenu: "Close menu",
+    signOut: "Sign out",
   },
   language: {
     ariaSwitchToArabic: "Switch to Arabic",
@@ -906,6 +908,7 @@ export const ar = {
     access: "إدارة الوصول",
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",
+    signOut: "تسجيل الخروج",
   },
   language: {
     ariaSwitchToArabic: "التبديل إلى العربية",

@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { SignOutButton } from "./SignOutButton";
 
 interface TopHeaderProps {
   title: string;
@@ -38,6 +39,7 @@ export function TopHeader({ title, subtitle, menuOpen, onOpenMenu, drawerId }: T
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <ThemeSwitcher />
         <LanguageSwitcher />
+        <SignOutButton />
       </div>
     </header>
   );
