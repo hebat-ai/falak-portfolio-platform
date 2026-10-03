@@ -1883,3 +1883,68 @@ export function makeViewerNavFlagsDbStub(options: {
     },
   };
 }
+
+export interface TrendsCycleFixture {
+  periodLabel: string;
+  periodStart: Date;
+  templateId: string;
+  submissionId: string | null;
+  revenueMetricValues?: { key: string; value: number | null; isNa?: boolean }[];
+}
+
+export interface TrendsCompanyFixture {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  currency: string;
+  archivedAt?: Date | null;
+  cycles: TrendsCycleFixture[];
+}
+
+/** Backs getCompanyPerformanceTrends (src/lib/admin/company-trends.ts). */
+export function makeCompanyTrendsDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  companies: TrendsCompanyFixture[];
+  metricsBySubmissionId?: Record<string, AlertMetricValueFixture[]>;
+}) {
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    company: {
+      findMany: async () =>
+        options.companies
+          .filter((c) => !c.archivedAt)
+          .map((c) => ({
+            id: c.id,
+            slug: c.slug,
+            nameEn: c.nameEn,
+            nameAr: c.nameAr,
+            currency: c.currency,
+            cycles: c.cycles.map((cy) => ({
+              periodLabel: cy.periodLabel,
+              periodStart: cy.periodStart,
+              templateId: cy.templateId,
+              submission:
+                cy.submissionId === null
+                  ? null
+                  : {
+                      id: cy.submissionId,
+                      metricValues: (cy.revenueMetricValues ?? []).map((v) => ({
+                        metricDefinition: { key: v.key },
+                        numericValue: v.value === null ? null : { toNumber: () => v.value },
+                        isNa: v.isNa ?? false,
+                      })),
+                    },
+            })),
+          })),
+    },
+    ...makeMetricLookupModels(options.metricsBySubmissionId ?? {}),
+  };
+}

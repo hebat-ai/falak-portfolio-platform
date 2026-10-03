@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Select } from "@/components/ui/Select";
 import { PortfolioSummaryKpis } from "./_components/PortfolioSummaryKpis";
 import { PortfolioAlertsPanel } from "./_components/PortfolioAlertsPanel";
+import { PortfolioNavPanel } from "./_components/PortfolioNavPanel";
 import { ReportingStatusPanel } from "./_components/ReportingStatusPanel";
 import { DashboardViewSwitcher, type DashboardView } from "./_components/charts/DashboardViewSwitcher";
 import { CompaniesByStageBarChart } from "./_components/charts/CompaniesByStageBarChart";
@@ -15,6 +16,7 @@ import { VehicleValuationsBarChart } from "./_components/charts/VehicleValuation
 import { PortfolioValuationSummary } from "./_components/charts/PortfolioValuationSummary";
 import { PortfolioTrendChart } from "./_components/charts/PortfolioTrendChart";
 import { BenchmarksView } from "./_components/charts/BenchmarksView";
+import { CompanyTrendsTable } from "./_components/charts/CompanyTrendsTable";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeRevenueByCurrency } from "@/lib/admin/revenue";
 import { getOverdueDays } from "@/lib/reportingStatus";
@@ -22,12 +24,14 @@ import type { AdminPortfolioData, PortfolioValuationData } from "@/lib/admin/dto
 import type { PortfolioAlert } from "@/lib/admin/alerts";
 import type { CompanyBenchmark } from "@/lib/admin/benchmarking";
 import type { PortfolioTrendPoint } from "@/lib/admin/portfolio-trend";
+import type { CompanyTrendDTO } from "@/lib/admin/company-trends";
 
 interface PortfolioDashboardClientProps extends AdminPortfolioData {
   valuationData: PortfolioValuationData;
   alerts: PortfolioAlert[];
   trend: PortfolioTrendPoint[];
   benchmarksByPeriod: Record<string, CompanyBenchmark[]>;
+  companyTrends: CompanyTrendDTO[];
 }
 
 // Portfolio-wide KPIs and the Reporting Status panel always reflect the
@@ -38,17 +42,31 @@ export function PortfolioDashboardClient({
   companies,
   vehicles,
   investors,
+  ownershipLinks,
   periods,
   valuationData,
   alerts,
   trend,
   benchmarksByPeriod,
+  companyTrends,
 }: PortfolioDashboardClientProps) {
   const { t } = useLanguage();
   const latestPeriodKey = periods.at(-1)?.key ?? "";
   const [periodKey, setPeriodKey] = useState(latestPeriodKey);
   const [view, setView] = useState<DashboardView>("kpi");
+  const [navVehicleId, setNavVehicleId] = useState("");
   const selectedPeriod = periods.find((p) => p.key === periodKey) ?? periods[0];
+
+  // Scopes the Company Performance Trends table to the same vehicle
+  // selected in the NAV panel's filter -- "all" (empty string) shows
+  // every company, same convention PortfolioNavPanel itself uses.
+  const scopedCompanyTrends = useMemo(() => {
+    if (!navVehicleId) return companyTrends;
+    const companyIdsInVehicle = new Set(
+      ownershipLinks.filter((l) => l.vehicleId === navVehicleId).map((l) => l.companyId)
+    );
+    return companyTrends.filter((t) => companyIdsInVehicle.has(t.companyId));
+  }, [companyTrends, ownershipLinks, navVehicleId]);
 
   const summary = useMemo(() => {
     const completeCount = companies.filter((c) => c.periods[periodKey]?.status === "approved").length;
@@ -85,7 +103,14 @@ export function PortfolioDashboardClient({
             </Select>
           </div>
         ) : null}
+        <PortfolioNavPanel vehicles={valuationData.vehicles} vehicleId={navVehicleId} onVehicleChange={setNavVehicleId} />
         <PortfolioAlertsPanel alerts={alerts} />
+
+        <div className="space-y-3">
+          <h2 className="font-heading text-sm font-semibold text-foreground">{t.admin.charts.companyTrendsTitle}</h2>
+          <CompanyTrendsTable trends={scopedCompanyTrends} />
+        </div>
+
         <DashboardViewSwitcher view={view} onChange={setView} />
         {view === "kpi" ? <PortfolioSummaryKpis {...summary} /> : null}
         {view === "bar" ? <CompaniesByStageBarChart companies={companies} periodKey={periodKey} /> : null}

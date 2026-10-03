@@ -5,6 +5,7 @@ import { getPortfolioValuationData } from "@/lib/admin/valuations";
 import { getPortfolioAlerts } from "@/lib/admin/alerts";
 import { getPortfolioBenchmarks, type CompanyBenchmark } from "@/lib/admin/benchmarking";
 import { getPortfolioTrend } from "@/lib/admin/portfolio-trend";
+import { getCompanyPerformanceTrends } from "@/lib/admin/company-trends";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { PortfolioDashboardClient } from "./PortfolioDashboardClient";
 
@@ -18,13 +19,15 @@ export default async function PortfolioDashboardPage() {
   let valuationData;
   let alerts;
   let trend;
+  let companyTrends;
   let benchmarksByPeriod: Record<string, CompanyBenchmark[]> = {};
   try {
-    [data, valuationData, alerts, trend] = await Promise.all([
+    [data, valuationData, alerts, trend, companyTrends] = await Promise.all([
       getAdminPortfolioData(),
       getPortfolioValuationData(),
       getPortfolioAlerts(),
       getPortfolioTrend(),
+      getCompanyPerformanceTrends(),
     ]);
     const benchmarkEntries = await Promise.all(
       data.periods.map(async (p) => [p.key, await getPortfolioBenchmarks(p.key)] as const)
@@ -48,6 +51,7 @@ export default async function PortfolioDashboardPage() {
       alerts={alerts}
       trend={trend}
       benchmarksByPeriod={benchmarksByPeriod}
+      companyTrends={companyTrends}
     />
   );
 }

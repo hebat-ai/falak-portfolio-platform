@@ -134,6 +134,16 @@ export interface Dictionary {
       burnLabel: string;
       percentileLabel: string;
       notEnoughPeersLabel: string;
+      navPanelTitle: string;
+      allVehiclesOption: string;
+      excludesNoNavSuffix: string;
+      vehicleFilterLabel: string;
+      companyTrendsTitle: string;
+      companyTrendsCaption: string;
+      revenueGrowthQoqColumn: string;
+      burnChangeQoqColumn: string;
+      runwayColumn: string;
+      noTrendDataMessage: string;
     };
     manage: {
       sectionTitle: string;
@@ -583,6 +593,16 @@ export const en = {
       burnLabel: "Burn",
       percentileLabel: "percentile",
       notEnoughPeersLabel: "Not enough peers to compare",
+      navPanelTitle: "Portfolio NAV",
+      allVehiclesOption: "All Vehicles",
+      excludesNoNavSuffix: "vehicles with no NAV mark recorded yet",
+      vehicleFilterLabel: "Vehicle",
+      companyTrendsTitle: "Company Performance Trends",
+      companyTrendsCaption: "Revenue and burn trend by company, most recent two periods",
+      revenueGrowthQoqColumn: "Revenue Growth (QoQ)",
+      burnChangeQoqColumn: "Burn Change (QoQ)",
+      runwayColumn: "Runway",
+      noTrendDataMessage: "No reporting history yet for the selected scope.",
     },
     manage: {
       sectionTitle: "Manage Portfolio",
@@ -1038,6 +1058,16 @@ export const ar = {
       burnLabel: "الحرق النقدي",
       percentileLabel: "الشريحة المئينية",
       notEnoughPeersLabel: "لا توجد شركات مماثلة كافية للمقارنة",
+      navPanelTitle: "صافي قيمة أصول المحفظة (NAV)",
+      allVehiclesOption: "جميع الأدوات الاستثمارية",
+      excludesNoNavSuffix: "أدوات استثمارية بلا تقييم NAV مسجل بعد",
+      vehicleFilterLabel: "الأداة الاستثمارية",
+      companyTrendsTitle: "اتجاهات أداء الشركات",
+      companyTrendsCaption: "اتجاه الإيرادات والحرق النقدي لكل شركة، لآخر فترتين",
+      revenueGrowthQoqColumn: "نمو الإيرادات (ربع سنوي)",
+      burnChangeQoqColumn: "تغير الحرق النقدي (ربع سنوي)",
+      runwayColumn: "مدة الاستمرارية",
+      noTrendDataMessage: "لا يوجد سجل تقارير بعد ضمن النطاق المحدد.",
     },
     manage: {
       sectionTitle: "إدارة المحفظة",
