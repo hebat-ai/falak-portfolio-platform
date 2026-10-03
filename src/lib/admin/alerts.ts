@@ -37,12 +37,17 @@ const SUBMITTED_STATUSES = ["submitted", "under_review", "approved"];
  * helper MetricsBreakdown/QuarterlyReportDocument already use), which
  * getAdminPortfolioData's periodsData was never shaped to carry, and nothing
  * else needs that shape.
+ *
+ * `companyIds`, when given, scopes this to exactly that set (e.g. one
+ * vehicle's linked companies, for the vehicle dashboard's own alerts
+ * panel) -- omitted/undefined covers the whole portfolio, the original
+ * behavior.
  */
-export async function getPortfolioAlerts(): Promise<PortfolioAlert[]> {
+export async function getPortfolioAlerts(companyIds?: string[]): Promise<PortfolioAlert[]> {
   await requireFalakRole("FALAK_OPERATIONS");
 
   const companies = await db.company.findMany({
-    where: { archivedAt: null },
+    where: { archivedAt: null, ...(companyIds ? { id: { in: companyIds } } : {}) },
     select: {
       id: true,
       slug: true,

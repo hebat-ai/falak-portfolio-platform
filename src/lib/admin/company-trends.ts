@@ -39,12 +39,16 @@ export interface CompanyTrendDTO {
  * periods still gets a row (with nulls for the growth figures it can't
  * compute yet) -- it's never silently dropped, since "no trend data yet"
  * is itself something a fund manager needs to see, not hide.
+ *
+ * `companyIds`, when given, scopes this to exactly that set (e.g. one
+ * vehicle's linked companies) -- omitted/undefined covers every
+ * non-archived company, the original portfolio-wide behavior.
  */
-export async function getCompanyPerformanceTrends(): Promise<CompanyTrendDTO[]> {
+export async function getCompanyPerformanceTrends(companyIds?: string[]): Promise<CompanyTrendDTO[]> {
   await requireFalakRole("FALAK_OPERATIONS");
 
   const companies = await db.company.findMany({
-    where: { archivedAt: null },
+    where: { archivedAt: null, ...(companyIds ? { id: { in: companyIds } } : {}) },
     orderBy: { nameEn: "asc" },
     select: {
       id: true,

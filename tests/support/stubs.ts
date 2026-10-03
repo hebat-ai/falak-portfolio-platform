@@ -1413,9 +1413,10 @@ export function makePortfolioAlertsDbStub(options: {
       },
     },
     company: {
-      findMany: async () =>
+      findMany: async ({ where }: { where?: { id?: { in: string[] } } } = {}) =>
         options.companies
           .filter((c) => !c.archivedAt)
+          .filter((c) => !where?.id || where.id.in.includes(c.id))
           .map((c) => ({
             id: c.id,
             slug: c.slug,
@@ -1918,9 +1919,10 @@ export function makeCompanyTrendsDbStub(options: {
       },
     },
     company: {
-      findMany: async () =>
+      findMany: async ({ where }: { where?: { id?: { in: string[] } } } = {}) =>
         options.companies
           .filter((c) => !c.archivedAt)
+          .filter((c) => !where?.id || where.id.in.includes(c.id))
           .map((c) => ({
             id: c.id,
             slug: c.slug,
@@ -1946,5 +1948,58 @@ export function makeCompanyTrendsDbStub(options: {
           })),
     },
     ...makeMetricLookupModels(options.metricsBySubmissionId ?? {}),
+  };
+}
+
+/** Backs getVehicleNavSummary (src/lib/vehicle/nav.ts). */
+export function makeVehicleNavDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  snapshots?: { vehicleId: string; asOfDate: Date; navAmount: number; currency: string }[];
+}) {
+  const snapshots = options.snapshots ?? [];
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    vehicleNavSnapshot: {
+      findMany: async ({ where }: { where: { vehicleId: string } }) =>
+        snapshots
+          .filter((s) => s.vehicleId === where.vehicleId)
+          .sort((a, b) => a.asOfDate.getTime() - b.asOfDate.getTime())
+          .map((s) => ({ asOfDate: s.asOfDate, navAmount: { toNumber: () => s.navAmount }, currency: s.currency })),
+    },
+  };
+}
+
+/** Backs getVehicleCapitalSummary (src/lib/vehicle/capital.ts). */
+export function makeVehicleCapitalDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  positions?: { vehicleId: string; commitmentAmount: number | null; calledAmount: number | null; currency: string }[];
+}) {
+  const positions = options.positions ?? [];
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    investorVehiclePosition: {
+      findMany: async ({ where }: { where: { vehicleId: string } }) =>
+        positions
+          .filter((p) => p.vehicleId === where.vehicleId)
+          .map((p) => ({
+            commitmentAmount: p.commitmentAmount === null ? null : { toNumber: () => p.commitmentAmount },
+            calledAmount: p.calledAmount === null ? null : { toNumber: () => p.calledAmount },
+            currency: p.currency,
+          })),
+    },
   };
 }

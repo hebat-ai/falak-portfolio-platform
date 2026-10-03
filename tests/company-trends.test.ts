@@ -150,3 +150,20 @@ test("archived companies are excluded", async () => {
   const trends = await getCompanyPerformanceTrends();
   assert.equal(trends.length, 0);
 });
+
+test("companyIds scopes the result to exactly that set (e.g. one vehicle's companies)", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeCompanyTrendsDbStub({
+      falakRoles: ADMIN_ROLE,
+      companies: [
+        { id: "co_1", slug: "acme", nameEn: "Acme", nameAr: "Acme AR", currency: "SAR", cycles: [] },
+        { id: "co_2", slug: "beta", nameEn: "Beta", nameAr: "Beta AR", currency: "SAR", cycles: [] },
+      ],
+    })
+  );
+
+  const trends = await getCompanyPerformanceTrends(["co_1"]);
+  assert.equal(trends.length, 1);
+  assert.equal(trends[0].companyId, "co_1");
+});

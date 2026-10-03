@@ -8,12 +8,27 @@ import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { VehicleCompanyTable } from "./VehicleCompanyTable";
 import { VehicleKpis } from "./VehicleKpis";
+import { VehicleNavPanel } from "./VehicleNavPanel";
+import { VehicleCapitalSummary } from "./VehicleCapitalSummary";
+import { PortfolioAlertsPanel } from "@/components/portfolio/AlertsPanel";
+import { CompanyTrendsTable } from "@/components/portfolio/CompanyTrendsTable";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getOverdueDays } from "@/lib/reportingStatus";
 import { computeVehicleRevenueByCurrency } from "@/lib/vehicle/revenue";
 import type { VehicleDashboardData } from "@/lib/vehicle/dto";
+import type { VehicleNavSummary } from "@/lib/vehicle/nav";
+import type { VehicleCapitalTotal } from "@/lib/vehicle/capital";
+import type { PortfolioAlert } from "@/lib/admin/alerts";
+import type { CompanyTrendDTO } from "@/lib/admin/company-trends";
 
-export function VehicleDashboardView({ vehicle, periods, companies, investors }: VehicleDashboardData) {
+interface VehicleDashboardViewProps extends VehicleDashboardData {
+  nav: VehicleNavSummary;
+  capital: VehicleCapitalTotal[];
+  alerts: PortfolioAlert[];
+  companyTrends: CompanyTrendDTO[];
+}
+
+export function VehicleDashboardView({ vehicle, periods, companies, investors, nav, capital, alerts, companyTrends }: VehicleDashboardViewProps) {
   const { t, lang } = useLanguage();
   const [selectedPeriodKey, setSelectedPeriodKey] = useState(periods[periods.length - 1]?.key ?? "");
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
@@ -73,6 +88,10 @@ export function VehicleDashboardView({ vehicle, periods, companies, investors }:
           revenueByCurrency={summary.revenueByCurrency}
         />
 
+        <VehicleNavPanel nav={nav} />
+        <VehicleCapitalSummary totals={capital} />
+        <PortfolioAlertsPanel alerts={alerts} linkQuery={`fromVehicle=${vehicle.slug}`} />
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card className="min-w-0">
             <h2 className="font-heading text-sm font-semibold text-foreground">{t.vehicleReport.profileTitle}</h2>
@@ -103,6 +122,11 @@ export function VehicleDashboardView({ vehicle, periods, companies, investors }:
               </ul>
             )}
           </Card>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="font-heading text-sm font-semibold text-foreground">{t.vehicleReport.trendsTitle}</h2>
+          <CompanyTrendsTable trends={companyTrends} linkQuery={`fromVehicle=${vehicle.slug}`} />
         </div>
 
         <div>

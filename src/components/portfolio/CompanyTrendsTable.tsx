@@ -45,14 +45,18 @@ function GrowthCell({ value, lang }: { value: number | null; lang: "en" | "ar" }
 
 interface CompanyTrendsTableProps {
   trends: CompanyTrendDTO[];
+  // Same shared convention as PortfolioAlertsPanel's linkQuery -- lets
+  // both the portfolio dashboard and a single vehicle dashboard reuse
+  // this exact table with the right back-link on each company row.
+  linkQuery: string;
 }
 
 // "Everything I need to know to track performance" in one scannable
 // grid: every reporting company, its revenue and burn sparkline across
 // its full reported history, and the latest QoQ growth/change figures --
-// the per-company counterpart to the aggregate Portfolio Trend chart
-// above it on this same dashboard.
-export function CompanyTrendsTable({ trends }: CompanyTrendsTableProps) {
+// the per-company counterpart to the aggregate portfolio/vehicle trend
+// chart it's rendered alongside.
+export function CompanyTrendsTable({ trends, linkQuery }: CompanyTrendsTableProps) {
   const { t, lang } = useLanguage();
 
   if (trends.length === 0) {
@@ -76,7 +80,7 @@ export function CompanyTrendsTable({ trends }: CompanyTrendsTableProps) {
           <Tr key={trend.companyId}>
             <Td className="font-medium">
               <Link
-                href={`/company/${trend.companySlug}?from=admin`}
+                href={`/company/${trend.companySlug}?${linkQuery}`}
                 className="chamfer-br-sm text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
               >
                 {lang === "ar" ? trend.companyNameAr : trend.companyNameEn}

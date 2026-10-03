@@ -277,6 +277,11 @@ export interface Dictionary {
     noCompaniesLinked: string;
     investorsTitle: string;
     noInvestorsLinked: string;
+    capitalSummaryTitle: string;
+    committedLabel: string;
+    calledLabel: string;
+    calledPctLabel: string;
+    trendsTitle: string;
   };
   submitReport: {
     formTitle: string;
@@ -738,6 +743,11 @@ export const en = {
     noCompaniesLinked: "No companies currently linked to this vehicle.",
     investorsTitle: "Investors",
     noInvestorsLinked: "No investor currently linked",
+    capitalSummaryTitle: "Capital Summary",
+    committedLabel: "Committed",
+    calledLabel: "Called",
+    calledPctLabel: "% Called",
+    trendsTitle: "Company Performance Trends",
   },
   submitReport: {
     formTitle: "Reporting Form",
@@ -1204,6 +1214,11 @@ export const ar = {
     noCompaniesLinked: "لا توجد شركات مرتبطة بهذه الأداة الاستثمارية حالياً.",
     investorsTitle: "المستثمرون",
     noInvestorsLinked: "لا يوجد مستثمر مرتبط حالياً",
+    capitalSummaryTitle: "ملخص رأس المال",
+    committedLabel: "الملتزم به",
+    calledLabel: "المطلوب (المسحوب)",
+    calledPctLabel: "نسبة السحب",
+    trendsTitle: "اتجاهات أداء الشركات",
   },
   submitReport: {
     formTitle: "نموذج التقرير",

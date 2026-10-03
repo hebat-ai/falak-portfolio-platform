@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Select } from "@/components/ui/Select";
 import { PortfolioSummaryKpis } from "./_components/PortfolioSummaryKpis";
-import { PortfolioAlertsPanel } from "./_components/PortfolioAlertsPanel";
+import { PortfolioAlertsPanel } from "@/components/portfolio/AlertsPanel";
 import { PortfolioNavPanel } from "./_components/PortfolioNavPanel";
 import { ReportingStatusPanel } from "./_components/ReportingStatusPanel";
 import { DashboardViewSwitcher, type DashboardView } from "./_components/charts/DashboardViewSwitcher";
@@ -16,7 +16,7 @@ import { VehicleValuationsBarChart } from "./_components/charts/VehicleValuation
 import { PortfolioValuationSummary } from "./_components/charts/PortfolioValuationSummary";
 import { PortfolioTrendChart } from "./_components/charts/PortfolioTrendChart";
 import { BenchmarksView } from "./_components/charts/BenchmarksView";
-import { CompanyTrendsTable } from "./_components/charts/CompanyTrendsTable";
+import { CompanyTrendsTable } from "@/components/portfolio/CompanyTrendsTable";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { computeRevenueByCurrency } from "@/lib/admin/revenue";
 import { getOverdueDays } from "@/lib/reportingStatus";
@@ -104,11 +104,11 @@ export function PortfolioDashboardClient({
           </div>
         ) : null}
         <PortfolioNavPanel vehicles={valuationData.vehicles} vehicleId={navVehicleId} onVehicleChange={setNavVehicleId} />
-        <PortfolioAlertsPanel alerts={alerts} />
+        <PortfolioAlertsPanel alerts={alerts} linkQuery="from=admin" />
 
         <div className="space-y-3">
           <h2 className="font-heading text-sm font-semibold text-foreground">{t.admin.charts.companyTrendsTitle}</h2>
-          <CompanyTrendsTable trends={scopedCompanyTrends} />
+          <CompanyTrendsTable trends={scopedCompanyTrends} linkQuery="from=admin" />
         </div>
 
         <DashboardViewSwitcher view={view} onChange={setView} />

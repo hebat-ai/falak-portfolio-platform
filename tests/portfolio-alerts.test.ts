@@ -179,3 +179,32 @@ test("archived companies are excluded entirely", async () => {
   const alerts = await getPortfolioAlerts();
   assert.equal(alerts.length, 0);
 });
+
+test("companyIds scopes the result to exactly that set (e.g. one vehicle's companies)", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makePortfolioAlertsDbStub({
+      falakRoles: ADMIN_ROLE,
+      companies: [
+        {
+          id: "co_1",
+          slug: "acme",
+          nameEn: "Acme",
+          nameAr: "Acme AR",
+          cycles: [{ templateId: "tpl_1", currentDeadline: new Date("2020-01-01"), submissionId: null, submissionStatus: null }],
+        },
+        {
+          id: "co_2",
+          slug: "beta",
+          nameEn: "Beta",
+          nameAr: "Beta AR",
+          cycles: [{ templateId: "tpl_1", currentDeadline: new Date("2020-01-01"), submissionId: null, submissionStatus: null }],
+        },
+      ],
+    })
+  );
+
+  const alerts = await getPortfolioAlerts(["co_1"]);
+  assert.equal(alerts.length, 1);
+  assert.equal(alerts[0].companyId, "co_1");
+});

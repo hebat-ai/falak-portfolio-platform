@@ -29,9 +29,16 @@ function alertMessage(alert: PortfolioAlert, t: ReturnType<typeof useLanguage>["
 
 interface PortfolioAlertsPanelProps {
   alerts: PortfolioAlert[];
+  // Query string appended to each company link (no leading "?"/"&") --
+  // e.g. "from=admin" or `fromVehicle=${vehicleSlug}` -- so the
+  // company page's own back-link returns to wherever THIS panel is
+  // actually rendered from, matching the from/fromVehicle convention
+  // CompanyReportView already establishes. Shared by both the portfolio
+  // dashboard and a vehicle dashboard's own alerts panel.
+  linkQuery: string;
 }
 
-export function PortfolioAlertsPanel({ alerts }: PortfolioAlertsPanelProps) {
+export function PortfolioAlertsPanel({ alerts, linkQuery }: PortfolioAlertsPanelProps) {
   const { t, lang } = useLanguage();
 
   return (
@@ -48,7 +55,7 @@ export function PortfolioAlertsPanel({ alerts }: PortfolioAlertsPanelProps) {
                   {alert.severity === "high" ? t.admin.alerts.severityHigh : t.admin.alerts.severityMedium}
                 </span>
                 <Link
-                  href={`/company/${alert.companySlug}?from=admin`}
+                  href={`/company/${alert.companySlug}?${linkQuery}`}
                   className="chamfer-br-sm min-w-0 truncate font-medium text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
                 >
                   {lang === "ar" ? alert.companyNameAr : alert.companyNameEn}
