@@ -326,6 +326,86 @@ test("linkVehicleToCompanyAction writes an ownership_position.linked audit event
   assert.equal(events[0].targetId, "pos_new");
 });
 
+test("linkInvestorToVehicleAction writes an investor_vehicle_position.linked audit event", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const db = makeAdminActionDbStub({
+    falakRoles: ADMIN_ROLE,
+    models: {
+      investor: { findUnique: async () => ({ id: "inv_1", nameEn: "Acme Capital" }) },
+      vehicle: { findUnique: async () => ({ id: "veh_1", slug: "fund-one" }) },
+      investorVehiclePosition: {
+        findUnique: async () => null,
+        create: async ({ data }: { data: Record<string, unknown> }) => ({ id: "pos_new", ...data }),
+      },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("currency", "SAR");
+  formData.set("effectiveFrom", "2026-01-01");
+  formData.set("commitmentAmount", "5000000");
+  formData.set("ownershipPct", "0.1");
+
+  const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
+  assert.equal(result.error, null);
+  assert.equal(result.success, true);
+
+  const events = db.getAuditEvents();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].action, "investor_vehicle_position.linked");
+  assert.equal(events[0].targetType, "InvestorVehiclePosition");
+  assert.equal(events[0].targetId, "pos_new");
+});
+
+test("linkInvestorToVehicleAction rejects a duplicate assignment for the same effective date", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const db = makeAdminActionDbStub({
+    falakRoles: ADMIN_ROLE,
+    models: {
+      investor: { findUnique: async () => ({ id: "inv_1" }) },
+      vehicle: { findUnique: async () => ({ id: "veh_1" }) },
+      investorVehiclePosition: { findUnique: async () => ({ id: "existing_pos" }) },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("currency", "SAR");
+  formData.set("effectiveFrom", "2026-01-01");
+
+  const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
+  assert.ok(result.error);
+  assert.equal(result.success, undefined);
+});
+
+test("unassignInvestorFromVehicleAction writes an investor_vehicle_position.unassigned audit event", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const db = makeAdminActionDbStub({
+    falakRoles: ADMIN_ROLE,
+    models: {
+      investorVehiclePosition: { update: async ({ data }: { data: Record<string, unknown> }) => ({ id: "pos_1", ...data }) },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("positionId", "pos_1");
+  await actions.unassignInvestorFromVehicleAction(formData);
+
+  const events = db.getAuditEvents();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].action, "investor_vehicle_position.unassigned");
+  assert.equal(events[0].targetId, "pos_1");
+});
+
 test("createReportingTemplateAction writes a reporting_template.created audit event", async () => {
   const actions = await import("../src/app/admin/actions.ts");
   setCurrentUser(REAL_USER);

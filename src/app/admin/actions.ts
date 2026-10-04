@@ -480,6 +480,127 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
 }
 
 // ============================================================
+// Investor <-> vehicle assignment
+// ============================================================
+
+/**
+ * Creates the InvestorVehiclePosition row that IS "this investor is
+ * assigned to this vehicle" -- the model already existed (vehicle NAV/
+ * capital summaries and investor returns already read it), but nothing
+ * in the app ever wrote one; Falak had no way to actually assign an
+ * investor to a vehicle. A status: "Active" row here is also exactly
+ * what resolveInvestorExposure (src/lib/reporting/publish-workflow.ts)
+ * checks before granting report access and emailing a published
+ * report, so assigning an investor here is what makes them start
+ * receiving reports for every startup that vehicle holds.
+ */
+export async function linkInvestorToVehicleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const investorId = readString(formData, "investorId");
+  const vehicleId = readString(formData, "vehicleId");
+  const currency = readString(formData, "currency");
+  const effectiveFromRaw = readString(formData, "effectiveFrom");
+  const commitmentAmount = readString(formData, "commitmentAmount");
+  const calledAmount = readString(formData, "calledAmount");
+  const ownershipPct = readString(formData, "ownershipPct");
+
+  if (
+    !investorId ||
+    !vehicleId ||
+    !currency ||
+    !CURRENCIES.includes(currency as Currency) ||
+    !effectiveFromRaw ||
+    (commitmentAmount && !AMOUNT_PATTERN.test(commitmentAmount)) ||
+    (calledAmount && !AMOUNT_PATTERN.test(calledAmount)) ||
+    (ownershipPct && !AMOUNT_PATTERN.test(ownershipPct))
+  ) {
+    return { error: "Fill in every required field with a valid value." };
+  }
+
+  const effectiveFrom = new Date(effectiveFromRaw);
+  if (Number.isNaN(effectiveFrom.getTime())) {
+    return { error: "Enter a valid date." };
+  }
+
+  const [investor, vehicle] = await Promise.all([
+    db.investor.findUnique({ where: { id: investorId } }),
+    db.vehicle.findUnique({ where: { id: vehicleId } }),
+  ]);
+  if (!investor || !vehicle) {
+    return { error: GENERIC_ERROR };
+  }
+
+  const existing = await db.investorVehiclePosition.findUnique({
+    where: { investorId_vehicleId_effectiveFrom: { investorId, vehicleId, effectiveFrom } },
+  });
+  if (existing) {
+    return { error: "This investor is already assigned to this vehicle as of that date." };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const position = await tx.investorVehiclePosition.create({
+        data: {
+          investorId,
+          vehicleId,
+          currency: currency as Currency,
+          effectiveFrom,
+          commitmentAmount: commitmentAmount || null,
+          calledAmount: calledAmount || null,
+          ownershipPct: ownershipPct || null,
+          status: "Active",
+        },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "investor_vehicle_position.linked",
+        targetType: "InvestorVehiclePosition",
+        targetId: position.id,
+      });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+
+  return { error: null, success: true };
+}
+
+export async function unassignInvestorFromVehicleAction(formData: FormData): Promise<void> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      redirect("/sign-in");
+    }
+    if (error instanceof ForbiddenError) {
+      return;
+    }
+    throw error;
+  }
+  const positionId = readString(formData, "positionId");
+  if (!positionId) return;
+  await db.$transaction(async (tx) => {
+    await tx.investorVehiclePosition.update({ where: { id: positionId }, data: { status: "Exited", effectiveTo: new Date() } });
+    await writeAuditEvent(tx, {
+      actorId: user.id,
+      action: "investor_vehicle_position.unassigned",
+      targetType: "InvestorVehiclePosition",
+      targetId: positionId,
+    });
+  });
+}
+
+// ============================================================
 // Reporting template + metric definitions
 // ============================================================
 

@@ -171,6 +171,11 @@ export interface Dictionary {
       indexSubtitle: string;
       invitesSectionTitle: string;
       vehicleAssignmentTitle: string;
+      investorVehicleAssignmentTitle: string;
+      investorVehicleAssignmentsCaption: string;
+      effectiveFromLabel: string;
+      commitmentAmountLabel: string;
+      unassignAction: string;
       recordCompanyValuationTitle: string;
       recordVehicleValuationTitle: string;
       recordCapitalTransactionTitle: string;
@@ -683,6 +688,11 @@ export const en = {
       indexSubtitle: "Create and manage companies, vehicles, investors, reporting templates and cycles, and invites.",
       invitesSectionTitle: "Investor & Company Invite",
       vehicleAssignmentTitle: "Company Assignment to Vehicle",
+      investorVehicleAssignmentTitle: "Investor Assignment to Vehicle",
+      investorVehicleAssignmentsCaption: "Investors currently assigned to a vehicle, and so receiving reports from its startups.",
+      effectiveFromLabel: "Effective From",
+      commitmentAmountLabel: "Commitment Amount",
+      unassignAction: "Unassign",
       recordCompanyValuationTitle: "Record Company Valuation",
       recordVehicleValuationTitle: "Record Vehicle Valuation",
       recordCapitalTransactionTitle: "Record Capital Transaction",
@@ -1201,6 +1211,11 @@ export const ar = {
       indexSubtitle: "إنشاء وإدارة الشركات والأدوات الاستثمارية والمستثمرين وقوالب التقارير ودوراتها والدعوات.",
       invitesSectionTitle: "دعوة المستثمرين والشركات",
       vehicleAssignmentTitle: "تعيين شركة لأداة استثمارية",
+      investorVehicleAssignmentTitle: "تعيين مستثمر لأداة استثمارية",
+      investorVehicleAssignmentsCaption: "المستثمرون المعيّنون حالياً لأداة استثمارية، والذين يستلمون تقارير شركاتها.",
+      effectiveFromLabel: "ساري من تاريخ",
+      commitmentAmountLabel: "مبلغ الالتزام",
+      unassignAction: "إلغاء التعيين",
       recordCompanyValuationTitle: "تسجيل تقييم شركة",
       recordVehicleValuationTitle: "تسجيل تقييم أداة استثمارية",
       recordCapitalTransactionTitle: "تسجيل حركة رأس مال",
