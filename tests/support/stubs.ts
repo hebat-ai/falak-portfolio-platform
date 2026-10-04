@@ -17,7 +17,17 @@ export function setCurrentUser(user: StubUser | null): void {
   (globalThis as Record<string, unknown>).__TEST_GET_CURRENT_USER_STUB__ = async () => user;
 }
 
+// Department lookup made by requireFalakRoleWithDepartmentScope for any
+// non-Admin Falak caller. Domain stubs that don't model users get this
+// default; fixtures don't model departments either, so the value only
+// needs to be non-null (a null department scopes to zero rows).
+export const DEFAULT_STUB_DEPARTMENT = "InvestmentDepartment";
+
 export function setDbStub(stub: unknown): void {
+  const s = stub as Record<string, unknown> | null;
+  if (s && typeof s === "object" && !("user" in s)) {
+    s.user = { findUnique: async () => ({ department: DEFAULT_STUB_DEPARTMENT }) };
+  }
   (globalThis as Record<string, unknown>).__TEST_DB_STUB__ = stub;
 }
 
@@ -1273,6 +1283,7 @@ export interface VehicleQueriesVehicleFixture {
   nameAr?: string;
   type?: string;
   currency?: string;
+  department?: string;
   archived?: boolean;
   companies?: VehicleQueriesCompanyFixture[];
   investorPositions?: VehicleQueriesInvestorPositionFixture[];
@@ -1338,6 +1349,7 @@ export function makeVehicleDbStub(options: { falakRoles?: FalakRoleFixture[]; ve
     nameAr: v.nameAr ?? v.nameEn,
     type: v.type ?? "Fund",
     currency: v.currency ?? "SAR",
+    department: v.department ?? DEFAULT_STUB_DEPARTMENT,
   });
 
   return {

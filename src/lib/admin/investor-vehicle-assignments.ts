@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import type { Currency } from "@/generated/prisma/client";
 
 export interface InvestorVehicleAssignmentRow {
@@ -31,10 +31,15 @@ function toDateOnly(date: Date): string {
  * history, not a current assignment.
  */
 export async function getInvestorVehicleAssignments(): Promise<InvestorVehicleAssignmentRow[]> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+  const deptWhere = scope.departments ? { department: { in: scope.departments } } : {};
 
   const positions = await db.investorVehiclePosition.findMany({
-    where: { status: "Active", investor: { archivedAt: null }, vehicle: { archivedAt: null } },
+    where: {
+      status: "Active",
+      investor: { archivedAt: null, ...deptWhere },
+      vehicle: { archivedAt: null, ...deptWhere },
+    },
     orderBy: { effectiveFrom: "desc" },
     select: {
       id: true,

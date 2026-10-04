@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import { findNumericMetricValue } from "@/lib/reporting/metric-format";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
@@ -56,11 +56,13 @@ function toDateOnly(date: Date): string {
 export async function getCompanyListData(): Promise<CompanyListRow[]> {
   // Same FALAK_MANAGEMENT floor as the Portfolio Dashboard -- Company
   // List is the other cross-company aggregate view restricted to
-  // Admin/Management only.
-  await requireFalakRole("FALAK_MANAGEMENT");
+  // Admin/Management only. Management itself is department-scoped
+  // (unlike Admin), so a Management user here only sees companies in
+  // their own department.
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_MANAGEMENT");
 
   const companies = await db.company.findMany({
-    where: { archivedAt: null },
+    where: { archivedAt: null, ...(scope.departments ? { department: { in: scope.departments } } : {}) },
     orderBy: { nameEn: "asc" },
     select: {
       id: true,

@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import { findNumericMetricValue } from "@/lib/reporting/metric-format";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
@@ -45,10 +45,14 @@ export interface CompanyTrendDTO {
  * non-archived company, the original portfolio-wide behavior.
  */
 export async function getCompanyPerformanceTrends(companyIds?: string[]): Promise<CompanyTrendDTO[]> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
 
   const companies = await db.company.findMany({
-    where: { archivedAt: null, ...(companyIds ? { id: { in: companyIds } } : {}) },
+    where: {
+      archivedAt: null,
+      ...(companyIds ? { id: { in: companyIds } } : {}),
+      ...(scope.departments ? { department: { in: scope.departments } } : {}),
+    },
     orderBy: { nameEn: "asc" },
     select: {
       id: true,

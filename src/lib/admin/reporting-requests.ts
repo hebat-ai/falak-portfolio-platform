@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import type { CycleStatus, SubmissionStatus } from "@/generated/prisma/client";
 
 export interface ReportingRequestVehicleRef {
@@ -62,10 +62,13 @@ function reportKey(companyId: string, periodStart: Date, periodEnd: Date): strin
  * getPortfolioAlerts/getCompanyPerformanceTrends.
  */
 export async function getReportingRequests(companyIds?: string[]): Promise<ReportingRequestRow[]> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
 
   const cycles = await db.reportingCycle.findMany({
-    where: { company: { archivedAt: null }, ...(companyIds ? { companyId: { in: companyIds } } : {}) },
+    where: {
+      company: { archivedAt: null, ...(scope.departments ? { department: { in: scope.departments } } : {}) },
+      ...(companyIds ? { companyId: { in: companyIds } } : {}),
+    },
     orderBy: { periodStart: "desc" },
     select: {
       id: true,

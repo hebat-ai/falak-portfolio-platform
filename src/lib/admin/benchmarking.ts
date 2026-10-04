@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import { findNumericMetricValue } from "@/lib/reporting/metric-format";
 
@@ -43,10 +43,10 @@ export interface CompanyBenchmark {
  * percentile.
  */
 export async function getPortfolioBenchmarks(periodLabel: string): Promise<CompanyBenchmark[]> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
 
   const companies = await db.company.findMany({
-    where: { archivedAt: null },
+    where: { archivedAt: null, ...(scope.departments ? { department: { in: scope.departments } } : {}) },
     select: {
       id: true,
       slug: true,

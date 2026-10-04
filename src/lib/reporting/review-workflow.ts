@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma, SubmissionStatus } from "@/generated/prisma/client";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 
@@ -42,11 +42,12 @@ async function appendWorkflowEvent(
  * with count 0.
  */
 export async function startReview(submissionId: string): Promise<void> {
-  const { user } = await requireFalakRole("FALAK_OPERATIONS");
+  const { user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+  const departmentWhere = departments ? { department: { in: departments } } : {};
 
   await db.$transaction(async (tx) => {
     const claim = await tx.companySubmission.updateMany({
-      where: { id: submissionId, status: "submitted", cycle: { company: { archivedAt: null } } },
+      where: { id: submissionId, status: "submitted", cycle: { company: { archivedAt: null, ...departmentWhere } } },
       data: { status: "under_review" },
     });
     if (claim.count !== 1) {
@@ -78,11 +79,12 @@ export async function startReview(submissionId: string): Promise<void> {
  * same atomicity discipline as submitCompanySubmission's event creation.
  */
 export async function requestChanges(submissionId: string, comment: string): Promise<void> {
-  const { user } = await requireFalakRole("FALAK_OPERATIONS");
+  const { user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+  const departmentWhere = departments ? { department: { in: departments } } : {};
 
   await db.$transaction(async (tx) => {
     const claim = await tx.companySubmission.updateMany({
-      where: { id: submissionId, status: "under_review", cycle: { company: { archivedAt: null } } },
+      where: { id: submissionId, status: "under_review", cycle: { company: { archivedAt: null, ...departmentWhere } } },
       data: { status: "changes_requested" },
     });
     if (claim.count !== 1) {
@@ -121,11 +123,12 @@ export async function requestChanges(submissionId: string, comment: string): Pro
  * never touches a Report.
  */
 export async function approveSubmission(submissionId: string): Promise<void> {
-  const { user } = await requireFalakRole("FALAK_OPERATIONS");
+  const { user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+  const departmentWhere = departments ? { department: { in: departments } } : {};
 
   await db.$transaction(async (tx) => {
     const claim = await tx.companySubmission.updateMany({
-      where: { id: submissionId, status: "under_review", cycle: { company: { archivedAt: null } } },
+      where: { id: submissionId, status: "under_review", cycle: { company: { archivedAt: null, ...departmentWhere } } },
       data: { status: "approved" },
     });
     if (claim.count !== 1) {

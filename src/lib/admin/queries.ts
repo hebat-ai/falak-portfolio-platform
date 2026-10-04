@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
 import type {
   AdminPortfolioData,
@@ -25,17 +25,24 @@ function toDateOnly(date: Date): string {
  * FALAK_ADMIN independently, never trusting that this call already ran.
  */
 export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  // Operations/Management are department-scoped (unlike Admin): each
+  // of companies/vehicles/investors is filtered independently by the
+  // caller's own department, and the join table (ownershipPositions)
+  // and cycles follow the company's department so no out-of-department
+  // row leaks in through a relation.
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+  const deptWhere = scope.departments ? { department: { in: scope.departments } } : {};
 
   const [companies, vehicles, investors, ownershipPositions, cycles, templates] = await Promise.all([
-    db.company.findMany({ orderBy: { nameEn: "asc" } }),
-    db.vehicle.findMany({ orderBy: { nameEn: "asc" } }),
-    db.investor.findMany({ orderBy: { nameEn: "asc" } }),
+    db.company.findMany({ where: deptWhere, orderBy: { nameEn: "asc" } }),
+    db.vehicle.findMany({ where: deptWhere, orderBy: { nameEn: "asc" } }),
+    db.investor.findMany({ where: deptWhere, orderBy: { nameEn: "asc" } }),
     db.ownershipPosition.findMany({
-      where: { holderType: "VEHICLE" },
+      where: { holderType: "VEHICLE", company: deptWhere, vehicle: deptWhere },
       select: { companyId: true, vehicleId: true },
     }),
     db.reportingCycle.findMany({
+      where: { company: deptWhere },
       select: {
         id: true,
         companyId: true,

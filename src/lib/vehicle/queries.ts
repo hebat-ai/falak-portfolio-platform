@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
 import type {
   VehicleDirectoryEntryDTO,
@@ -22,10 +22,10 @@ function toDateOnly(date: Date): string {
  * requireFalakRole is the only gate that can apply.
  */
 export async function getVehicleDirectoryData(): Promise<VehicleDirectoryEntryDTO[]> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
 
   const vehicles = await db.vehicle.findMany({
-    where: { archivedAt: null },
+    where: { archivedAt: null, ...(scope.departments ? { department: { in: scope.departments } } : {}) },
     orderBy: { nameEn: "asc" },
     select: {
       id: true,
@@ -68,7 +68,7 @@ export async function getVehicleDirectoryData(): Promise<VehicleDirectoryEntryDT
  * admin tables can link to one, and Falak staff may need its history.
  */
 export async function getVehicleDashboardData(slug: string): Promise<VehicleDashboardData | null> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
 
   const vehicle = await db.vehicle.findUnique({
     where: { slug },
@@ -79,6 +79,7 @@ export async function getVehicleDashboardData(slug: string): Promise<VehicleDash
       nameAr: true,
       type: true,
       currency: true,
+      department: true,
       ownershipPositions: {
         where: { holderType: "VEHICLE", company: { archivedAt: null } },
         select: {
@@ -125,6 +126,12 @@ export async function getVehicleDashboardData(slug: string): Promise<VehicleDash
   });
 
   if (!vehicle) return null;
+  if (scope.departments && !scope.departments.includes(vehicle.department)) {
+    // Out-of-department staff gets the same "unknown slug" null as a
+    // truly nonexistent vehicle -- never a distinguishable ForbiddenError,
+    // same discipline as getCompanyReportData.
+    return null;
+  }
 
   const seenCompanyIds = new Set<string>();
   const linkedCompanies: (typeof vehicle.ownershipPositions)[number]["company"][] = [];

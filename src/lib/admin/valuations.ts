@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import type {
   PortfolioValuationData,
   AdminCompanyValuationDTO,
@@ -19,27 +19,28 @@ function toDateOnly(date: Date): string {
  * reduction needed.
  */
 export async function getPortfolioValuationData(): Promise<PortfolioValuationData> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+  const deptWhere = scope.departments ? { department: { in: scope.departments } } : {};
 
   const [companies, latestCompanyValuations, vehicles, latestVehicleNavs] = await Promise.all([
     db.company.findMany({
-      where: { archivedAt: null },
+      where: { archivedAt: null, ...deptWhere },
       orderBy: { nameEn: "asc" },
       select: { id: true, nameEn: true, nameAr: true },
     }),
     db.companyValuationSnapshot.findMany({
-      where: { company: { archivedAt: null } },
+      where: { company: { archivedAt: null, ...deptWhere } },
       orderBy: { asOfDate: "desc" },
       distinct: ["companyId"],
       select: { companyId: true, asOfDate: true, valuationAmount: true, currency: true, valuationType: true },
     }),
     db.vehicle.findMany({
-      where: { archivedAt: null },
+      where: { archivedAt: null, ...deptWhere },
       orderBy: { nameEn: "asc" },
       select: { id: true, nameEn: true, nameAr: true },
     }),
     db.vehicleNavSnapshot.findMany({
-      where: { vehicle: { archivedAt: null } },
+      where: { vehicle: { archivedAt: null, ...deptWhere } },
       orderBy: { asOfDate: "desc" },
       distinct: ["vehicleId"],
       select: { vehicleId: true, asOfDate: true, navAmount: true, currency: true },

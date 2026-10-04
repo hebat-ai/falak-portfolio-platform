@@ -223,3 +223,26 @@ test("dashboard: the same company linked twice appears once", async () => {
   const result = await getVehicleDashboardData("fund-one");
   assert.equal(result!.companies.length, 1);
 });
+
+test("dashboard: a vehicle outside an Operations user's department returns null, same as an unknown slug", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeVehicleDbStub({
+      falakRoles: OPERATIONS_ROLE,
+      vehicles: [{ id: "veh_vb", slug: "vb-fund", nameEn: "VB Fund", department: "VentureBuilder" }],
+    })
+  );
+  assert.equal(await getVehicleDashboardData("vb-fund"), null);
+});
+
+test("dashboard: Admin sees a vehicle in any department", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeVehicleDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      vehicles: [{ id: "veh_vb", slug: "vb-fund", nameEn: "VB Fund", department: "VentureBuilder" }],
+    })
+  );
+  const result = await getVehicleDashboardData("vb-fund");
+  assert.equal(result!.vehicle.slug, "vb-fund");
+});

@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import { findNumericMetricValue, findMetric } from "@/lib/reporting/metric-format";
 
@@ -44,10 +44,14 @@ const SUBMITTED_STATUSES = ["submitted", "under_review", "approved"];
  * behavior.
  */
 export async function getPortfolioAlerts(companyIds?: string[]): Promise<PortfolioAlert[]> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
 
   const companies = await db.company.findMany({
-    where: { archivedAt: null, ...(companyIds ? { id: { in: companyIds } } : {}) },
+    where: {
+      archivedAt: null,
+      ...(companyIds ? { id: { in: companyIds } } : {}),
+      ...(scope.departments ? { department: { in: scope.departments } } : {}),
+    },
     select: {
       id: true,
       slug: true,

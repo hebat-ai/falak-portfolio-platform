@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import type { Currency, Department } from "@/generated/prisma/client";
 
 // Draft agreements haven't moved money; Terminated ones had their
@@ -101,12 +101,14 @@ function toDateOnly(date: Date): string {
  * dashboard panel in this codebase).
  */
 export async function getPortfolioOverviewData(): Promise<PortfolioOverviewRaw> {
-  // FALAK_MANAGEMENT floor, not FALAK_OPERATIONS -- the Portfolio
-  // Dashboard is a cross-department aggregate view, explicitly
-  // restricted to Admin/Management only (see PlatformRole's own
-  // comment); an Investment Professional never sees this page at all,
-  // not even scoped to their own department.
-  await requireFalakRole("FALAK_MANAGEMENT");
+  // FALAK_MANAGEMENT floor, not FALAK_OPERATIONS -- an Investment
+  // Professional never sees this page at all. Management itself is
+  // department-scoped (unlike Admin): the dashboard still only covers
+  // Management's own department's companies/vehicles, never the whole
+  // portfolio.
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_MANAGEMENT");
+  const companyDeptWhere = scope.departments ? { department: { in: scope.departments } } : {};
+  const vehicleDeptWhere = scope.departments ? { department: { in: scope.departments } } : {};
 
   const [
     companies,
@@ -120,39 +122,45 @@ export async function getPortfolioOverviewData(): Promise<PortfolioOverviewRaw> 
     reportingCycles,
   ] = await Promise.all([
     db.company.findMany({
-      where: { archivedAt: null },
+      where: { archivedAt: null, ...companyDeptWhere },
       select: { id: true, nameEn: true, nameAr: true, slug: true, department: true },
     }),
     db.vehicle.findMany({
-      where: { archivedAt: null },
+      where: { archivedAt: null, ...vehicleDeptWhere },
       select: { id: true, nameEn: true, nameAr: true, slug: true, vintageYear: true },
     }),
     db.ownershipPosition.findMany({
-      where: { company: { archivedAt: null } },
+      where: { company: { archivedAt: null, ...companyDeptWhere } },
       select: { id: true, companyId: true, vehicleId: true },
     }),
     db.investmentAgreement.findMany({
-      where: { status: { in: [...INVESTED_STATUSES] }, ownershipPosition: { company: { archivedAt: null } } },
+      where: {
+        status: { in: [...INVESTED_STATUSES] },
+        ownershipPosition: { company: { archivedAt: null, ...companyDeptWhere } },
+      },
       select: { id: true, ownershipPositionId: true, investedAmount: true, currency: true, signedDate: true },
     }),
     db.companyValuationSnapshot.findMany({
-      where: { company: { archivedAt: null } },
+      where: { company: { archivedAt: null, ...companyDeptWhere } },
       select: { companyId: true, asOfDate: true, valuationAmount: true, currency: true },
     }),
     db.vehicleNavSnapshot.findMany({
-      where: { vehicle: { archivedAt: null } },
+      where: { vehicle: { archivedAt: null, ...vehicleDeptWhere } },
       select: { vehicleId: true, asOfDate: true, navAmount: true, currency: true },
     }),
     db.agreementCashFlow.findMany({
-      where: { type: "Distribution", agreement: { ownershipPosition: { company: { archivedAt: null } } } },
+      where: {
+        type: "Distribution",
+        agreement: { ownershipPosition: { company: { archivedAt: null, ...companyDeptWhere } } },
+      },
       select: { amount: true, currency: true, agreement: { select: { ownershipPositionId: true } } },
     }),
     db.investorVehiclePosition.findMany({
-      where: { status: "Active", vehicle: { archivedAt: null } },
+      where: { status: "Active", vehicle: { archivedAt: null, ...vehicleDeptWhere } },
       select: { vehicleId: true, investorId: true },
     }),
     db.reportingCycle.findMany({
-      where: { company: { archivedAt: null } },
+      where: { company: { archivedAt: null, ...companyDeptWhere } },
       select: {
         companyId: true,
         periodLabel: true,

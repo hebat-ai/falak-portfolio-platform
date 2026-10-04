@@ -1,7 +1,9 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireCurrentUser, requireFalakRole, requireCompanyMembership } from "@/lib/auth/authorization";
+import { requireCurrentUser, requireCompanyMembership } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { ForbiddenError } from "@/lib/auth/authorization-errors";
+import type { Department } from "@/generated/prisma/client";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import { getPortfolioBenchmarks } from "@/lib/admin/benchmarking";
@@ -25,9 +27,20 @@ function toDateOnly(date: Date): string {
  * OR-composition yet, so it stays local/private here rather than becoming
  * a generic export on authorization.ts.
  */
-async function requireCompanyReportViewer(companyId: string): Promise<{ viewerRole: CompanyReportViewerRole }> {
+async function requireCompanyReportViewer(
+  companyId: string,
+  companyDepartment: Department
+): Promise<{ viewerRole: CompanyReportViewerRole }> {
   try {
-    await requireFalakRole("FALAK_OPERATIONS");
+    const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+    if (scope.departments && !scope.departments.includes(companyDepartment)) {
+      // Out-of-department staff falls through to the company-membership
+      // check below, same as someone with no Falak role at all -- they
+      // are never that company's own member either, so it ends in the
+      // same ForbiddenError, collapsed by the caller into the same
+      // "unknown slug" null the page already returns for a non-member.
+      throw new ForbiddenError();
+    }
     return { viewerRole: "FALAK_STAFF" };
   } catch (error) {
     if (!(error instanceof ForbiddenError)) throw error;
@@ -68,6 +81,7 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
       entryStage: true,
       currentStage: true,
       archivedAt: true,
+      department: true,
       cycles: {
         select: {
           id: true,
@@ -117,7 +131,7 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
 
   if (!company) return null;
 
-  const { viewerRole } = await requireCompanyReportViewer(company.id);
+  const { viewerRole } = await requireCompanyReportViewer(company.id, company.department);
 
   const periods: CompanyReportPeriodOption[] = company.cycles
     .map((cycle) => ({

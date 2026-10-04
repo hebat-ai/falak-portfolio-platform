@@ -2,8 +2,10 @@ import "server-only";
 import type { Department } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireFalakRole, type FalakRole } from "@/lib/auth/authorization";
+import type { CurrentUser } from "@/lib/auth/current-user";
 
 export interface DepartmentScope {
+  user: CurrentUser;
   role: FalakRole;
   // null = unscoped (FALAK_ADMIN only): every admin query that reads
   // this must treat null as "no department filter," never as "filter to
@@ -28,9 +30,9 @@ export async function requireFalakRoleWithDepartmentScope(requiredRole: FalakRol
   const { user, role } = await requireFalakRole(requiredRole);
 
   if (role === "FALAK_ADMIN") {
-    return { role, departments: null };
+    return { user, role, departments: null };
   }
 
   const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { department: true } });
-  return { role, departments: dbUser?.department ? [dbUser.department] : [] };
+  return { user, role, departments: dbUser?.department ? [dbUser.department] : [] };
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireCurrentUser, requireFalakRole } from "@/lib/auth/authorization";
+import { requireCurrentUser } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { ForbiddenError } from "@/lib/auth/authorization-errors";
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
@@ -95,6 +96,7 @@ export async function getQuarterlyReportData(slug: string, periodKey: string): P
       currency: true,
       currentStage: true,
       archivedAt: true,
+      department: true,
       cycles: {
         orderBy: { periodStart: "asc" },
         select: {
@@ -148,8 +150,8 @@ export async function getQuarterlyReportData(slug: string, periodKey: string): P
 
   let isAuthorized = false;
   try {
-    await requireFalakRole("FALAK_OPERATIONS");
-    isAuthorized = true;
+    const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+    isAuthorized = scope.departments === null || scope.departments.includes(company.department);
   } catch (error) {
     if (!(error instanceof ForbiddenError)) throw error;
   }
