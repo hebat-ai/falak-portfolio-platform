@@ -2054,12 +2054,20 @@ export function makeVehicleNavDbStub(options: {
   };
 }
 
-/** Backs getVehicleCapitalSummary (src/lib/vehicle/capital.ts). */
-export function makeVehicleCapitalDbStub(options: {
+/** Backs getVehicleCapitalOverview (src/lib/vehicle/cap-table.ts). */
+export function makeVehicleCapTableDbStub(options: {
   falakRoles?: FalakRoleFixture[];
-  positions?: { vehicleId: string; commitmentAmount: number | null; calledAmount: number | null; currency: string }[];
+  agreements?: { vehicleId: string; investedAmount: number | null; currency: string | null }[];
+  positions?: {
+    vehicleId: string;
+    investor: { id: string; nameEn: string; nameAr: string };
+    commitmentAmount: number | null;
+    ownershipPct: number | null;
+    currency: string;
+  }[];
+  fees?: { vehicleId: string; investorId: string; amount: number; currency: string }[];
 }) {
-  const positions = options.positions ?? [];
+  const dec = (v: number | null) => (v === null ? null : { toNumber: () => v });
   return {
     userRoleAssignment: {
       findMany: async ({ where }: { where: Record<string, unknown> }) => {
@@ -2069,15 +2077,28 @@ export function makeVehicleCapitalDbStub(options: {
           .map((r) => ({ role: r.role }));
       },
     },
+    investmentAgreement: {
+      findMany: async ({ where }: { where: { ownershipPosition: { vehicleId: string } } }) =>
+        (options.agreements ?? [])
+          .filter((a) => a.vehicleId === where.ownershipPosition.vehicleId)
+          .map((a) => ({ investedAmount: dec(a.investedAmount), currency: a.currency })),
+    },
     investorVehiclePosition: {
       findMany: async ({ where }: { where: { vehicleId: string } }) =>
-        positions
+        (options.positions ?? [])
           .filter((p) => p.vehicleId === where.vehicleId)
           .map((p) => ({
-            commitmentAmount: p.commitmentAmount === null ? null : { toNumber: () => p.commitmentAmount },
-            calledAmount: p.calledAmount === null ? null : { toNumber: () => p.calledAmount },
+            commitmentAmount: dec(p.commitmentAmount),
+            ownershipPct: dec(p.ownershipPct),
             currency: p.currency,
+            investor: p.investor,
           })),
+    },
+    investorCapitalTransaction: {
+      findMany: async ({ where }: { where: { vehicleId: string } }) =>
+        (options.fees ?? [])
+          .filter((f) => f.vehicleId === where.vehicleId)
+          .map((f) => ({ investorId: f.investorId, amount: dec(f.amount)!, currency: f.currency })),
     },
   };
 }

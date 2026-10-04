@@ -4,15 +4,11 @@ import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
 import { findNumericMetricValue } from "@/lib/reporting/metric-format";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
-import { percentChange } from "@/lib/reporting/computed-metrics";
+import { deriveMonthlyBurn, deriveRunwayMonths } from "@/lib/reporting/computed-metrics";
 import type { Currency } from "@/generated/prisma/client";
+import type { CompanyTrendPoint } from "./company-trend-row";
 
-export interface CompanyTrendPoint {
-  periodLabel: string;
-  periodStart: string;
-  revenue: number | null;
-  burn: number | null;
-}
+export type { CompanyTrendPoint } from "./company-trend-row";
 
 export interface CompanyTrendDTO {
   companyId: string;
@@ -21,24 +17,15 @@ export interface CompanyTrendDTO {
   companyNameAr: string;
   currency: Currency;
   points: CompanyTrendPoint[];
-  latestPeriodLabel: string | null;
-  latestRevenue: number | null;
-  previousRevenue: number | null;
-  revenueGrowth: number | null;
-  latestBurn: number | null;
-  previousBurn: number | null;
-  burnChange: number | null;
-  runwayMonths: number | null;
 }
 
 /**
- * Falak-staff-only. One row per non-archived company: its full
- * reported-period revenue/burn history (for the sparkline), plus the
- * latest-vs-prior QoQ growth figures the Company Performance Trends
- * table surfaces directly. A company with fewer than two reported
- * periods still gets a row (with nulls for the growth figures it can't
- * compute yet) -- it's never silently dropped, since "no trend data yet"
- * is itself something a fund manager needs to see, not hide.
+ * Falak-staff-only. One row per non-archived company with its per-period
+ * revenue/burn/runway history, in the company's own currency. Burn and
+ * runway are derived from other submitted metrics when not reported
+ * directly. QoQ growth is computed client-side for whichever period the
+ * viewer selects (computeTrendRow). A company with no reported periods
+ * still gets a row -- "no data yet" is itself worth seeing.
  *
  * `companyIds`, when given, scopes this to exactly that set (e.g. one
  * vehicle's linked companies) -- omitted/undefined covers every
@@ -83,28 +70,28 @@ export async function getCompanyPerformanceTrends(companyIds?: string[]): Promis
   return Promise.all(
     companies.map(async (company) => {
       const points: CompanyTrendPoint[] = [];
-      // Runway isn't part of CompanyTrendPoint (it's a point-in-time
-      // figure, not something that makes sense to sparkline) -- just
-      // keep whatever the most recently processed reported period's
-      // value was; since cycles are already ordered oldest-first, that's
-      // the latest one once the loop finishes.
-      let latestRunway: number | null = null;
       for (const cycle of company.cycles) {
         if (!cycle.submission) continue;
         const revenue = sumRevenueMetricValues(cycle.submission.metricValues);
         const metrics = await fetchSubmissionMetricFields(db, cycle.submission.id, cycle.templateId);
-        const burn = findNumericMetricValue(metrics, "fin_burn_rate");
-        latestRunway = findNumericMetricValue(metrics, "fin_runway_months");
+        const burn = deriveMonthlyBurn({
+          reportedBurn: findNumericMetricValue(metrics, "fin_burn_rate"),
+          monthlyNetCashFlow: findNumericMetricValue(metrics, "fin_monthly_net_cash_flow"),
+          quarterRevenue: revenue,
+          quarterExpenses: findNumericMetricValue(metrics, "fin_expenses"),
+        });
         points.push({
           periodLabel: cycle.periodLabel,
           periodStart: cycle.periodStart.toISOString().slice(0, 10),
           revenue,
           burn,
+          runwayMonths: deriveRunwayMonths(
+            findNumericMetricValue(metrics, "fin_runway_months"),
+            findNumericMetricValue(metrics, "fin_cash_balance"),
+            burn
+          ),
         });
       }
-
-      const latest = points.at(-1) ?? null;
-      const previous = points.length > 1 ? points.at(-2)! : null;
 
       return {
         companyId: company.id,
@@ -113,14 +100,6 @@ export async function getCompanyPerformanceTrends(companyIds?: string[]): Promis
         companyNameAr: company.nameAr,
         currency: company.currency,
         points,
-        latestPeriodLabel: latest?.periodLabel ?? null,
-        latestRevenue: latest?.revenue ?? null,
-        previousRevenue: previous?.revenue ?? null,
-        revenueGrowth: percentChange(latest?.revenue ?? null, previous?.revenue ?? null),
-        latestBurn: latest?.burn ?? null,
-        previousBurn: previous?.burn ?? null,
-        burnChange: percentChange(latest?.burn ?? null, previous?.burn ?? null),
-        runwayMonths: latestRunway,
       };
     })
   );

@@ -34,6 +34,37 @@ export function percentChange(current: number | null, previous: number | null): 
 }
 
 /**
+ * Monthly burn: the reported Burn Rate when submitted; otherwise derived
+ * from Monthly Net Cash Flow (burn = outflow), or failing that from the
+ * quarter's Total Expenses minus Revenue spread over 3 months. Floored
+ * at 0 -- a cash-generating company burns nothing, never a negative burn.
+ */
+export function deriveMonthlyBurn(inputs: {
+  reportedBurn: number | null;
+  monthlyNetCashFlow: number | null;
+  quarterRevenue: number | null;
+  quarterExpenses: number | null;
+}): number | null {
+  if (inputs.reportedBurn !== null) return inputs.reportedBurn;
+  if (inputs.monthlyNetCashFlow !== null) return Math.max(0, -inputs.monthlyNetCashFlow);
+  if (inputs.quarterRevenue !== null && inputs.quarterExpenses !== null) {
+    return Math.max(0, (inputs.quarterExpenses - inputs.quarterRevenue) / 3);
+  }
+  return null;
+}
+
+/** Runway: the reported figure when submitted; otherwise Cash Balance / monthly burn. */
+export function deriveRunwayMonths(
+  reportedRunway: number | null,
+  cashBalance: number | null,
+  monthlyBurn: number | null
+): number | null {
+  if (reportedRunway !== null) return reportedRunway;
+  if (cashBalance !== null && monthlyBurn !== null && monthlyBurn > 0) return cashBalance / monthlyBurn;
+  return null;
+}
+
+/**
  * Revenue Projection = latest period's Total Revenue x 4 (a simple
  * run-rate annualization) -- verified against the source PDF's own
  * numbers: $160.0K x 4 = $640.0K exactly.

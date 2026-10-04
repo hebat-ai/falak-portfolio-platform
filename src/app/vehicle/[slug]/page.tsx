@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getVehicleDashboardData } from "@/lib/vehicle/queries";
 import { getVehicleNavSummary } from "@/lib/vehicle/nav";
-import { getVehicleCapitalSummary } from "@/lib/vehicle/capital";
+import { getVehicleCapitalOverview } from "@/lib/vehicle/cap-table";
 import { getPortfolioAlerts } from "@/lib/admin/alerts";
 import { getCompanyPerformanceTrends } from "@/lib/admin/company-trends";
 import { getReportingRequests } from "@/lib/admin/reporting-requests";
@@ -22,7 +22,7 @@ export default async function VehicleDashboardPage({ params }: { params: Promise
   // concern when no non-staff user can see any vehicle at all.
   let data;
   let nav;
-  let capital;
+  let capitalOverview;
   let alerts;
   let companyTrends;
   let reportingRequests;
@@ -30,9 +30,9 @@ export default async function VehicleDashboardPage({ params }: { params: Promise
     data = await getVehicleDashboardData(slug);
     if (data) {
       const companyIds = data.companies.map((c) => c.id);
-      [nav, capital, alerts, companyTrends, reportingRequests] = await Promise.all([
+      [nav, capitalOverview, alerts, companyTrends, reportingRequests] = await Promise.all([
         getVehicleNavSummary(data.vehicle.id),
-        getVehicleCapitalSummary(data.vehicle.id),
+        getVehicleCapitalOverview(data.vehicle.id),
         getPortfolioAlerts(companyIds),
         getCompanyPerformanceTrends(companyIds),
         getReportingRequests(companyIds),
@@ -45,7 +45,7 @@ export default async function VehicleDashboardPage({ params }: { params: Promise
     throw error;
   }
 
-  if (!data || !nav || !capital || !alerts || !companyTrends || !reportingRequests) {
+  if (!data || !nav || !capitalOverview || !alerts || !companyTrends || !reportingRequests) {
     notFound();
   }
 
@@ -53,7 +53,7 @@ export default async function VehicleDashboardPage({ params }: { params: Promise
     <VehicleDashboardView
       {...data}
       nav={nav}
-      capital={capital}
+      capitalOverview={capitalOverview}
       alerts={alerts}
       companyTrends={companyTrends}
       reportingRequests={reportingRequests}

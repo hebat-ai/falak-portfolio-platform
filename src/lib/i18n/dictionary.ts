@@ -313,16 +313,22 @@ export interface Dictionary {
   };
   vehicleReport: {
     backToDirectory: string;
-    profileTitle: string;
     companiesLabel: string;
     companiesTableTitle: string;
     noCompaniesLinked: string;
     investorsTitle: string;
     noInvestorsLinked: string;
-    capitalSummaryTitle: string;
-    committedLabel: string;
-    calledLabel: string;
-    calledPctLabel: string;
+    investedCapitalLabel: string;
+    latestValuationLabel: string;
+    latestValuationAsOf: string;
+    noValuationRecorded: string;
+    capTableTitle: string;
+    capTableCaption: string;
+    investorColumn: string;
+    contributedCapitalColumn: string;
+    netInvestedCapitalColumn: string;
+    ownershipColumn: string;
+    totalRow: string;
     trendsTitle: string;
   };
   submitReport: {
@@ -848,16 +854,22 @@ export const en = {
   },
   vehicleReport: {
     backToDirectory: "Back to Vehicles",
-    profileTitle: "Vehicle Profile",
     companiesLabel: "Companies",
     companiesTableTitle: "Companies in this Vehicle",
     noCompaniesLinked: "No companies currently linked to this vehicle.",
     investorsTitle: "Investors",
     noInvestorsLinked: "No investor currently linked",
-    capitalSummaryTitle: "Capital Summary",
-    committedLabel: "Committed",
-    calledLabel: "Called",
-    calledPctLabel: "% Called",
+    investedCapitalLabel: "Invested Capital",
+    latestValuationLabel: "Latest Valuation",
+    latestValuationAsOf: "As of",
+    noValuationRecorded: "No valuation recorded yet",
+    capTableTitle: "Cap Table",
+    capTableCaption: "Each investor's contributed capital, net invested capital, and ownership of this vehicle.",
+    investorColumn: "Investor",
+    contributedCapitalColumn: "Contributed Capital",
+    netInvestedCapitalColumn: "Net Invested Capital",
+    ownershipColumn: "Ownership",
+    totalRow: "Total",
     trendsTitle: "Company Performance Trends",
   },
   submitReport: {
@@ -1388,16 +1400,22 @@ export const ar = {
   },
   vehicleReport: {
     backToDirectory: "العودة إلى الأدوات الاستثمارية",
-    profileTitle: "الملف التعريفي للأداة الاستثمارية",
     companiesLabel: "الشركات",
     companiesTableTitle: "الشركات ضمن هذه الأداة الاستثمارية",
     noCompaniesLinked: "لا توجد شركات مرتبطة بهذه الأداة الاستثمارية حالياً.",
     investorsTitle: "المستثمرون",
     noInvestorsLinked: "لا يوجد مستثمر مرتبط حالياً",
-    capitalSummaryTitle: "ملخص رأس المال",
-    committedLabel: "الملتزم به",
-    calledLabel: "المطلوب (المسحوب)",
-    calledPctLabel: "نسبة السحب",
+    investedCapitalLabel: "رأس المال المستثمر",
+    latestValuationLabel: "آخر تقييم",
+    latestValuationAsOf: "بتاريخ",
+    noValuationRecorded: "لم يُسجَّل أي تقييم بعد",
+    capTableTitle: "جدول الملكية",
+    capTableCaption: "رأس المال المساهم به لكل مستثمر، وصافي رأس المال المستثمر، ونسبة ملكيته في هذه الأداة.",
+    investorColumn: "المستثمر",
+    contributedCapitalColumn: "رأس المال المساهم به",
+    netInvestedCapitalColumn: "صافي رأس المال المستثمر",
+    ownershipColumn: "نسبة الملكية",
+    totalRow: "الإجمالي",
     trendsTitle: "اتجاهات أداء الشركات",
   },
   submitReport: {

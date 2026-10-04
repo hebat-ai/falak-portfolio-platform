@@ -19,10 +19,10 @@ export function formatCurrency(amount: number, currency: Currency, locale: AppLo
   }).format(amount);
 }
 
-export function formatPercent(value: number, locale: AppLocale): string {
+export function formatPercent(value: number, locale: AppLocale, maximumFractionDigits = 0): string {
   return new Intl.NumberFormat(intlLocale(locale), {
     style: "percent",
-    maximumFractionDigits: 0,
+    maximumFractionDigits,
   }).format(value);
 }
 
