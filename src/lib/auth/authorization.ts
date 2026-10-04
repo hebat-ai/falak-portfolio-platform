@@ -15,31 +15,30 @@ import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-e
  */
 export type FalakRole = Exclude<PlatformRole, "INVESTOR">;
 
+// Strict seniority order, highest first -- ADMIN outranks MANAGEMENT
+// outranks OPERATIONS. Every "acceptable set"/"effective role" below is
+// derived from this one array, so the hierarchy only needs to be
+// declared once.
+const FALAK_ROLE_SENIORITY: readonly FalakRole[] = ["FALAK_ADMIN", "FALAK_MANAGEMENT", "FALAK_OPERATIONS"];
+
 function isFalakRole(role: PlatformRole): role is FalakRole {
-  return role === "FALAK_ADMIN" || role === "FALAK_OPERATIONS";
+  return (FALAK_ROLE_SENIORITY as readonly PlatformRole[]).includes(role);
 }
 
 /**
- * ADMIN is a strict superset of MEMBER for the Falak roles (carried
+ * A senior role is a strict superset of every role below it (carried
  * forward from this project's own original permissions-matrix decision:
- * "Admin = strict superset with override power over Operations") -- a
- * FALAK_OPERATIONS requirement accepts either FALAK_ADMIN or
- * FALAK_OPERATIONS; a FALAK_ADMIN requirement accepts FALAK_ADMIN only.
- * Exhaustive over FalakRole's two members -- if a third FalakRole value
- * is ever introduced, the `never` assignment below fails to compile until
- * this switch is updated, rather than silently under-covering it.
+ * "Admin = strict superset with override power over Operations", now
+ * extended to the three-tier ADMIN > MANAGEMENT > OPERATIONS hierarchy)
+ * -- a FALAK_OPERATIONS requirement accepts all three roles; a
+ * FALAK_MANAGEMENT requirement accepts ADMIN or MANAGEMENT; a
+ * FALAK_ADMIN requirement accepts FALAK_ADMIN only. Derived from
+ * FALAK_ROLE_SENIORITY's own order -- every role at or above
+ * `requiredRole`'s seniority index is acceptable.
  */
 function acceptableFalakRoles(requiredRole: FalakRole): FalakRole[] {
-  switch (requiredRole) {
-    case "FALAK_ADMIN":
-      return ["FALAK_ADMIN"];
-    case "FALAK_OPERATIONS":
-      return ["FALAK_ADMIN", "FALAK_OPERATIONS"];
-    default: {
-      const exhaustiveCheck: never = requiredRole;
-      throw new Error(`Unhandled FalakRole: ${String(exhaustiveCheck)}`);
-    }
-  }
+  const requiredIndex = FALAK_ROLE_SENIORITY.indexOf(requiredRole);
+  return FALAK_ROLE_SENIORITY.slice(0, requiredIndex + 1);
 }
 
 /** Same ADMIN-is-a-superset-of-MEMBER rule, for CompanyMembershipRole. */
@@ -111,9 +110,9 @@ export async function requireCurrentUser(): Promise<CurrentUser> {
  * active row matching the acceptable set; the effective role is then
  * resolved explicitly in application code below, never left to
  * findFirst()'s unspecified ordering or to PostgreSQL enum ordering:
- * FALAK_ADMIN wins whenever an active FALAK_ADMIN row exists, since
- * ADMIN is the strict superset (see acceptableFalakRoles above);
- * otherwise FALAK_OPERATIONS, if that row exists instead.
+ * the most senior role present wins (FALAK_ADMIN, then
+ * FALAK_MANAGEMENT, then FALAK_OPERATIONS -- see
+ * FALAK_ROLE_SENIORITY/acceptableFalakRoles above).
  *
  * WHERE predicate (the one query): userId = the authenticated user's own
  * id (never a client-supplied value) AND role IN (the exhaustive
@@ -137,11 +136,10 @@ export async function requireFalakRole(requiredRole: FalakRole): Promise<{ user:
   // -- this narrows it without an unchecked `as`.
   const matchedRoles = new Set(roleRows.map((row) => row.role).filter(isFalakRole));
 
-  const effectiveRole: FalakRole | null = matchedRoles.has("FALAK_ADMIN")
-    ? "FALAK_ADMIN"
-    : matchedRoles.has("FALAK_OPERATIONS")
-      ? "FALAK_OPERATIONS"
-      : null;
+  // Most senior matched role wins, same deterministic-resolution
+  // reasoning as the two-tier version this replaces -- never left to
+  // query ordering.
+  const effectiveRole: FalakRole | null = FALAK_ROLE_SENIORITY.find((role) => matchedRoles.has(role)) ?? null;
 
   if (!effectiveRole) {
     throw new ForbiddenError();

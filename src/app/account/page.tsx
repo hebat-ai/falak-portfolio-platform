@@ -15,11 +15,17 @@ import { signOutAction } from "./actions";
 // resolveLandingPath itself rather than trusting how the visitor
 // arrived, so it never shows "pending approval" to someone who actually
 // has access.
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ setPassword?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/sign-in");
   }
+
+  const { setPassword } = await searchParams;
 
   const landingPath = await resolveLandingPath(user.id);
   const isPending = landingPath === "/account";
@@ -49,6 +55,13 @@ export default async function AccountPage() {
           </Button>
         </form>
       </div>
+
+      {!isPending && setPassword === "1" && !hasPassword ? (
+        <p role="alert" className="chamfer-br-sm bg-surface-muted p-3 text-sm text-foreground shadow-[var(--inner-line)]">
+          Set a password to continue. You signed in with an emailed link this time, but every sign-in after this one
+          requires a password.
+        </p>
+      ) : null}
 
       {!isPending ? <SetPasswordForm hasPassword={hasPassword} /> : null}
     </main>

@@ -74,6 +74,55 @@ test("requireFalakRole: Operations only, Admin requirement -> denied", async () 
   await assert.rejects(() => requireFalakRole("FALAK_ADMIN"), ForbiddenError);
 });
 
+// ============================================================
+// FALAK_MANAGEMENT -- the three-tier ADMIN > MANAGEMENT > OPERATIONS
+// hierarchy
+// ============================================================
+
+test("requireFalakRole: Management only, Operations requirement -> returns FALAK_MANAGEMENT", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(makeAuthorizationDbStub({ falakRoles: [{ role: "FALAK_MANAGEMENT" }] }));
+  const result = await requireFalakRole("FALAK_OPERATIONS");
+  assert.equal(result.role, "FALAK_MANAGEMENT");
+});
+
+test("requireFalakRole: Management only, Management requirement -> returns FALAK_MANAGEMENT", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(makeAuthorizationDbStub({ falakRoles: [{ role: "FALAK_MANAGEMENT" }] }));
+  const result = await requireFalakRole("FALAK_MANAGEMENT");
+  assert.equal(result.role, "FALAK_MANAGEMENT");
+});
+
+test("requireFalakRole: Management only, Admin requirement -> denied", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(makeAuthorizationDbStub({ falakRoles: [{ role: "FALAK_MANAGEMENT" }] }));
+  await assert.rejects(() => requireFalakRole("FALAK_ADMIN"), ForbiddenError);
+});
+
+test("requireFalakRole: Operations only, Management requirement -> denied", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(makeAuthorizationDbStub({ falakRoles: [{ role: "FALAK_OPERATIONS" }] }));
+  await assert.rejects(() => requireFalakRole("FALAK_MANAGEMENT"), ForbiddenError);
+});
+
+test("requireFalakRole: Admin always resolves as the effective role, regardless of which other roles are also active", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeAuthorizationDbStub({
+      falakRoles: [{ role: "FALAK_OPERATIONS" }, { role: "FALAK_MANAGEMENT" }, { role: "FALAK_ADMIN" }],
+    })
+  );
+  const result = await requireFalakRole("FALAK_OPERATIONS");
+  assert.equal(result.role, "FALAK_ADMIN");
+});
+
+test("requireFalakRole: Management outranks Operations when both are active and Operations is required", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(makeAuthorizationDbStub({ falakRoles: [{ role: "FALAK_MANAGEMENT" }, { role: "FALAK_OPERATIONS" }] }));
+  const result = await requireFalakRole("FALAK_OPERATIONS");
+  assert.equal(result.role, "FALAK_MANAGEMENT");
+});
+
 test("requireCompanyMembership: revoked membership is denied", async () => {
   setCurrentUser(REAL_USER);
   setDbStub(makeAuthorizationDbStub({ companyMembership: { userId: "user_1", companyId: "co_1", role: "MEMBER", revoked: true } }));

@@ -17,8 +17,20 @@ datasource db {
 // Platform roles & accounts
 // ============================================================
 
+// Three Falak-staff tiers, strictly nested (ADMIN > MANAGEMENT >
+// OPERATIONS): FALAK_ADMIN is the platform-owner tier, unscoped by
+// department, able to see and manage everything. FALAK_MANAGEMENT and
+// FALAK_OPERATIONS ("Investment Professional" at sign-up) are both
+// scoped to exactly one department (User.department below) -- they see
+// only companies/vehicles/investors in their own department. On top of
+// that department scoping, the Portfolio Dashboard and Company List
+// pages are further restricted to FALAK_ADMIN/FALAK_MANAGEMENT only --
+// FALAK_OPERATIONS cannot open those two cross-company aggregate views
+// at all, even scoped to its own department (see requireFalakRole's own
+// doc comment for the full acceptable-role hierarchy this backs).
 enum PlatformRole {
   FALAK_ADMIN
+  FALAK_MANAGEMENT
   FALAK_OPERATIONS
   INVESTOR
 }
@@ -34,12 +46,20 @@ model User {
   // (EmailVerificationToken below), checked by
   // src/lib/auth/authorize-password.ts -- never the only way in.
   passwordHash  String?
+  // Which department this user's Falak-staff access is scoped to --
+  // meaningful (and set) only for FALAK_MANAGEMENT/FALAK_OPERATIONS;
+  // null for FALAK_ADMIN (unscoped) and for anyone with no Falak role
+  // at all (a company member or investor). Department itself is
+  // defined on Company (prisma/schema.prisma's own Department enum,
+  // added for the portfolio dashboard) and reused here unchanged.
+  department    Department?
   deactivatedAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   roles                      UserRoleAssignment[]
   verificationTokens         EmailVerificationToken[]
+  passwordResetTokens        PasswordResetToken[]
   companyMemberships         CompanyMembership[]
   investorMemberships        InvestorMembership[]
   companyInvitesSent         CompanyInvite[]                   @relation("CompanyInviteInvitedBy")
@@ -142,6 +162,25 @@ model EmailVerificationToken {
 
   @@index([userId])
   @@map("email_verification_tokens")
+}
+
+// Deliberately a separate model/table from EmailVerificationToken, even
+// though the shape is identical -- that one signs the holder straight
+// in (passwordless magic link); this one only ever authorizes setting a
+// NEW passwordHash, via /reset-password, and never establishes a
+// session by itself. Keeping them distinct means a leaked or reused
+// reset link can never be replayed as a sign-in link, and vice versa.
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 // ============================================================
@@ -276,6 +315,12 @@ model Vehicle {
   // dashboard's vintage-vs-investment-year timeline. Optional: not every
   // existing vehicle will have this backfilled immediately.
   vintageYear Int?
+  // Which department owns/runs this vehicle -- drives department-scoped
+  // access for FALAK_MANAGEMENT/FALAK_OPERATIONS staff (see
+  // PlatformRole's own comment): a staff member scoped to one
+  // department only sees vehicles (and, through them, companies and
+  // investors) in that same department.
+  department  Department  @default(InvestmentDepartment)
   archivedAt  DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -300,6 +345,13 @@ model Investor {
   nameEn     String
   nameAr     String
   type       InvestorType
+  // Same department-scoping purpose as Vehicle.department -- which
+  // department relationship-manages this investor. An investor
+  // genuinely exposed to vehicles in both departments is still
+  // classified under the one that primarily owns the relationship;
+  // this is Falak's own manual classification, not derived from
+  // InvestorVehiclePosition.
+  department Department   @default(InvestmentDepartment)
   archivedAt DateTime?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt

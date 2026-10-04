@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { signInWithPasswordAction, type PasswordSignInState } from "./actions";
@@ -32,6 +33,11 @@ export function PasswordSignInForm() {
       <Button type="submit" disabled={isPending}>
         {isPending ? "Signing in..." : "Sign in"}
       </Button>
+      <p className="text-xs text-muted-foreground">
+        <Link href="/reset-password" className="text-link-foreground underline-offset-2 hover:underline">
+          Forgot password?
+        </Link>
+      </p>
     </form>
   );
 }

@@ -54,7 +54,10 @@ function toDateOnly(date: Date): string {
  * open, unsubmitted cycle has nothing to report yet).
  */
 export async function getCompanyListData(): Promise<CompanyListRow[]> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  // Same FALAK_MANAGEMENT floor as the Portfolio Dashboard -- Company
+  // List is the other cross-company aggregate view restricted to
+  // Admin/Management only.
+  await requireFalakRole("FALAK_MANAGEMENT");
 
   const companies = await db.company.findMany({
     where: { archivedAt: null },

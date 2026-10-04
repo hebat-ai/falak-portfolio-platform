@@ -38,6 +38,26 @@ export async function sendSignInEmail(to: string, verifyUrl: string): Promise<vo
 }
 
 /**
+ * Deliberately separate from sendSignInEmail (different subject/copy,
+ * and a different underlying token family -- see PasswordResetToken's
+ * own schema comment on why reset and sign-in links are never the same
+ * token type) even though the HTML shape is near-identical.
+ */
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+  const resend = getClient();
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: "Reset your Falak Portfolio Platform password",
+    html: `<p>Click the link below to set a new password. This link expires in 30 minutes and can only be used once.</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can ignore this email.</p>`,
+    text: `Click the link below to set a new password. This link expires in 30 minutes and can only be used once.\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this email.`,
+  });
+  if (error) {
+    throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
+}
+
+/**
  * Sent once, right after an admin approves an AccessRequest -- same
  * network I/O boundary and never-swallow-a-real-failure discipline as
  * sendSignInEmail above. Points at /sign-in rather than carrying a token

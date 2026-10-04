@@ -101,7 +101,12 @@ function toDateOnly(date: Date): string {
  * dashboard panel in this codebase).
  */
 export async function getPortfolioOverviewData(): Promise<PortfolioOverviewRaw> {
-  await requireFalakRole("FALAK_OPERATIONS");
+  // FALAK_MANAGEMENT floor, not FALAK_OPERATIONS -- the Portfolio
+  // Dashboard is a cross-department aggregate view, explicitly
+  // restricted to Admin/Management only (see PlatformRole's own
+  // comment); an Investment Professional never sees this page at all,
+  // not even scoped to their own department.
+  await requireFalakRole("FALAK_MANAGEMENT");
 
   const [
     companies,

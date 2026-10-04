@@ -39,6 +39,20 @@ export function setSendEmailSpy(): SentEmail[] {
   return calls;
 }
 
+export interface SentPasswordResetEmail {
+  to: string;
+  resetUrl: string;
+}
+
+/** Installs a spy in place of sendPasswordResetEmail -- same shape as setSendEmailSpy above. */
+export function setSendPasswordResetEmailSpy(): SentPasswordResetEmail[] {
+  const calls: SentPasswordResetEmail[] = [];
+  (globalThis as Record<string, unknown>).__TEST_SEND_PASSWORD_RESET_EMAIL_STUB__ = async (to: string, resetUrl: string) => {
+    calls.push({ to, resetUrl });
+  };
+  return calls;
+}
+
 /**
  * Installs a spy in place of sendAccessApprovedEmail -- same shape as
  * setSendEmailSpy above, kept separate since it's a different real
@@ -425,6 +439,72 @@ export function makeSignInDbStub(options: { users?: SignInUserFixture[]; tokens?
       },
     },
     getTokens: () => tokens,
+  };
+}
+
+export interface PasswordResetTokenFixture {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+  consumedAt: Date | null;
+}
+
+/** Backs requestPasswordReset/consumePasswordResetToken (src/lib/auth/password-reset.ts). */
+export function makePasswordResetDbStub(
+  options: { users?: SignInUserFixture[]; tokens?: PasswordResetTokenFixture[] } = {}
+) {
+  const users = options.users ?? [];
+  const tokens: PasswordResetTokenFixture[] = (options.tokens ?? []).map((t) => ({ ...t }));
+  const updatedPasswordHashes: Record<string, string> = {};
+  let nextId = 0;
+
+  return {
+    user: {
+      findUnique: async ({ where }: { where: { id?: string; email?: string } }) => {
+        const user = users.find((u) => (where.id ? u.id === where.id : u.email === where.email));
+        if (!user) return null;
+        return { id: user.id, email: user.email, deactivatedAt: user.deactivatedAt ?? null };
+      },
+      update: async ({ where, data }: { where: { id: string }; data: { passwordHash: string } }) => {
+        updatedPasswordHashes[where.id] = data.passwordHash;
+        return { id: where.id, passwordHash: data.passwordHash };
+      },
+    },
+    passwordResetToken: {
+      create: async ({ data }: { data: { userId: string; tokenHash: string; expiresAt: Date } }) => {
+        const row: PasswordResetTokenFixture = {
+          id: `reset_token_${++nextId}`,
+          userId: data.userId,
+          tokenHash: data.tokenHash,
+          expiresAt: data.expiresAt,
+          consumedAt: null,
+        };
+        tokens.push(row);
+        return row;
+      },
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: { tokenHash: string; consumedAt: null; expiresAt: { gt: Date } };
+        data: { consumedAt: Date };
+      }) => {
+        const row = tokens.find((t) => t.tokenHash === where.tokenHash);
+        if (!row) return { count: 0 };
+        if (row.consumedAt) return { count: 0 };
+        if (!(row.expiresAt.getTime() > where.expiresAt.gt.getTime())) return { count: 0 };
+        row.consumedAt = data.consumedAt;
+        return { count: 1 };
+      },
+      findUnique: async ({ where }: { where: { tokenHash: string } }) => {
+        const row = tokens.find((t) => t.tokenHash === where.tokenHash);
+        if (!row) return null;
+        return { userId: row.userId };
+      },
+    },
+    getTokens: () => tokens,
+    getUpdatedPasswordHashes: () => updatedPasswordHashes,
   };
 }
 
