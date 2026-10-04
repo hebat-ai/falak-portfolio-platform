@@ -15,12 +15,15 @@ import {
   approveSubmissionAction,
   publishSubmissionAction,
   getSubmissionMetricsForReviewAction,
+  getSubmissionAttachmentsForReviewAction,
   type ReviewActionState,
 } from "../actions";
 import { ReviewMetricsEditForm } from "./ReviewMetricsEditForm";
+import { ReviewAttachmentsPanel } from "./ReviewAttachmentsPanel";
 import type { AdminCompanyDTO, AdminCompanyPeriodData, AdminPeriodOption } from "@/lib/admin/dto";
 import type { NarrativeKind } from "@/generated/prisma/client";
 import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
+import type { SubmissionAttachmentDTO } from "@/lib/reporting/attachments";
 
 const NARRATIVE_KINDS: NarrativeKind[] = [
   "operational_update",
@@ -78,6 +81,27 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
 
   const metrics = isEditableStatus && metricsResult?.submissionId === submissionId ? metricsResult.metrics : [];
 
+  // Unlike metrics (editable only during submitted/under_review),
+  // attachments are visible and uploadable at any review stage -- Falak
+  // may need to attach a document before, during, or after the
+  // company's own submission status changes.
+  const [attachmentsResult, setAttachmentsResult] = useState<{ submissionId: string; attachments: SubmissionAttachmentDTO[] } | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!submissionId) return;
+    let cancelled = false;
+    getSubmissionAttachmentsForReviewAction(submissionId).then((result) => {
+      if (!cancelled) setAttachmentsResult({ submissionId, attachments: result });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [submissionId]);
+
+  const attachments = attachmentsResult?.submissionId === submissionId ? attachmentsResult.attachments : [];
+
   return (
     <Card>
       <h2
@@ -123,6 +147,8 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
           {isEditableStatus && metrics.length > 0 ? (
             <ReviewMetricsEditForm submissionId={submissionId} metrics={metrics} />
           ) : null}
+
+          <ReviewAttachmentsPanel submissionId={submissionId} attachments={attachments} />
 
           <div className="flex flex-wrap gap-3">
             {effectiveData.status === "submitted" ? (

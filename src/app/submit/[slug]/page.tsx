@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getCurrentSubmissionForCompanyMember } from "@/lib/reporting/submissions";
-import { listSubmissionAttachments } from "@/lib/reporting/attachments";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { StartupReportForm } from "../_components/StartupReportForm";
 
@@ -45,13 +44,10 @@ export default async function SubmitReportPage({ params }: { params: Promise<{ s
     throw error;
   }
 
-  const attachments = submission ? await listSubmissionAttachments(submission.id) : [];
-
   return (
     <StartupReportForm
       company={{ id: company.id, slug: company.slug, nameEn: company.nameEn, nameAr: company.nameAr, currency: company.currency }}
       submission={submission}
-      attachments={attachments}
     />
   );
 }

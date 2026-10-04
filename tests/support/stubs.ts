@@ -1623,30 +1623,24 @@ export function setUploadAttachmentFailureSpy() {
 
 /** Backs uploadSubmissionAttachment (src/lib/reporting/attachments.ts). */
 export function makeAttachmentUploadDbStub(options: {
-  membership: MembershipFixture | null;
+  falakRoles?: FalakRoleFixture[];
   submission: { id: string; cycleCompanyId: string; status: string; companyArchived?: boolean } | null;
 }) {
   const createdAttachments: Record<string, unknown>[] = [];
   return {
-    companyMembership: {
-      findFirst: async ({ where }: { where: Record<string, unknown> }) => {
-        const m = options.membership;
-        if (!m) return null;
-        if (where.userId !== m.userId) return null;
-        if (where.companyId !== m.companyId) return null;
-        if (m.revoked) return null;
-        if (m.archived) return null;
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
         const roleFilter = where.role as { in: string[] };
-        if (!roleFilter.in.includes(m.role)) return null;
-        return { role: m.role };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
       },
     },
     companySubmission: {
-      findFirst: async ({ where }: { where: { id?: string; cycle?: { companyId?: string } } }) => {
+      findFirst: async ({ where }: { where: { id?: string } }) => {
         const s = options.submission;
         if (!s) return null;
         if (where.id && where.id !== s.id) return null;
-        if (where.cycle?.companyId && where.cycle.companyId !== s.cycleCompanyId) return null;
         if (s.companyArchived) return null;
         return { id: s.id, status: s.status };
       },

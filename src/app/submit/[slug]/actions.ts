@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { submitCompanySubmission } from "@/lib/reporting/submissions";
 import { saveMetricValues, type MetricValueInput } from "@/lib/reporting/metrics";
-import { uploadSubmissionAttachment } from "@/lib/reporting/attachments";
 import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-errors";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 
@@ -100,33 +99,3 @@ export async function saveMetricValuesAction(
   return { error: null, success: true };
 }
 
-const GENERIC_UPLOAD_ERROR = "Choose a file to upload.";
-
-export async function uploadAttachmentAction(
-  companyId: string,
-  submissionId: string,
-  slug: string,
-  _prevState: SaveMetricsState,
-  formData: FormData
-): Promise<SaveMetricsState> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { error: GENERIC_UPLOAD_ERROR, success: false };
-  }
-  const isAuditedFinancials = formData.get("isAuditedFinancials") === "on";
-
-  try {
-    const result = await uploadSubmissionAttachment(companyId, submissionId, file, isAuditedFinancials);
-    if (!result.success) {
-      return { error: result.error, success: false };
-    }
-  } catch (error) {
-    if (error instanceof UnauthenticatedError || error instanceof ForbiddenError) {
-      return { error: GENERIC_ACCESS_DENIED, success: false };
-    }
-    throw error;
-  }
-
-  revalidatePath(`/submit/${slug}`);
-  return { error: null, success: true };
-}

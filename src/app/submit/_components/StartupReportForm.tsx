@@ -9,11 +9,8 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
 import type { Currency } from "@/generated/prisma/client";
 import type { SubmissionDTO } from "@/lib/reporting/dto";
-import type { SubmissionAttachmentDTO } from "@/lib/reporting/attachments";
-import { SUBMITTABLE_FROM_STATUSES } from "@/lib/reporting/submission-status";
 import { SubmitReportButton } from "./SubmitReportButton";
 import { MetricsEntryForm } from "./MetricsEntryForm";
-import { AttachmentsPanel } from "./AttachmentsPanel";
 
 interface StartupReportFormCompany {
   id: string;
@@ -26,10 +23,9 @@ interface StartupReportFormCompany {
 interface StartupReportFormProps {
   company: StartupReportFormCompany;
   submission: SubmissionDTO | null;
-  attachments: SubmissionAttachmentDTO[];
 }
 
-export function StartupReportForm({ company, submission, attachments }: StartupReportFormProps) {
+export function StartupReportForm({ company, submission }: StartupReportFormProps) {
   const { t, lang } = useLanguage();
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
@@ -85,14 +81,6 @@ export function StartupReportForm({ company, submission, attachments }: StartupR
                 {t.submitReport.metricsIncompleteMessage}
               </p>
             ) : null}
-
-            <AttachmentsPanel
-              companyId={company.id}
-              submissionId={submission.id}
-              slug={company.slug}
-              attachments={attachments}
-              editable={SUBMITTABLE_FROM_STATUSES.includes(submission.status)}
-            />
 
             {submission.canSubmit ? (
               <SubmitReportButton companyId={company.id} submissionId={submission.id} slug={company.slug} />

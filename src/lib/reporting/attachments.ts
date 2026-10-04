@@ -1,11 +1,9 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { requireCompanyMembership } from "@/lib/auth/authorization";
-import { SUBMITTABLE_FROM_STATUSES } from "@/lib/reporting/submission-status";
+import { requireFalakRole } from "@/lib/auth/authorization";
 import { uploadAttachment } from "@/lib/storage/blob";
 
 const GENERIC_ERROR = "Something went wrong. Check your file and try again.";
-const LOCKED_ERROR = "This report can no longer be edited.";
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
@@ -22,29 +20,30 @@ export interface UploadAttachmentResult {
 }
 
 /**
- * Re-verifies company membership AND the editable-status gate before
- * writing anything -- same discipline as saveMetricValues. Rejects an
- * oversized or wrong-type file outright rather than storing it; the
- * allowlist covers the realistic set of financials/decks a company would
- * actually attach, not arbitrary file types.
+ * Falak-staff-only (Admin or Operations -- "Management" and
+ * "Investment Professional" in sign-up terms, see
+ * src/app/admin/access/_components/ApproveRequestForm.tsx's own
+ * mapping). Company members no longer have any attachment-upload path
+ * of their own; a startup's supporting documents (financials, decks,
+ * audited statements) are attached by Falak on the platform, through
+ * this one function, on the Reports Review and Approval page. Not
+ * gated by submission status -- Falak may need to attach something at
+ * any point in the review lifecycle, not only while it's still
+ * editable by the company.
  */
-export async function uploadSubmissionAttachment(
-  companyId: string,
+export async function adminUploadSubmissionAttachment(
   submissionId: string,
   file: File,
   isAuditedFinancials = false
 ): Promise<UploadAttachmentResult> {
-  const { user } = await requireCompanyMembership(companyId, "MEMBER");
+  const { user } = await requireFalakRole("FALAK_OPERATIONS");
 
   const submission = await db.companySubmission.findFirst({
-    where: { id: submissionId, cycle: { companyId, company: { archivedAt: null } } },
-    select: { id: true, status: true },
+    where: { id: submissionId, cycle: { company: { archivedAt: null } } },
+    select: { id: true },
   });
   if (!submission) {
     return { error: GENERIC_ERROR, success: false };
-  }
-  if (!SUBMITTABLE_FROM_STATUSES.includes(submission.status)) {
-    return { error: LOCKED_ERROR, success: false };
   }
 
   if (file.size === 0 || file.size > MAX_FILE_SIZE_BYTES) {
@@ -86,9 +85,8 @@ export interface SubmissionAttachmentDTO {
 }
 
 /**
- * No auth of its own -- the caller (the /submit/[slug] page, already
- * having called getCurrentSubmissionForCompanyMember) has already
- * verified access to this exact submissionId before reaching here, same
+ * No auth of its own -- every caller (the Reports Review and Approval
+ * page) already verifies FALAK_OPERATIONS before reaching here, same
  * "auth happens once, at the real entry point" discipline as
  * fetchSubmissionMetricFields.
  */

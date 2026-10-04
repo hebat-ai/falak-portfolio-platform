@@ -11,6 +11,11 @@ import {
   type NarrativeInputs,
 } from "@/lib/reporting/publish-workflow";
 import { adminUpdateSubmissionMetricValues, fetchSubmissionMetricFields, type MetricValueInput } from "@/lib/reporting/metrics";
+import {
+  adminUploadSubmissionAttachment,
+  listSubmissionAttachments,
+  type SubmissionAttachmentDTO,
+} from "@/lib/reporting/attachments";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
 import type { NarrativeKind } from "@/generated/prisma/client";
@@ -301,4 +306,40 @@ export async function resendReportToInvestorsAction(
   }
 
   return { error: null };
+}
+
+/**
+ * Read-only, called directly (not via a <form>) from
+ * ReviewActionPanel's own effect, same pattern as
+ * getSubmissionMetricsForReviewAction above.
+ */
+export async function getSubmissionAttachmentsForReviewAction(submissionId: string): Promise<SubmissionAttachmentDTO[]> {
+  await requireFalakRole("FALAK_OPERATIONS");
+  return listSubmissionAttachments(submissionId);
+}
+
+export async function adminUploadAttachmentAction(
+  _prevState: SaveMetricsActionState,
+  formData: FormData
+): Promise<SaveMetricsActionState> {
+  const submissionId = readSubmissionId(formData);
+  const file = formData.get("file");
+  if (!submissionId || !(file instanceof File) || file.size === 0) {
+    return { error: GENERIC_ERROR, success: false };
+  }
+  const isAuditedFinancials = formData.get("isAuditedFinancials") === "on";
+
+  try {
+    const result = await adminUploadSubmissionAttachment(submissionId, file, isAuditedFinancials);
+    if (!result.success) {
+      return { error: result.error, success: false };
+    }
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED, success: false };
+    }
+    throw error;
+  }
+
+  return { error: null, success: true };
 }
