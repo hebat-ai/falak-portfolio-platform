@@ -223,6 +223,9 @@ export interface Dictionary {
       inviteStaffTitle: string;
       manageStaffTitle: string;
       staffListCaption: string;
+      hasPasswordLabel: string;
+      yesLabel: string;
+      noLabel: string;
       setPasswordAction: string;
       revokeAction: string;
       addMetricAction: string;
@@ -754,6 +757,9 @@ export const en = {
       inviteStaffTitle: "Invite Staff User",
       manageStaffTitle: "Manage Staff",
       staffListCaption: "Falak staff accounts, their role, and their department.",
+      hasPasswordLabel: "Password Set",
+      yesLabel: "Yes",
+      noLabel: "No",
       setPasswordAction: "Set Password",
       revokeAction: "Revoke",
       addMetricAction: "Add another metric",
@@ -1291,6 +1297,9 @@ export const ar = {
       inviteStaffTitle: "دعوة موظف",
       manageStaffTitle: "إدارة الموظفين",
       staffListCaption: "حسابات موظفي فلك، أدوارهم، وأقسامهم.",
+      hasPasswordLabel: "كلمة المرور معيّنة",
+      yesLabel: "نعم",
+      noLabel: "لا",
       setPasswordAction: "تعيين كلمة المرور",
       revokeAction: "إلغاء الصلاحية",
       addMetricAction: "إضافة مؤشر آخر",

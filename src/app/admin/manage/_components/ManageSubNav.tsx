@@ -22,6 +22,7 @@ interface SubNavItem {
     | "setDepartmentTitle"
     | "setVintageYearTitle"
     | "investorVehicleAssignmentTitle"
+    | "manageStaffTitle"
   >;
   href: string;
 }
@@ -41,6 +42,7 @@ const SUB_NAV_ITEMS: SubNavItem[] = [
   { key: "setDepartmentTitle", href: "/admin/manage/set-company-department" },
   { key: "setVintageYearTitle", href: "/admin/manage/set-vehicle-vintage-year" },
   { key: "auditLogTitle", href: "/admin/manage/audit-log" },
+  { key: "manageStaffTitle", href: "/admin/manage/staff" },
 ];
 
 // Mirrors Sidebar.tsx's own activeHref pattern: these nine routes never
