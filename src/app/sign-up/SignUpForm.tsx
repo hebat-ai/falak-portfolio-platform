@@ -76,7 +76,7 @@ export function SignUpForm() {
       </div>
 
       {errorMessage ? (
-        <p role="alert" className="text-xs font-medium text-foreground">
+        <p role="alert" className="text-xs font-semibold text-danger">
           {errorMessage}
         </p>
       ) : null}

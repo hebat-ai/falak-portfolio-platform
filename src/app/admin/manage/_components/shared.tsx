@@ -12,7 +12,7 @@ export function FormMessage({ state }: { state: ActionState }) {
   const { t } = useLanguage();
   if (state.error) {
     return (
-      <p role="alert" className="text-xs font-medium text-foreground">
+      <p role="alert" className="text-xs font-semibold text-danger">
         {state.error}
       </p>
     );

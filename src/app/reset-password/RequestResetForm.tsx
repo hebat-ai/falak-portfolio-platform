@@ -28,7 +28,7 @@ export function RequestResetForm() {
         <Input id="reset-email" name="email" type="email" autoComplete="email" required />
       </div>
       {state.error ? (
-        <p role="alert" className="text-xs font-medium text-foreground">
+        <p role="alert" className="text-xs font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

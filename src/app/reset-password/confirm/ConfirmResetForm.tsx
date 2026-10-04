@@ -40,7 +40,7 @@ export function ConfirmResetForm({ token }: { token: string }) {
         <Input id="confirm-reset-confirm-password" name="confirmPassword" type="password" autoComplete="new-password" minLength={8} required />
       </div>
       {state.error ? (
-        <p role="alert" className="text-xs font-medium text-foreground">
+        <p role="alert" className="text-xs font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

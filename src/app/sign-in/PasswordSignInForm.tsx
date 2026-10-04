@@ -26,7 +26,7 @@ export function PasswordSignInForm() {
         <Input id="password-sign-in-password" name="password" type="password" autoComplete="current-password" required />
       </div>
       {state.error ? (
-        <p role="alert" className="text-xs font-medium text-foreground">
+        <p role="alert" className="text-xs font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

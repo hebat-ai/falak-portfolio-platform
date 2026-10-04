@@ -1,22 +1,32 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { createVehicleAction } from "../../actions";
 import { labelClass, fieldClass, initialActionState, FormMessage } from "./shared";
+import { slugify } from "@/lib/slugify";
 
 export function CreateVehicleForm() {
   const { t } = useLanguage();
   const [state, formAction, isPending] = useActionState(createVehicleAction, initialActionState);
+  const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
 
   return (
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-nameEn">{t.admin.manage.nameEnLabel}</label>
-        <Input id="v-nameEn" name="nameEn" required />
+        <Input
+          id="v-nameEn"
+          name="nameEn"
+          required
+          onChange={(e) => {
+            if (!slugTouched) setSlug(slugify(e.target.value));
+          }}
+        />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-nameAr">{t.admin.manage.nameArLabel}</label>
@@ -24,7 +34,17 @@ export function CreateVehicleForm() {
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-slug">{t.admin.manage.slugLabel}</label>
-        <Input id="v-slug" name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
+        <Input
+          id="v-slug"
+          name="slug"
+          pattern="[a-z0-9]+(-[a-z0-9]+)*"
+          required
+          value={slug}
+          onChange={(e) => {
+            setSlugTouched(true);
+            setSlug(slugify(e.target.value));
+          }}
+        />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="v-type">{t.admin.manage.typeLabel}</label>

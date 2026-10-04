@@ -25,7 +25,7 @@ export function AcceptInvestorInviteForm({ token, email, investorName }: AcceptI
         No password needed -- after you accept, sign in anytime with a one-time link sent to your email.
       </p>
       {state.error ? (
-        <p role="alert" className="text-xs font-medium text-foreground">
+        <p role="alert" className="text-xs font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

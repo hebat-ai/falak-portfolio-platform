@@ -1,22 +1,35 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { createCompanyAction } from "../../actions";
 import { labelClass, fieldClass, initialActionState, FormMessage } from "./shared";
+import { slugify } from "@/lib/slugify";
 
 export function CreateCompanyForm() {
   const { t } = useLanguage();
   const [state, formAction, isPending] = useActionState(createCompanyAction, initialActionState);
+  const [slug, setSlug] = useState("");
+  // Once the admin edits the slug themselves, stop overwriting it on
+  // every nameEn keystroke -- auto-fill is a convenience for the common
+  // case, never a fight against a deliberate manual edit.
+  const [slugTouched, setSlugTouched] = useState(false);
 
   return (
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-nameEn">{t.admin.manage.nameEnLabel}</label>
-        <Input id="c-nameEn" name="nameEn" required />
+        <Input
+          id="c-nameEn"
+          name="nameEn"
+          required
+          onChange={(e) => {
+            if (!slugTouched) setSlug(slugify(e.target.value));
+          }}
+        />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-nameAr">{t.admin.manage.nameArLabel}</label>
@@ -24,7 +37,17 @@ export function CreateCompanyForm() {
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-slug">{t.admin.manage.slugLabel}</label>
-        <Input id="c-slug" name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
+        <Input
+          id="c-slug"
+          name="slug"
+          pattern="[a-z0-9]+(-[a-z0-9]+)*"
+          required
+          value={slug}
+          onChange={(e) => {
+            setSlugTouched(true);
+            setSlug(slugify(e.target.value));
+          }}
+        />
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-sectorEn">{t.admin.manage.sectorEnLabel}</label>

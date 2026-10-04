@@ -54,7 +54,7 @@ export function ReportAttachmentsPanel({ reportVersionId, companySlug, periodLab
       ) : null}
 
       {state.error ? (
-        <p role="alert" className="mt-2 text-xs font-medium text-foreground">
+        <p role="alert" className="mt-2 text-xs font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

@@ -158,7 +158,7 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                   {t.reviewWorkspace.startReviewAction}
                 </Button>
                 {startState.error ? (
-                  <p role="alert" className="text-xs font-medium text-foreground">
+                  <p role="alert" className="text-xs font-semibold text-danger">
                     {startState.error}
                   </p>
                 ) : null}
@@ -177,7 +177,7 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                     {t.reviewWorkspace.requestChangesAction}
                   </Button>
                   {changesState.error ? (
-                    <p role="alert" className="text-xs font-medium text-foreground">
+                    <p role="alert" className="text-xs font-semibold text-danger">
                       {changesState.error}
                     </p>
                   ) : null}
@@ -189,7 +189,7 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                     {t.reviewWorkspace.approveAction}
                   </Button>
                   {approveState.error ? (
-                    <p role="alert" className="text-xs font-medium text-foreground">
+                    <p role="alert" className="text-xs font-semibold text-danger">
                       {approveState.error}
                     </p>
                   ) : null}
@@ -223,7 +223,7 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                   {t.reviewWorkspace.publishAction}
                 </Button>
                 {publishState.error ? (
-                  <p role="alert" className="text-xs font-medium text-foreground">
+                  <p role="alert" className="text-xs font-semibold text-danger">
                     {publishState.error}
                   </p>
                 ) : null}

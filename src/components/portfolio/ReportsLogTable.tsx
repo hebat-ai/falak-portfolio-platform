@@ -81,7 +81,7 @@ function ReportLogRow({
             </Button>
           </div>
         )}
-        {deadlineState.error ? <p role="alert" className="text-xs font-medium text-foreground">{deadlineState.error}</p> : null}
+        {deadlineState.error ? <p role="alert" className="text-xs font-semibold text-danger">{deadlineState.error}</p> : null}
       </Td>
       <Td>{row.submissionStatus ? <StatusBadge status={row.submissionStatus} /> : t.admin.table.noDataValue}</Td>
       <Td>
@@ -131,7 +131,7 @@ function ReportLogRow({
             </form>
           ) : null}
         </div>
-        {resendState.error ? <p role="alert" className="text-xs font-medium text-foreground">{resendState.error}</p> : null}
+        {resendState.error ? <p role="alert" className="text-xs font-semibold text-danger">{resendState.error}</p> : null}
       </Td>
     </Tr>
   );

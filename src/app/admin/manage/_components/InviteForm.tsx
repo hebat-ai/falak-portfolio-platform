@@ -43,7 +43,7 @@ export function InviteForm({ action, idPrefix, selectName, selectLabel, options 
       </div>
       <div className="sm:col-span-2">
         {state.error ? (
-          <p role="alert" className="text-xs font-medium text-foreground">{state.error}</p>
+          <p role="alert" className="text-xs font-semibold text-danger">{state.error}</p>
         ) : null}
         {fullUrl ? (
           <div className="chamfer-br-sm flex flex-col gap-2 bg-surface-muted p-3 shadow-[var(--inner-line)]">

@@ -32,6 +32,15 @@
   --surface: #ffffff;
   --surface-muted: #f3f6f5;
 
+  /* Not part of the brand palette (which has no red) -- a deliberate,
+     semantic exception: every form error in this app used to render in
+     --foreground, the SAME color as ordinary body text, which made
+     validation failures functionally invisible (confirmed root cause of
+     a production incident: admin forms "silently" failed with no
+     visible error, because the error WAS rendered, just unreadable
+     against the rest of the page). >=4.5:1 against --surface. */
+  --danger: #b3261e;
+
   /* border-subtle: decorative separation only (cards, table dividers) --
      intentionally NOT tuned to any contrast target, so it stays visually
      light regardless of theme. control-border: a separate, stronger
@@ -107,6 +116,7 @@
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-link-foreground: var(--link-foreground);
+  --color-danger: var(--danger);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-border-subtle: var(--border-subtle);
@@ -166,6 +176,10 @@
   --border-subtle: color-mix(in srgb, var(--brand-starlight) 25%, var(--brand-dark-nebula) 75%);
   /* control-border: >=3:1 against the lightest dark-mode surface. */
   --control-border: color-mix(in srgb, var(--brand-starlight) 70%, var(--brand-dark-nebula) 30%);
+
+  /* Lighter than light-mode's --danger -- >=4.5:1 against dark-mode's
+     own --surface instead of light-mode's. */
+  --danger: #ff6b6b;
 }
 
 html,

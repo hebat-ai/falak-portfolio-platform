@@ -11,7 +11,7 @@ export default async function SignInPage({
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-12">
       <h1 className="mb-6 text-lg font-semibold text-foreground">Sign in</h1>
       {error ? (
-        <p role="alert" className="mb-4 text-xs font-medium text-foreground">
+        <p role="alert" className="mb-4 text-xs font-semibold text-danger">
           That link is invalid or has expired. Enter your email below to get a new one.
         </p>
       ) : null}
