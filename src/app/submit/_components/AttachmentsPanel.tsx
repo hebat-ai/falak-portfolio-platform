@@ -46,6 +46,12 @@ export function AttachmentsPanel({ companyId, submissionId, slug, attachments, e
               </a>
               <span className="shrink-0 text-xs text-muted-foreground">
                 {formatFileSize(a.sizeBytes)} &middot; {formatDate(a.createdAt.slice(0, 10), lang)}
+                {a.isAuditedFinancials ? (
+                  <>
+                    {" "}
+                    &middot; <span className="font-medium text-foreground">{t.submitReport.auditedFinancialsBadge}</span>
+                  </>
+                ) : null}
               </span>
             </li>
           ))}
@@ -60,6 +66,10 @@ export function AttachmentsPanel({ companyId, submissionId, slug, attachments, e
             required
             className="text-sm text-foreground file:me-3 file:chamfer-br-sm file:border-0 file:bg-surface-muted file:px-3 file:py-1.5 file:text-sm file:font-medium"
           />
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <input type="checkbox" name="isAuditedFinancials" className="size-3.5" />
+            {t.submitReport.auditedFinancialsCheckboxLabel}
+          </label>
           <Button type="submit" variant="outline" size="sm" disabled={isPending}>
             {isPending ? t.submitReport.uploading : t.submitReport.uploadAction}
           </Button>

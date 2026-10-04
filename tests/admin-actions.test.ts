@@ -38,6 +38,8 @@ const STATE_ACTIONS: { name: string; invoke: () => Promise<{ error: string | nul
   { name: "createInvestorInviteAction", invoke: () => actions.createInvestorInviteAction({ error: null }, new FormData()) },
   { name: "createCompanyValuationAction", invoke: () => actions.createCompanyValuationAction({ error: null }, new FormData()) },
   { name: "createVehicleNavAction", invoke: () => actions.createVehicleNavAction({ error: null }, new FormData()) },
+  { name: "setCompanyDepartmentAction", invoke: () => actions.setCompanyDepartmentAction({ error: null }, new FormData()) },
+  { name: "setVehicleVintageYearAction", invoke: () => actions.setVehicleVintageYearAction({ error: null }, new FormData()) },
 ];
 
 for (const { name, invoke } of STATE_ACTIONS) {

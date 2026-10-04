@@ -113,9 +113,10 @@ export async function uploadAttachmentAction(
   if (!(file instanceof File) || file.size === 0) {
     return { error: GENERIC_UPLOAD_ERROR, success: false };
   }
+  const isAuditedFinancials = formData.get("isAuditedFinancials") === "on";
 
   try {
-    const result = await uploadSubmissionAttachment(companyId, submissionId, file);
+    const result = await uploadSubmissionAttachment(companyId, submissionId, file, isAuditedFinancials);
     if (!result.success) {
       return { error: result.error, success: false };
     }

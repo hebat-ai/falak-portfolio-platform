@@ -69,6 +69,14 @@ export function CreateCompanyForm() {
           ))}
         </Select>
       </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="c-department">{t.admin.manage.departmentLabel}</label>
+        <Select id="c-department" name="department" required defaultValue="">
+          <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
+          <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
+          <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
+        </Select>
+      </div>
       <fieldset className="sm:col-span-2">
         <legend className={labelClass}>{t.admin.manage.revenueModelsLabel}</legend>
         <div className="mt-1 flex flex-wrap gap-3">

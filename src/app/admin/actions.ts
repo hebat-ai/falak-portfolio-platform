@@ -19,6 +19,7 @@ import type {
   MetricDataType,
   CompanyValuationType,
   InvestorCapitalTransactionType,
+  Department,
 } from "@/generated/prisma/client";
 
 export interface ActionState {
@@ -49,6 +50,9 @@ const MAX_METRIC_ROWS = 40;
 const VALUATION_TYPES: CompanyValuationType[] = ["LastRound", "InternalMark", "ThirdPartyMark", "Exit", "WrittenOff"];
 const AMOUNT_PATTERN = /^\d+(\.\d{1,4})?$/;
 const MAX_SOURCE_LENGTH = 200;
+const DEPARTMENTS: Department[] = ["VentureBuilder", "InvestmentDepartment"];
+const MIN_VINTAGE_YEAR = 1990;
+const MAX_VINTAGE_YEAR = 2100;
 
 function readString(formData: FormData, field: string): string | null {
   const value = formData.get(field);
@@ -87,6 +91,7 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
   const currency = readString(formData, "currency");
   const entryStage = readString(formData, "entryStage");
   const currentStage = readString(formData, "currentStage");
+  const department = readString(formData, "department");
   const revenueModels = formData.getAll("revenueModels").filter((v): v is string => typeof v === "string");
 
   if (
@@ -103,6 +108,8 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
     !FUNDING_STAGES.includes(entryStage as FundingStage) ||
     !currentStage ||
     !FUNDING_STAGES.includes(currentStage as FundingStage) ||
+    !department ||
+    !DEPARTMENTS.includes(department as Department) ||
     revenueModels.some((m) => !REVENUE_MODELS.includes(m as RevenueModel))
   ) {
     return { error: "Fill in every field with a valid value." };
@@ -127,6 +134,7 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
           currency: currency as Currency,
           entryStage: entryStage as FundingStage,
           currentStage: currentStage as FundingStage,
+          department: department as Department,
         },
       });
       await writeAuditEvent(tx, {
@@ -170,6 +178,44 @@ export async function archiveCompanyAction(formData: FormData): Promise<void> {
   });
 }
 
+// Reclassifies an EXISTING company's department -- the create form only
+// sets this going forward; every company created before this field
+// existed needs it set once via this separate action instead of a full
+// edit form for the other (rarely-changing) company fields.
+export async function setCompanyDepartmentAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const companyId = readString(formData, "companyId");
+  const department = readString(formData, "department");
+  if (!companyId || !department || !DEPARTMENTS.includes(department as Department)) {
+    return { error: "Fill in every field with a valid value." };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.company.update({ where: { id: companyId }, data: { department: department as Department } });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "company.department_changed",
+        targetType: "Company",
+        targetId: companyId,
+      });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+
+  return { error: null, success: true };
+}
+
 // ============================================================
 // Vehicle
 // ============================================================
@@ -190,6 +236,8 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
   const nameAr = readString(formData, "nameAr");
   const type = readString(formData, "type");
   const currency = readString(formData, "currency");
+  const vintageYearRaw = readString(formData, "vintageYear");
+  const vintageYear = vintageYearRaw ? Number(vintageYearRaw) : null;
 
   if (
     !isValidSlug(slug) ||
@@ -198,7 +246,9 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
     !type ||
     !VEHICLE_TYPES.includes(type as VehicleType) ||
     !currency ||
-    !CURRENCIES.includes(currency as Currency)
+    !CURRENCIES.includes(currency as Currency) ||
+    (vintageYearRaw !== null &&
+      (!Number.isInteger(vintageYear) || vintageYear! < MIN_VINTAGE_YEAR || vintageYear! > MAX_VINTAGE_YEAR))
   ) {
     return { error: "Fill in every field with a valid value." };
   }
@@ -211,9 +261,53 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
   try {
     await db.$transaction(async (tx) => {
       const vehicle = await tx.vehicle.create({
-        data: { slug, nameEn, nameAr, type: type as VehicleType, currency: currency as Currency },
+        data: { slug, nameEn, nameAr, type: type as VehicleType, currency: currency as Currency, vintageYear },
       });
       await writeAuditEvent(tx, { actorId: user.id, action: "vehicle.created", targetType: "Vehicle", targetId: vehicle.id });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+
+  return { error: null, success: true };
+}
+
+// Sets an EXISTING vehicle's vintage year -- same "new field, old rows
+// need a one-off setter rather than a full edit form" rationale as
+// setCompanyDepartmentAction above.
+export async function setVehicleVintageYearAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const vehicleId = readString(formData, "vehicleId");
+  const vintageYearRaw = readString(formData, "vintageYear");
+  const vintageYear = vintageYearRaw ? Number(vintageYearRaw) : null;
+  if (
+    !vehicleId ||
+    !vintageYearRaw ||
+    !Number.isInteger(vintageYear) ||
+    vintageYear! < MIN_VINTAGE_YEAR ||
+    vintageYear! > MAX_VINTAGE_YEAR
+  ) {
+    return { error: "Fill in every field with a valid value." };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.vehicle.update({ where: { id: vehicleId }, data: { vintageYear } });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "vehicle.vintage_year_set",
+        targetType: "Vehicle",
+        targetId: vehicleId,
+      });
     });
   } catch {
     return { error: GENERIC_ERROR };

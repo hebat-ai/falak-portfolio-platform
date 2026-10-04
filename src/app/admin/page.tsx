@@ -1,14 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getAdminPortfolioData } from "@/lib/admin/queries";
-import { getPortfolioValuationData } from "@/lib/admin/valuations";
-import { getPortfolioAlerts } from "@/lib/admin/alerts";
-import { getPortfolioBenchmarks, type CompanyBenchmark } from "@/lib/admin/benchmarking";
-import { getPortfolioTrend } from "@/lib/admin/portfolio-trend";
-import { getCompanyPerformanceTrends } from "@/lib/admin/company-trends";
-import { getPortfolioReturns } from "@/lib/admin/portfolio-returns";
+import { getPortfolioOverviewData } from "@/lib/admin/portfolio-overview";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
-import { PortfolioDashboardClient } from "./PortfolioDashboardClient";
+import { PortfolioOverviewClient } from "./PortfolioOverviewClient";
 
 export default async function PortfolioDashboardPage() {
   const currentUser = await getCurrentUser();
@@ -16,26 +10,9 @@ export default async function PortfolioDashboardPage() {
     redirect("/sign-in");
   }
 
-  let data;
-  let valuationData;
-  let alerts;
-  let trend;
-  let companyTrends;
-  let portfolioReturns;
-  let benchmarksByPeriod: Record<string, CompanyBenchmark[]> = {};
+  let raw;
   try {
-    [data, valuationData, alerts, trend, companyTrends, portfolioReturns] = await Promise.all([
-      getAdminPortfolioData(),
-      getPortfolioValuationData(),
-      getPortfolioAlerts(),
-      getPortfolioTrend(),
-      getCompanyPerformanceTrends(),
-      getPortfolioReturns(),
-    ]);
-    const benchmarkEntries = await Promise.all(
-      data.periods.map(async (p) => [p.key, await getPortfolioBenchmarks(p.key)] as const)
-    );
-    benchmarksByPeriod = Object.fromEntries(benchmarkEntries);
+    raw = await getPortfolioOverviewData();
   } catch (error) {
     // ForbiddenError: authenticated, but not FALAK_ADMIN/FALAK_OPERATIONS.
     // UnauthenticatedError: defensive only (the getCurrentUser() check
@@ -47,15 +24,5 @@ export default async function PortfolioDashboardPage() {
     throw error;
   }
 
-  return (
-    <PortfolioDashboardClient
-      {...data}
-      valuationData={valuationData}
-      alerts={alerts}
-      trend={trend}
-      benchmarksByPeriod={benchmarksByPeriod}
-      companyTrends={companyTrends}
-      portfolioReturns={portfolioReturns}
-    />
-  );
+  return <PortfolioOverviewClient raw={raw} />;
 }

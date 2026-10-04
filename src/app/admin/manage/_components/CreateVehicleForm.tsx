@@ -42,6 +42,10 @@ export function CreateVehicleForm() {
           <option value="USD">{t.currencyNames.USD}</option>
         </Select>
       </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="v-vintageYear">{t.admin.manage.vintageYearLabel}</label>
+        <Input id="v-vintageYear" name="vintageYear" type="number" min={1990} max={2100} step={1} />
+      </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />
       </div>

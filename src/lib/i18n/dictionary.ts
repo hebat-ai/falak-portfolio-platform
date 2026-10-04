@@ -8,6 +8,7 @@ import type {
   InvestorType,
   CompanyValuationType,
   InvestorCapitalTransactionType,
+  Department,
 } from "@/generated/prisma/client";
 
 export interface Dictionary {
@@ -45,6 +46,7 @@ export interface Dictionary {
   currencyNames: Record<Currency, string>;
   vehicleTypes: Record<VehicleType, string>;
   investorTypes: Record<InvestorType, string>;
+  departments: Record<Department, string>;
   valuationTypes: Record<CompanyValuationType, string>;
   capitalTransactionTypes: Record<InvestorCapitalTransactionType, string>;
   admin: {
@@ -116,41 +118,43 @@ export interface Dictionary {
     };
     emptyState: string;
     charts: {
-      viewSwitcherLabel: string;
-      kpiViewLabel: string;
-      barViewLabel: string;
-      pieViewLabel: string;
-      scatterViewLabel: string;
-      stackedToggleLabel: string;
-      currencyLabel: string;
-      overdueDaysAxisLabel: string;
-      revenueAxisLabel: string;
-      companyValuationsViewLabel: string;
-      vehicleValuationsViewLabel: string;
-      portfolioValuationViewLabel: string;
       valuationAxisLabel: string;
-      excludesNoValuationSuffix: string;
-      trendViewLabel: string;
-      benchmarksViewLabel: string;
       burnLabel: string;
       percentileLabel: string;
-      notEnoughPeersLabel: string;
       navPanelTitle: string;
-      allVehiclesOption: string;
-      excludesNoNavSuffix: string;
-      vehicleFilterLabel: string;
-      companyTrendsTitle: string;
       companyTrendsCaption: string;
       revenueGrowthQoqColumn: string;
       burnChangeQoqColumn: string;
       runwayColumn: string;
       noTrendDataMessage: string;
-      portfolioReturnsTitle: string;
       investedCapitalLabel: string;
-      distributedCapitalLabel: string;
-      currentAttributableValueLabel: string;
       portfolioMoicLabel: string;
       moicNotAvailableLabel: string;
+      noDataMessage: string;
+      currencyToggleLabel: string;
+      totalLabel: string;
+      byVehicleLabel: string;
+      byDepartmentLabel: string;
+      allOption: string;
+      startupCountChartTitle: string;
+      investedCapitalChartTitle: string;
+      navChartTitle: string;
+      marketCapChartTitle: string;
+      marketCapByStartupChartTitle: string;
+      vintageVsInvestmentChartTitle: string;
+      reportingStatusChartTitle: string;
+      fundsFormedLabel: string;
+      startupsInvestedLabel: string;
+      submissionViewLabel: string;
+      auditedViewLabel: string;
+      submittedLabel: string;
+      notSubmittedLabel: string;
+      auditedLabel: string;
+      notAuditedLabel: string;
+      fundListTitle: string;
+      fundNameColumn: string;
+      navColumn: string;
+      numberOfInvestorsColumn: string;
     };
     manage: {
       sectionTitle: string;
@@ -178,6 +182,10 @@ export interface Dictionary {
       currencyLabel: string;
       entryStageLabel: string;
       currentStageLabel: string;
+      departmentLabel: string;
+      vintageYearLabel: string;
+      setDepartmentTitle: string;
+      setVintageYearTitle: string;
       typeLabel: string;
       submitLabel: string;
       archiveAction: string;
@@ -309,6 +317,8 @@ export interface Dictionary {
     uploadAction: string;
     uploading: string;
     noAttachmentsMessage: string;
+    auditedFinancialsCheckboxLabel: string;
+    auditedFinancialsBadge: string;
     uploadErrorMessage: string;
   };
   reviewWorkspace: {
@@ -505,6 +515,10 @@ export const en = {
     FamilyOffice: "Family Office",
     Individual: "Individual",
   },
+  departments: {
+    VentureBuilder: "Venture Builder",
+    InvestmentDepartment: "Investment Department",
+  },
   valuationTypes: {
     LastRound: "Last Round",
     InternalMark: "Internal Mark",
@@ -587,41 +601,43 @@ export const en = {
     },
     emptyState: "No companies match the selected filters.",
     charts: {
-      viewSwitcherLabel: "Dashboard view",
-      kpiViewLabel: "KPI Summary",
-      barViewLabel: "Bar Chart",
-      pieViewLabel: "Pie Chart",
-      scatterViewLabel: "Scatter Plot",
-      stackedToggleLabel: "Stacked",
-      currencyLabel: "Currency",
-      overdueDaysAxisLabel: "Days Overdue",
-      revenueAxisLabel: "Revenue",
-      companyValuationsViewLabel: "Company Valuations",
-      vehicleValuationsViewLabel: "Vehicle Valuations",
-      portfolioValuationViewLabel: "Portfolio Valuation",
       valuationAxisLabel: "Valuation",
-      excludesNoValuationSuffix: "companies with no valuation recorded yet",
-      trendViewLabel: "Portfolio Trend",
-      benchmarksViewLabel: "Benchmarks",
       burnLabel: "Burn",
       percentileLabel: "percentile",
-      notEnoughPeersLabel: "Not enough peers to compare",
       navPanelTitle: "Portfolio NAV",
-      allVehiclesOption: "All Vehicles",
-      excludesNoNavSuffix: "vehicles with no NAV mark recorded yet",
-      vehicleFilterLabel: "Vehicle",
-      companyTrendsTitle: "Company Performance Trends",
       companyTrendsCaption: "Revenue and burn trend by company, most recent two periods",
       revenueGrowthQoqColumn: "Revenue Growth (QoQ)",
       burnChangeQoqColumn: "Burn Change (QoQ)",
       runwayColumn: "Runway",
       noTrendDataMessage: "No reporting history yet for the selected scope.",
-      portfolioReturnsTitle: "Portfolio Returns",
       investedCapitalLabel: "Invested Capital",
-      distributedCapitalLabel: "Distributed",
-      currentAttributableValueLabel: "Current Attributable Value",
       portfolioMoicLabel: "Blended MOIC",
       moicNotAvailableLabel: "Not available",
+      noDataMessage: "No data recorded yet.",
+      currencyToggleLabel: "Display Currency",
+      totalLabel: "Total",
+      byVehicleLabel: "By Vehicle",
+      byDepartmentLabel: "By Department",
+      allOption: "All",
+      startupCountChartTitle: "No. of Portfolio Startups",
+      investedCapitalChartTitle: "Total Invested Capital",
+      navChartTitle: "NAV",
+      marketCapChartTitle: "Market Cap",
+      marketCapByStartupChartTitle: "Market Cap by Startup",
+      vintageVsInvestmentChartTitle: "Fund Vintage Year vs. Startup Investment Year",
+      reportingStatusChartTitle: "Startup Reporting",
+      fundsFormedLabel: "Funds Formed",
+      startupsInvestedLabel: "Startups Invested",
+      submissionViewLabel: "Submission Status",
+      auditedViewLabel: "Audited Status",
+      submittedLabel: "Submitted",
+      notSubmittedLabel: "Not Submitted",
+      auditedLabel: "Audited Financials Submitted",
+      notAuditedLabel: "Audited Financials Not Submitted",
+      fundListTitle: "Fund List",
+      fundNameColumn: "Fund Name",
+      navColumn: "NAV",
+      numberOfInvestorsColumn: "No. of Investors",
     },
     manage: {
       sectionTitle: "Manage Portfolio",
@@ -649,6 +665,10 @@ export const en = {
       currencyLabel: "Currency",
       entryStageLabel: "Entry Stage",
       currentStageLabel: "Current Stage",
+      departmentLabel: "Department",
+      vintageYearLabel: "Vintage Year",
+      setDepartmentTitle: "Set Company Department",
+      setVintageYearTitle: "Set Vehicle Vintage Year",
       typeLabel: "Type",
       submitLabel: "Create",
       archiveAction: "Archive",
@@ -782,6 +802,8 @@ export const en = {
     uploadAction: "Upload File",
     uploading: "Uploading...",
     noAttachmentsMessage: "No files uploaded yet.",
+    auditedFinancialsCheckboxLabel: "This file is the audited financial statements",
+    auditedFinancialsBadge: "Audited financials",
     uploadErrorMessage: "Choose a file to upload.",
   },
   reviewWorkspace: {
@@ -982,6 +1004,10 @@ export const ar = {
     FamilyOffice: "مكتب عائلي",
     Individual: "مستثمر فردي",
   },
+  departments: {
+    VentureBuilder: "بناء المشاريع",
+    InvestmentDepartment: "إدارة الاستثمار",
+  },
   valuationTypes: {
     LastRound: "آخر جولة تمويل",
     InternalMark: "تقييم داخلي",
@@ -1064,41 +1090,43 @@ export const ar = {
     },
     emptyState: "لا توجد شركات مطابقة لعوامل التصفية المحددة.",
     charts: {
-      viewSwitcherLabel: "عرض لوحة المعلومات",
-      kpiViewLabel: "ملخص المؤشرات",
-      barViewLabel: "مخطط شريطي",
-      pieViewLabel: "مخطط دائري",
-      scatterViewLabel: "مخطط التشتت",
-      stackedToggleLabel: "تراكمي",
-      currencyLabel: "العملة",
-      overdueDaysAxisLabel: "أيام التأخير",
-      revenueAxisLabel: "الإيرادات",
-      companyValuationsViewLabel: "تقييمات الشركات",
-      vehicleValuationsViewLabel: "تقييمات الأدوات الاستثمارية",
-      portfolioValuationViewLabel: "تقييم المحفظة",
       valuationAxisLabel: "التقييم",
-      excludesNoValuationSuffix: "شركات بلا تقييم مسجل بعد",
-      trendViewLabel: "اتجاه المحفظة",
-      benchmarksViewLabel: "المقارنات المعيارية",
       burnLabel: "الحرق النقدي",
       percentileLabel: "الشريحة المئينية",
-      notEnoughPeersLabel: "لا توجد شركات مماثلة كافية للمقارنة",
       navPanelTitle: "صافي قيمة أصول المحفظة (NAV)",
-      allVehiclesOption: "جميع الأدوات الاستثمارية",
-      excludesNoNavSuffix: "أدوات استثمارية بلا تقييم NAV مسجل بعد",
-      vehicleFilterLabel: "الأداة الاستثمارية",
-      companyTrendsTitle: "اتجاهات أداء الشركات",
       companyTrendsCaption: "اتجاه الإيرادات والحرق النقدي لكل شركة، لآخر فترتين",
       revenueGrowthQoqColumn: "نمو الإيرادات (ربع سنوي)",
       burnChangeQoqColumn: "تغير الحرق النقدي (ربع سنوي)",
       runwayColumn: "مدة الاستمرارية",
       noTrendDataMessage: "لا يوجد سجل تقارير بعد ضمن النطاق المحدد.",
-      portfolioReturnsTitle: "عوائد المحفظة",
       investedCapitalLabel: "رأس المال المستثمر",
-      distributedCapitalLabel: "التوزيعات",
-      currentAttributableValueLabel: "القيمة الحالية المنسوبة",
       portfolioMoicLabel: "مضاعف رأس المال المجمّع (MOIC)",
       moicNotAvailableLabel: "غير متاح",
+      noDataMessage: "لا توجد بيانات مسجلة بعد.",
+      currencyToggleLabel: "عملة العرض",
+      totalLabel: "الإجمالي",
+      byVehicleLabel: "حسب الصندوق",
+      byDepartmentLabel: "حسب القسم",
+      allOption: "الكل",
+      startupCountChartTitle: "عدد الشركات الناشئة في المحفظة",
+      investedCapitalChartTitle: "إجمالي رأس المال المستثمر",
+      navChartTitle: "صافي قيمة الأصول (NAV)",
+      marketCapChartTitle: "القيمة السوقية",
+      marketCapByStartupChartTitle: "القيمة السوقية حسب الشركة الناشئة",
+      vintageVsInvestmentChartTitle: "سنة تأسيس الصندوق مقابل سنة الاستثمار في الشركة الناشئة",
+      reportingStatusChartTitle: "التزام الشركات الناشئة بالتقارير",
+      fundsFormedLabel: "الصناديق المؤسسة",
+      startupsInvestedLabel: "الشركات الناشئة الممولة",
+      submissionViewLabel: "حالة تقديم التقرير",
+      auditedViewLabel: "حالة القوائم المدققة",
+      submittedLabel: "تم التقديم",
+      notSubmittedLabel: "لم يتم التقديم",
+      auditedLabel: "تم تقديم القوائم المدققة",
+      notAuditedLabel: "لم يتم تقديم القوائم المدققة",
+      fundListTitle: "قائمة الصناديق",
+      fundNameColumn: "اسم الصندوق",
+      navColumn: "صافي قيمة الأصول",
+      numberOfInvestorsColumn: "عدد المستثمرين",
     },
     manage: {
       sectionTitle: "إدارة المحفظة",
@@ -1126,6 +1154,10 @@ export const ar = {
       currencyLabel: "العملة",
       entryStageLabel: "مرحلة الاستثمار",
       currentStageLabel: "المرحلة الحالية",
+      departmentLabel: "القسم",
+      vintageYearLabel: "سنة التأسيس",
+      setDepartmentTitle: "تحديد قسم الشركة",
+      setVintageYearTitle: "تحديد سنة تأسيس الصندوق",
       typeLabel: "النوع",
       submitLabel: "إنشاء",
       archiveAction: "أرشفة",
@@ -1259,6 +1291,8 @@ export const ar = {
     uploadAction: "رفع ملف",
     uploading: "جارٍ الرفع...",
     noAttachmentsMessage: "لم يتم رفع أي ملفات بعد.",
+    auditedFinancialsCheckboxLabel: "هذا الملف هو القوائم المالية المدققة",
+    auditedFinancialsBadge: "قوائم مالية مدققة",
     uploadErrorMessage: "اختر ملفًا لرفعه.",
   },
   reviewWorkspace: {

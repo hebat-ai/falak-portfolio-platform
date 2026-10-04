@@ -31,7 +31,8 @@ export interface UploadAttachmentResult {
 export async function uploadSubmissionAttachment(
   companyId: string,
   submissionId: string,
-  file: File
+  file: File,
+  isAuditedFinancials = false
 ): Promise<UploadAttachmentResult> {
   const { user } = await requireCompanyMembership(companyId, "MEMBER");
 
@@ -58,6 +59,7 @@ export async function uploadSubmissionAttachment(
     await db.attachment.create({
       data: {
         ownerType: "SUBMISSION",
+        kind: isAuditedFinancials ? "AuditedFinancials" : "General",
         submissionId,
         fileName: file.name,
         mimeType: file.type,
@@ -80,6 +82,7 @@ export interface SubmissionAttachmentDTO {
   mimeType: string;
   sizeBytes: number;
   createdAt: string;
+  isAuditedFinancials: boolean;
 }
 
 /**
@@ -93,7 +96,14 @@ export async function listSubmissionAttachments(submissionId: string): Promise<S
   const rows = await db.attachment.findMany({
     where: { submissionId, ownerType: "SUBMISSION" },
     orderBy: { createdAt: "desc" },
-    select: { id: true, fileName: true, mimeType: true, sizeBytes: true, createdAt: true },
+    select: { id: true, fileName: true, mimeType: true, sizeBytes: true, createdAt: true, kind: true },
   });
-  return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+  return rows.map((r) => ({
+    id: r.id,
+    fileName: r.fileName,
+    mimeType: r.mimeType,
+    sizeBytes: r.sizeBytes,
+    createdAt: r.createdAt.toISOString(),
+    isAuditedFinancials: r.kind === "AuditedFinancials",
+  }));
 }

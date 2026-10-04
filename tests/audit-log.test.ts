@@ -157,6 +157,7 @@ test("createCompanyAction writes a company.created audit event", async () => {
   formData.set("currency", "SAR");
   formData.set("entryStage", "Seed");
   formData.set("currentStage", "Seed");
+  formData.set("department", "InvestmentDepartment");
 
   const result = await actions.createCompanyAction({ error: null }, formData);
   assert.equal(result.error, null);

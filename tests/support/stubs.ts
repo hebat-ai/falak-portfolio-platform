@@ -1585,52 +1585,6 @@ export function makeBenchmarksDbStub(options: {
   };
 }
 
-export interface TrendCycleFixture {
-  periodLabel: string;
-  periodStart: Date;
-  templateId: string;
-  submissionId: string | null;
-  revenueMetricValues?: { key: string; value: number | null; isNa?: boolean }[];
-}
-
-/** Backs getPortfolioTrend (src/lib/admin/portfolio-trend.ts). */
-export function makeTrendDbStub(options: {
-  falakRoles?: FalakRoleFixture[];
-  cycles: TrendCycleFixture[];
-  metricsBySubmissionId?: Record<string, AlertMetricValueFixture[]>;
-}) {
-  return {
-    userRoleAssignment: {
-      findMany: async ({ where }: { where: Record<string, unknown> }) => {
-        const roleFilter = where.role as { in: string[] };
-        return (options.falakRoles ?? [])
-          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
-          .map((r) => ({ role: r.role }));
-      },
-    },
-    reportingCycle: {
-      findMany: async () =>
-        options.cycles.map((cy) => ({
-          periodLabel: cy.periodLabel,
-          periodStart: cy.periodStart,
-          templateId: cy.templateId,
-          submission:
-            cy.submissionId === null
-              ? null
-              : {
-                  id: cy.submissionId,
-                  metricValues: (cy.revenueMetricValues ?? []).map((v) => ({
-                    metricDefinition: { key: v.key },
-                    numericValue: v.value === null ? null : { toNumber: () => v.value },
-                    isNa: v.isNa ?? false,
-                  })),
-                },
-        })),
-    },
-    ...makeMetricLookupModels(options.metricsBySubmissionId ?? {}),
-  };
-}
-
 /**
  * Installs a spy in place of uploadAttachment that returns a fixed
  * pathname/size -- same "never a real network call" discipline as
@@ -1889,84 +1843,6 @@ export function makeInvestorReturnsDbStub(options: {
         if (!match) return null;
         return { navAmount: { toNumber: () => match.navAmount }, currency: match.currency };
       },
-    },
-  };
-}
-
-export interface PortfolioReturnsAgreementFixture {
-  investedAmount: number | null;
-  currency: string | null;
-  status: string;
-}
-
-export interface PortfolioReturnsCashFlowFixture {
-  type: string;
-  amount: number;
-  currency: string;
-}
-
-export interface PortfolioReturnsPositionFixture {
-  companyId: string;
-  // Only the latest snapshot matters -- this stub always returns
-  // exactly this one row for `snapshots` (as the real distinct/orderBy/
-  // take:1 query would), so a test wanting "no snapshot yet" passes null.
-  ownershipPct: number | null;
-}
-
-export interface PortfolioReturnsValuationFixture {
-  companyId: string;
-  valuationAmount: number;
-  currency: string;
-}
-
-/** Backs getPortfolioReturns (src/lib/admin/portfolio-returns.ts). */
-export function makePortfolioReturnsDbStub(options: {
-  falakRoles?: FalakRoleFixture[];
-  agreements?: PortfolioReturnsAgreementFixture[];
-  cashFlows?: PortfolioReturnsCashFlowFixture[];
-  positions?: PortfolioReturnsPositionFixture[];
-  valuations?: PortfolioReturnsValuationFixture[];
-}) {
-  const agreements = options.agreements ?? [];
-  const cashFlows = options.cashFlows ?? [];
-  const positions = options.positions ?? [];
-  const valuations = options.valuations ?? [];
-
-  return {
-    userRoleAssignment: {
-      findMany: async ({ where }: { where: Record<string, unknown> }) => {
-        const roleFilter = where.role as { in: string[] };
-        return (options.falakRoles ?? [])
-          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
-          .map((r) => ({ role: r.role }));
-      },
-    },
-    investmentAgreement: {
-      findMany: async ({ where }: { where?: { status?: { in: string[] } } } = {}) =>
-        agreements
-          .filter((a) => !where?.status || where.status.in.includes(a.status))
-          .map((a) => ({
-            investedAmount: a.investedAmount === null ? null : { toNumber: () => a.investedAmount },
-            currency: a.currency,
-          })),
-    },
-    agreementCashFlow: {
-      findMany: async () => cashFlows.map((cf) => ({ amount: { toNumber: () => cf.amount }, currency: cf.currency })),
-    },
-    ownershipPosition: {
-      findMany: async () =>
-        positions.map((p) => ({
-          companyId: p.companyId,
-          snapshots: p.ownershipPct === null ? [] : [{ ownershipPct: { toNumber: () => p.ownershipPct } }],
-        })),
-    },
-    companyValuationSnapshot: {
-      findMany: async () =>
-        valuations.map((v) => ({
-          companyId: v.companyId,
-          valuationAmount: { toNumber: () => v.valuationAmount },
-          currency: v.currency,
-        })),
     },
   };
 }

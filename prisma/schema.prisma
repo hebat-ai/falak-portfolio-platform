@@ -176,6 +176,11 @@ enum FundingStage {
   Later
 }
 
+enum Department {
+  VentureBuilder
+  InvestmentDepartment
+}
+
 model Company {
   id            String         @id @default(cuid())
   slug          String         @unique
@@ -188,6 +193,12 @@ model Company {
   currency      Currency
   entryStage    FundingStage
   currentStage  FundingStage
+  // Which Falak business unit sourced/owns this startup -- independent
+  // of which Vehicle(s) hold its equity. Drives the portfolio
+  // dashboard's department-level breakdowns (startup count, invested
+  // capital, NAV, market cap all slice by this, separately from the
+  // per-vehicle slice).
+  department    Department     @default(InvestmentDepartment)
   archivedAt    DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -254,15 +265,20 @@ enum VehicleType {
 }
 
 model Vehicle {
-  id         String      @id @default(cuid())
-  slug       String      @unique
-  nameEn     String
-  nameAr     String
-  type       VehicleType
-  currency   Currency
-  archivedAt DateTime?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  nameEn      String
+  nameAr      String
+  type        VehicleType
+  currency    Currency
+  // Falak-entered, once per vehicle -- the fund/SPV's formation year,
+  // shown against each startup's own investment year on the portfolio
+  // dashboard's vintage-vs-investment-year timeline. Optional: not every
+  // existing vehicle will have this backfilled immediately.
+  vintageYear Int?
+  archivedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   ownershipPositions OwnershipPosition[]
   positions          InvestorVehiclePosition[]
@@ -959,9 +975,20 @@ enum AttachmentOwnerType {
   REPORT_VERSION
 }
 
+enum AttachmentKind {
+  General
+  AuditedFinancials
+}
+
 model Attachment {
   id              String              @id @default(cuid())
   ownerType       AttachmentOwnerType
+  // AuditedFinancials on a SUBMISSION-owned attachment is what the
+  // portfolio dashboard's reporting chart counts as "audited financials
+  // submitted" for that company+period -- set by the uploader
+  // (company member or Falak staff) at upload time, never inferred
+  // from file name/type.
+  kind            AttachmentKind      @default(General)
   submission      CompanySubmission?  @relation(fields: [submissionId], references: [id], onDelete: Restrict)
   submissionId    String?
   reportVersion   ReportVersion?      @relation(fields: [reportVersionId], references: [id], onDelete: Restrict)

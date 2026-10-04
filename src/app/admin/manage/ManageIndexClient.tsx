@@ -18,6 +18,8 @@ const MANAGE_CARDS: { key: keyof Dictionary["admin"]["manage"]; href: string }[]
   { key: "recordCompanyValuationTitle", href: "/admin/manage/company-valuation" },
   { key: "recordVehicleValuationTitle", href: "/admin/manage/vehicle-valuation" },
   { key: "recordCapitalTransactionTitle", href: "/admin/manage/capital-transaction" },
+  { key: "setDepartmentTitle", href: "/admin/manage/set-company-department" },
+  { key: "setVintageYearTitle", href: "/admin/manage/set-vehicle-vintage-year" },
   { key: "auditLogTitle", href: "/admin/manage/audit-log" },
 ];
 
