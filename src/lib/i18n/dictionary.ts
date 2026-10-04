@@ -861,7 +861,7 @@ export const en = {
   },
   reviewWorkspace: {
     subtitle: "Review submitted reports and manage their approval status.",
-    statusActionableOption: "Actionable (Submitted + Under Review)",
+    statusActionableOption: "Actionable (Submitted + Under Review + Approved)",
     searchPlaceholder: "Search company or sector",
     reviewAction: "Review",
     actionPanelTitle: "Review Action",
@@ -1386,7 +1386,7 @@ export const ar = {
   },
   reviewWorkspace: {
     subtitle: "مراجعة التقارير المُقدَّمة وإدارة حالة اعتمادها.",
-    statusActionableOption: "قابلة للإجراء (تم التقديم + قيد المراجعة)",
+    statusActionableOption: "قابلة للإجراء (تم التقديم + قيد المراجعة + معتمدة)",
     searchPlaceholder: "ابحث عن شركة أو قطاع",
     reviewAction: "مراجعة",
     actionPanelTitle: "إجراء المراجعة",

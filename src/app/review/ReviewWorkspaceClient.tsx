@@ -14,7 +14,13 @@ import type { ReportingRequestRow } from "@/lib/admin/reporting-requests";
 
 function matchesStatusFilter(status: SubmissionStatus, filter: QueueStatusFilter): boolean {
   if (filter === "all") return true;
-  if (filter === "actionable") return status === "submitted" || status === "under_review";
+  // "approved" belongs here too -- Publish is still a real pending
+  // action Falak needs to take on it, same as Start Review/Approve are
+  // for submitted/under_review. Excluding it previously meant the
+  // default queue view could show zero rows (and so no way to select a
+  // company at all) in the common case where everything due this
+  // period is already approved and just waiting to be published.
+  if (filter === "actionable") return status === "submitted" || status === "under_review" || status === "approved";
   return status === filter;
 }
 
