@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getAdminPortfolioData } from "@/lib/admin/queries";
+import { getCompanyListData } from "@/lib/admin/company-list";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { CompanyListClient } from "./CompanyListClient";
 
@@ -10,9 +10,9 @@ export default async function CompanyListPage() {
     redirect("/sign-in");
   }
 
-  let data;
+  let companies;
   try {
-    data = await getAdminPortfolioData();
+    companies = await getCompanyListData();
   } catch (error) {
     if (error instanceof ForbiddenError || error instanceof UnauthenticatedError) {
       redirect("/account");
@@ -20,5 +20,5 @@ export default async function CompanyListPage() {
     throw error;
   }
 
-  return <CompanyListClient {...data} />;
+  return <CompanyListClient companies={companies} />;
 }

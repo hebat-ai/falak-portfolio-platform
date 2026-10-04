@@ -97,6 +97,7 @@ export interface Dictionary {
       periodLabel: string;
       currencyLabel: string;
       statusLabel: string;
+      investmentYearLabel: string;
       allOption: string;
       resetFilters: string;
       viewTable: string;
@@ -115,6 +116,11 @@ export interface Dictionary {
       lastUpdatedColumn: string;
       viewCompanyAction: string;
       noDataValue: string;
+      departmentColumn: string;
+      investmentYearColumn: string;
+      grossMarginColumn: string;
+      cashBurnColumn: string;
+      noVehicleValue: string;
     };
     emptyState: string;
     charts: {
@@ -155,6 +161,10 @@ export interface Dictionary {
       fundNameColumn: string;
       navColumn: string;
       numberOfInvestorsColumn: string;
+      sectorDistributionChartTitle: string;
+      vehicleDistributionChartTitle: string;
+      stageDistributionChartTitle: string;
+      investmentYearChartTitle: string;
     };
     manage: {
       sectionTitle: string;
@@ -580,6 +590,7 @@ export const en = {
       periodLabel: "Reporting Period",
       currencyLabel: "Currency",
       statusLabel: "Status",
+      investmentYearLabel: "Investment Year",
       allOption: "All",
       resetFilters: "Reset filters",
       viewTable: "Table view",
@@ -598,6 +609,11 @@ export const en = {
       lastUpdatedColumn: "Last Updated",
       viewCompanyAction: "View report",
       noDataValue: "No data submitted",
+      departmentColumn: "Department",
+      investmentYearColumn: "Investment Year",
+      grossMarginColumn: "Gross Margin",
+      cashBurnColumn: "Cash Burn",
+      noVehicleValue: "Direct holding",
     },
     emptyState: "No companies match the selected filters.",
     charts: {
@@ -638,6 +654,10 @@ export const en = {
       fundNameColumn: "Fund Name",
       navColumn: "NAV",
       numberOfInvestorsColumn: "No. of Investors",
+      sectorDistributionChartTitle: "Sector Distribution",
+      vehicleDistributionChartTitle: "Vehicle Distribution",
+      stageDistributionChartTitle: "Stage Distribution",
+      investmentYearChartTitle: "Startups Invested per Year",
     },
     manage: {
       sectionTitle: "Manage Portfolio",
@@ -1069,6 +1089,7 @@ export const ar = {
       periodLabel: "فترة التقرير",
       currencyLabel: "العملة",
       statusLabel: "الحالة",
+      investmentYearLabel: "سنة الاستثمار",
       allOption: "الكل",
       resetFilters: "إعادة تعيين عوامل التصفية",
       viewTable: "عرض الجدول",
@@ -1087,6 +1108,11 @@ export const ar = {
       lastUpdatedColumn: "آخر تحديث",
       viewCompanyAction: "عرض التقرير",
       noDataValue: "لا توجد بيانات مُقدَّمة",
+      departmentColumn: "القسم",
+      investmentYearColumn: "سنة الاستثمار",
+      grossMarginColumn: "هامش الربح الإجمالي",
+      cashBurnColumn: "الحرق النقدي",
+      noVehicleValue: "حيازة مباشرة",
     },
     emptyState: "لا توجد شركات مطابقة لعوامل التصفية المحددة.",
     charts: {
@@ -1127,6 +1153,10 @@ export const ar = {
       fundNameColumn: "اسم الصندوق",
       navColumn: "صافي قيمة الأصول",
       numberOfInvestorsColumn: "عدد المستثمرين",
+      sectorDistributionChartTitle: "التوزيع حسب القطاع",
+      vehicleDistributionChartTitle: "التوزيع حسب الصندوق",
+      stageDistributionChartTitle: "التوزيع حسب المرحلة",
+      investmentYearChartTitle: "الشركات الناشئة الممولة سنوياً",
     },
     manage: {
       sectionTitle: "إدارة المحفظة",
