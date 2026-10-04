@@ -186,9 +186,27 @@ test("vehicle exposure: Active surfaces, Exited is excluded, direct investor pos
   const result = await getInvestorPortfolioData();
   assert.equal(result.vehicleExposures.length, 1);
   assert.equal(result.vehicleExposures[0].id, "veh_1");
-  assert.deepEqual(result.vehicleExposures[0].linkedCompanyIds, ["co_1"]);
+  assert.deepEqual(result.vehicleExposures[0].linkedCompanies.map((c) => c.id), ["co_1"]);
   // The company itself is still visible via its own direct grant, independent of vehicle exposure.
   assert.equal(result.companies.length, 1);
+});
+
+test("vehicle exposure lists linked companies by name even when no report has ever been published for them", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeInvestorQueriesDbStub({
+      memberships: [MEMBERSHIP],
+      reportAccessGrants: [],
+      investorVehiclePositions: [{ investorId: "inv_1", vehicleId: "veh_1", status: "Active" }],
+      vehicles: [{ id: "veh_1", slug: "fund-one", nameEn: "Fund One", nameAr: "الصندوق الأول", type: "Fund", currency: "SAR" }],
+      ownershipLinks: [{ vehicleId: "veh_1", companyId: "co_1", companyNameEn: "Waslah Logistics", companySlug: "waslah" }],
+    })
+  );
+  const result = await getInvestorPortfolioData();
+  assert.equal(result.companies.length, 0, "no published report, so no grant-based company entry");
+  assert.equal(result.vehicleExposures[0].linkedCompanies.length, 1);
+  assert.equal(result.vehicleExposures[0].linkedCompanies[0].nameEn, "Waslah Logistics");
+  assert.equal(result.vehicleExposures[0].linkedCompanies[0].slug, "waslah");
 });
 
 test("two Active positions on the same vehicle (different effectiveFrom) dedupe to one exposure entry", async () => {

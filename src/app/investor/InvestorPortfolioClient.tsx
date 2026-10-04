@@ -42,8 +42,11 @@ export function InvestorPortfolioClient({
 
     const orgVehicles = vehicleExposures.filter((v) => v.investorOrgId === orgId);
     const vehicleCards = orgVehicles.map((vehicle) => {
-      const visibleCount = vehicle.linkedCompanyIds.filter((id) => inScopeCompanyIds.has(id)).length;
-      return { vehicle, visibleCount };
+      const companies = vehicle.linkedCompanies.map((company) => ({
+        ...company,
+        hasVisibleReport: inScopeCompanyIds.has(company.id),
+      }));
+      return { vehicle, companies, visibleCount: companies.filter((c) => c.hasVisibleReport).length };
     });
 
     return {
@@ -118,7 +121,7 @@ export function InvestorPortfolioClient({
             {t.investorDashboard.vehicleExposureTitle}
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {scope.vehicleCards.map(({ vehicle, visibleCount }) => (
+            {scope.vehicleCards.map(({ vehicle, companies, visibleCount }) => (
               <div key={vehicle.id} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
                 {/* Deliberately plain text, not a Link to /vehicle/[slug]
                     -- that page is Falak-staff-only (getVehicleDashboardData
@@ -137,6 +140,29 @@ export function InvestorPortfolioClient({
                 <p className="mt-2 text-sm text-foreground">
                   {t.investorDashboard.visibleCompaniesLabel}: <Num>{visibleCount}</Num>
                 </p>
+                {companies.length === 0 ? (
+                  <p className="mt-2 text-xs text-muted-foreground">{t.investorDashboard.noStartupsInVehicle}</p>
+                ) : (
+                  <ul className="mt-2 space-y-1">
+                    {companies.map((company) => (
+                      <li key={company.id} className="text-sm">
+                        {company.hasVisibleReport ? (
+                          <Link
+                            href={`/company/${company.slug}/report?period=${encodeURIComponent(periodKey)}`}
+                            className="text-link-foreground underline-offset-2 hover:underline"
+                          >
+                            {lang === "ar" ? company.nameAr : company.nameEn}
+                          </Link>
+                        ) : (
+                          <span className="text-foreground">
+                            {lang === "ar" ? company.nameAr : company.nameEn}{" "}
+                            <span className="text-xs text-muted-foreground">({t.reviewWorkspace.notPublishedValue})</span>
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
           </div>

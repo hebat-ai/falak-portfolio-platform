@@ -857,6 +857,9 @@ export interface VehicleFixture {
 export interface OwnershipLinkFixture {
   vehicleId: string;
   companyId: string;
+  companyNameEn?: string;
+  companyNameAr?: string;
+  companySlug?: string;
 }
 
 /**
@@ -967,7 +970,15 @@ export function makeInvestorQueriesDbStub(options: {
       findMany: async ({ where }: { where: { vehicleId: { in: string[] }; holderType: string } }) =>
         ownershipLinks
           .filter((l) => where.vehicleId.in.includes(l.vehicleId))
-          .map((l) => ({ vehicleId: l.vehicleId, companyId: l.companyId })),
+          .map((l) => ({
+            vehicleId: l.vehicleId,
+            company: {
+              id: l.companyId,
+              slug: l.companySlug ?? l.companyId,
+              nameEn: l.companyNameEn ?? l.companyId,
+              nameAr: l.companyNameAr ?? l.companyId,
+            },
+          })),
     },
   };
 }

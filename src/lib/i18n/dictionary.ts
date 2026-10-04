@@ -383,6 +383,7 @@ export interface Dictionary {
     companiesInScopeLabel: string;
     vehicleExposureTitle: string;
     visibleCompaniesLabel: string;
+    noStartupsInVehicle: string;
     companiesTableTitle: string;
     companiesTableCaption: string;
     noApprovedReports: string;
@@ -903,6 +904,7 @@ export const en = {
     companiesInScopeLabel: "Companies (Approved)",
     vehicleExposureTitle: "Vehicle Exposure",
     visibleCompaniesLabel: "Visible companies this period",
+    noStartupsInVehicle: "No startups linked to this vehicle yet.",
     companiesTableTitle: "Companies",
     companiesTableCaption: "Companies visible to this investor for the selected period, approved only",
     noApprovedReports: "No published reports for this organization and period yet.",
@@ -1427,6 +1429,7 @@ export const ar = {
     companiesInScopeLabel: "الشركات (المعتمدة)",
     vehicleExposureTitle: "الأدوات الاستثمارية المرتبطة",
     visibleCompaniesLabel: "الشركات المرئية لهذه الفترة",
+    noStartupsInVehicle: "لا توجد شركات ناشئة مرتبطة بهذه الأداة الاستثمارية بعد.",
     companiesTableTitle: "الشركات",
     companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة فقط",
     noApprovedReports: "لا توجد تقارير منشورة لهذه المؤسسة والفترة بعد.",

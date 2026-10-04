@@ -193,10 +193,15 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
           select: { id: true, slug: true, nameEn: true, nameAr: true, type: true, currency: true },
         })
       : Promise.resolve([]),
+    // Company name/slug fetched here too (not just companyId) -- the
+    // vehicle exposure card lists every startup the vehicle holds by
+    // name, regardless of whether a report has ever been published for
+    // it yet; an investor assigned to a vehicle should see what's IN
+    // it immediately, not an empty-looking card until the first publish.
     vehicleIds.length
       ? db.ownershipPosition.findMany({
-          where: { vehicleId: { in: vehicleIds }, holderType: "VEHICLE" },
-          select: { vehicleId: true, companyId: true },
+          where: { vehicleId: { in: vehicleIds }, holderType: "VEHICLE", company: { archivedAt: null } },
+          select: { vehicleId: true, company: { select: { id: true, slug: true, nameEn: true, nameAr: true } } },
         })
       : Promise.resolve([]),
   ]);
@@ -206,6 +211,17 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
   for (const position of dedupedPositions) {
     const vehicle = vehicleById.get(position.vehicleId);
     if (!vehicle) continue;
+
+    const seenCompanyIds = new Set<string>();
+    const linkedCompanies = ownershipLinks
+      .filter((l) => l.vehicleId === vehicle.id)
+      .map((l) => l.company)
+      .filter((c) => {
+        if (seenCompanyIds.has(c.id)) return false;
+        seenCompanyIds.add(c.id);
+        return true;
+      });
+
     vehicleExposures.push({
       id: vehicle.id,
       slug: vehicle.slug,
@@ -214,9 +230,7 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
       type: vehicle.type,
       currency: vehicle.currency,
       investorOrgId: position.investorId,
-      linkedCompanyIds: ownershipLinks
-        .filter((l): l is typeof l & { vehicleId: string } => l.vehicleId === vehicle.id)
-        .map((l) => l.companyId),
+      linkedCompanies,
     });
   }
 

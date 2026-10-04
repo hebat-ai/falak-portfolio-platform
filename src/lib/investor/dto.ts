@@ -54,6 +54,13 @@ export interface InvestorVisibleCompanyDTO {
 // intersects this with the selected period's visible-company set to get
 // a per-period "visible companies" count, same as the mock page already
 // does.
+export interface InvestorVehicleExposureCompanyDTO {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+}
+
 export interface InvestorVehicleExposureDTO {
   id: string;
   slug: string;
@@ -62,7 +69,7 @@ export interface InvestorVehicleExposureDTO {
   type: VehicleType;
   currency: Currency;
   investorOrgId: string;
-  linkedCompanyIds: string[];
+  linkedCompanies: InvestorVehicleExposureCompanyDTO[];
 }
 
 export interface InvestorPortfolioData {
