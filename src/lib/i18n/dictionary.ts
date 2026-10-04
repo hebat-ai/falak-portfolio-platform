@@ -175,6 +175,7 @@ export interface Dictionary {
       investorVehicleAssignmentsCaption: string;
       effectiveFromLabel: string;
       commitmentAmountLabel: string;
+      ownershipPctAutoHint: string;
       unassignAction: string;
       recordCompanyValuationTitle: string;
       recordVehicleValuationTitle: string;
@@ -691,7 +692,8 @@ export const en = {
       investorVehicleAssignmentTitle: "Investor Assignment to Vehicle",
       investorVehicleAssignmentsCaption: "Investors currently assigned to a vehicle, and so receiving reports from its startups.",
       effectiveFromLabel: "Effective From",
-      commitmentAmountLabel: "Commitment Amount",
+      commitmentAmountLabel: "Contributions (Net Invested)",
+      ownershipPctAutoHint: "Ownership % is calculated automatically: contributions ÷ the vehicle's total invested capital.",
       unassignAction: "Unassign",
       recordCompanyValuationTitle: "Record Company Valuation",
       recordVehicleValuationTitle: "Record Vehicle Valuation",
@@ -1214,7 +1216,8 @@ export const ar = {
       investorVehicleAssignmentTitle: "تعيين مستثمر لأداة استثمارية",
       investorVehicleAssignmentsCaption: "المستثمرون المعيّنون حالياً لأداة استثمارية، والذين يستلمون تقارير شركاتها.",
       effectiveFromLabel: "ساري من تاريخ",
-      commitmentAmountLabel: "مبلغ الالتزام",
+      commitmentAmountLabel: "المساهمات (صافي المستثمر)",
+      ownershipPctAutoHint: "تُحسب نسبة الملكية تلقائياً: المساهمات ÷ إجمالي رأس المال المستثمر للصندوق.",
       unassignAction: "إلغاء التعيين",
       recordCompanyValuationTitle: "تسجيل تقييم شركة",
       recordVehicleValuationTitle: "تسجيل تقييم أداة استثمارية",

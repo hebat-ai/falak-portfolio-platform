@@ -326,20 +326,48 @@ test("linkVehicleToCompanyAction writes an ownership_position.linked audit event
   assert.equal(events[0].targetId, "pos_new");
 });
 
-test("linkInvestorToVehicleAction writes an investor_vehicle_position.linked audit event", async () => {
-  const actions = await import("../src/app/admin/actions.ts");
-  setCurrentUser(REAL_USER);
+function makeInvestorVehicleLinkDbStub(options: {
+  existingPosition?: { id: string } | null;
+  vehicleAgreements?: { investedAmount: { toNumber: () => number } | null; currency: string | null }[];
+  vehicleCompanyIds?: string[];
+  publishedVersionIds?: string[];
+}) {
+  const grantUpserts: Record<string, unknown>[] = [];
+  const createCalls: Record<string, unknown>[] = [];
   const db = makeAdminActionDbStub({
     falakRoles: ADMIN_ROLE,
     models: {
       investor: { findUnique: async () => ({ id: "inv_1", nameEn: "Acme Capital" }) },
       vehicle: { findUnique: async () => ({ id: "veh_1", slug: "fund-one" }) },
       investorVehiclePosition: {
-        findUnique: async () => null,
-        create: async ({ data }: { data: Record<string, unknown> }) => ({ id: "pos_new", ...data }),
+        findUnique: async () => options.existingPosition ?? null,
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          createCalls.push(data);
+          return { id: "pos_new", ...data };
+        },
+      },
+      investmentAgreement: { findMany: async () => options.vehicleAgreements ?? [] },
+      ownershipPosition: {
+        findMany: async () => (options.vehicleCompanyIds ?? []).map((companyId) => ({ companyId })),
+      },
+      reportVersion: {
+        findMany: async () => (options.publishedVersionIds ?? []).map((id) => ({ id })),
+      },
+      reportAccessGrant: {
+        upsert: async ({ create }: { create: Record<string, unknown> }) => {
+          grantUpserts.push(create);
+          return create;
+        },
       },
     },
   });
+  return { db, getGrantUpserts: () => grantUpserts, getCreateCalls: () => createCalls };
+}
+
+test("linkInvestorToVehicleAction writes an investor_vehicle_position.linked audit event", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const { db } = makeInvestorVehicleLinkDbStub({});
   setDbStub(db);
 
   const formData = new FormData();
@@ -348,7 +376,6 @@ test("linkInvestorToVehicleAction writes an investor_vehicle_position.linked aud
   formData.set("currency", "SAR");
   formData.set("effectiveFrom", "2026-01-01");
   formData.set("commitmentAmount", "5000000");
-  formData.set("ownershipPct", "0.1");
 
   const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
   assert.equal(result.error, null);
@@ -364,14 +391,7 @@ test("linkInvestorToVehicleAction writes an investor_vehicle_position.linked aud
 test("linkInvestorToVehicleAction rejects a duplicate assignment for the same effective date", async () => {
   const actions = await import("../src/app/admin/actions.ts");
   setCurrentUser(REAL_USER);
-  const db = makeAdminActionDbStub({
-    falakRoles: ADMIN_ROLE,
-    models: {
-      investor: { findUnique: async () => ({ id: "inv_1" }) },
-      vehicle: { findUnique: async () => ({ id: "veh_1" }) },
-      investorVehiclePosition: { findUnique: async () => ({ id: "existing_pos" }) },
-    },
-  });
+  const { db } = makeInvestorVehicleLinkDbStub({ existingPosition: { id: "existing_pos" } });
   setDbStub(db);
 
   const formData = new FormData();
@@ -383,6 +403,91 @@ test("linkInvestorToVehicleAction rejects a duplicate assignment for the same ef
   const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
   assert.ok(result.error);
   assert.equal(result.success, undefined);
+});
+
+test("linkInvestorToVehicleAction computes ownershipPct as contribution / vehicle invested capital, never from manual input", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const { db, getCreateCalls } = makeInvestorVehicleLinkDbStub({
+    vehicleAgreements: [{ investedAmount: { toNumber: () => 2000000 }, currency: "SAR" }],
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("currency", "SAR");
+  formData.set("effectiveFrom", "2026-01-01");
+  formData.set("commitmentAmount", "500000");
+  // Even if a client somehow still sent one, it must be ignored.
+  formData.set("ownershipPct", "0.99");
+
+  const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
+  assert.equal(result.error, null);
+  assert.equal(getCreateCalls()[0].ownershipPct, 0.25, "500,000 / 2,000,000, never the submitted 0.99");
+});
+
+test("linkInvestorToVehicleAction converts the vehicle's invested capital to the position's own currency before dividing", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const { db, getCreateCalls } = makeInvestorVehicleLinkDbStub({
+    // 2,000,000 USD vehicle agreement, position recorded in SAR (x3.75).
+    vehicleAgreements: [{ investedAmount: { toNumber: () => 2000000 }, currency: "USD" }],
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("currency", "SAR");
+  formData.set("effectiveFrom", "2026-01-01");
+  formData.set("commitmentAmount", "1875000"); // = 500,000 USD equivalent
+
+  const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
+  assert.equal(result.error, null);
+  assert.equal(getCreateCalls()[0].ownershipPct, 0.25);
+});
+
+test("linkInvestorToVehicleAction leaves ownershipPct null when the vehicle has no recorded invested capital yet", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const { db, getCreateCalls } = makeInvestorVehicleLinkDbStub({ vehicleAgreements: [] });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("currency", "SAR");
+  formData.set("effectiveFrom", "2026-01-01");
+  formData.set("commitmentAmount", "500000");
+
+  const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
+  assert.equal(result.error, null);
+  assert.equal(getCreateCalls()[0].ownershipPct, null);
+});
+
+test("linkInvestorToVehicleAction backfills ReportAccessGrant for every already-published report of the vehicle's companies", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const { db, getGrantUpserts } = makeInvestorVehicleLinkDbStub({
+    vehicleCompanyIds: ["co_1", "co_2"],
+    publishedVersionIds: ["version_1", "version_2"],
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("currency", "SAR");
+  formData.set("effectiveFrom", "2026-01-01");
+
+  const result = await actions.linkInvestorToVehicleAction({ error: null }, formData);
+  assert.equal(result.error, null);
+
+  const upserts = getGrantUpserts();
+  assert.equal(upserts.length, 2);
+  assert.deepEqual(upserts.map((u) => u.reportVersionId).sort(), ["version_1", "version_2"]);
+  assert.ok(upserts.every((u) => u.investorId === "inv_1"));
 });
 
 test("unassignInvestorFromVehicleAction writes an investor_vehicle_position.unassigned audit event", async () => {

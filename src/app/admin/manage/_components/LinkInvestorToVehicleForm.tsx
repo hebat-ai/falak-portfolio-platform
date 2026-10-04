@@ -48,10 +48,7 @@ export function LinkInvestorToVehicleForm({ investors, vehicles }: { investors: 
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="iv-commitment">{t.admin.manage.commitmentAmountLabel}</label>
         <Input id="iv-commitment" name="commitmentAmount" inputMode="decimal" pattern="\d+(\.\d{1,4})?" />
-      </div>
-      <div className={fieldClass}>
-        <label className={labelClass} htmlFor="iv-pct">{t.admin.manage.ownershipPctLabel}</label>
-        <Input id="iv-pct" name="ownershipPct" inputMode="decimal" pattern="\d+(\.\d{1,4})?" />
+        <p className="text-xs text-muted-foreground">{t.admin.manage.ownershipPctAutoHint}</p>
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />

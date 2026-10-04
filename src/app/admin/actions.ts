@@ -9,6 +9,7 @@ import { hashInviteToken } from "@/lib/auth/invite-token";
 import { normalizeEmail, MAX_RAW_EMAIL_LENGTH } from "@/lib/auth/utils";
 import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { convertToDisplay, type DisplayCurrency } from "@/lib/currency/convert";
 import type {
   Currency,
   CustomerModel,
@@ -511,7 +512,6 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
   const effectiveFromRaw = readString(formData, "effectiveFrom");
   const commitmentAmount = readString(formData, "commitmentAmount");
   const calledAmount = readString(formData, "calledAmount");
-  const ownershipPct = readString(formData, "ownershipPct");
 
   if (
     !investorId ||
@@ -520,8 +520,7 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
     !CURRENCIES.includes(currency as Currency) ||
     !effectiveFromRaw ||
     (commitmentAmount && !AMOUNT_PATTERN.test(commitmentAmount)) ||
-    (calledAmount && !AMOUNT_PATTERN.test(calledAmount)) ||
-    (ownershipPct && !AMOUNT_PATTERN.test(ownershipPct))
+    (calledAmount && !AMOUNT_PATTERN.test(calledAmount))
   ) {
     return { error: "Fill in every required field with a valid value." };
   }
@@ -546,6 +545,28 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
     return { error: "This investor is already assigned to this vehicle as of that date." };
   }
 
+  // Ownership % is never typed in by hand -- it's this investor's
+  // contribution (net invested) divided by the vehicle's own total
+  // invested capital (every Active/Superseded InvestmentAgreement
+  // under it, converted to this position's currency via the same
+  // fixed 3.75 rate the portfolio overview dashboard uses), so it
+  // always reflects a real share of real deployed capital rather than
+  // a number Falak could type inconsistently with the rest of the
+  // vehicle's cap table.
+  const vehicleAgreements = await db.investmentAgreement.findMany({
+    where: {
+      status: { in: ["Active", "Superseded"] },
+      ownershipPosition: { vehicleId },
+    },
+    select: { investedAmount: true, currency: true },
+  });
+  const vehicleInvestedCapital = vehicleAgreements.reduce((sum, a) => {
+    if (a.investedAmount === null || a.currency === null) return sum;
+    return sum + convertToDisplay(a.investedAmount.toNumber(), a.currency, currency as DisplayCurrency);
+  }, 0);
+  const ownershipPct =
+    commitmentAmount && vehicleInvestedCapital > 0 ? Number(commitmentAmount) / vehicleInvestedCapital : null;
+
   try {
     await db.$transaction(async (tx) => {
       const position = await tx.investorVehiclePosition.create({
@@ -556,7 +577,7 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
           effectiveFrom,
           commitmentAmount: commitmentAmount || null,
           calledAmount: calledAmount || null,
-          ownershipPct: ownershipPct || null,
+          ownershipPct,
           status: "Active",
         },
       });
@@ -566,6 +587,34 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
         targetType: "InvestorVehiclePosition",
         targetId: position.id,
       });
+
+      // Backfill: grant this investor access to every ALREADY-PUBLISHED
+      // report for a company this vehicle holds -- resolveInvestorExposure
+      // only runs at the moment of a NEW publish, so without this an
+      // investor assigned today would see nothing on their dashboard
+      // until the next quarter's report, even though they're now
+      // genuinely exposed to this vehicle's existing startups. No email
+      // is (re-)sent for these backfilled grants -- "Resend to Investors"
+      // on the Reports Log covers that separately, per report, if Falak
+      // wants to notify by email too.
+      const vehicleCompanies = await tx.ownershipPosition.findMany({
+        where: { vehicleId, holderType: "VEHICLE" },
+        select: { companyId: true },
+      });
+      const companyIds = [...new Set(vehicleCompanies.map((p) => p.companyId))];
+      if (companyIds.length > 0) {
+        const latestVersions = await tx.reportVersion.findMany({
+          where: { isSuperseded: false, report: { scope: "COMPANY", companyId: { in: companyIds } } },
+          select: { id: true },
+        });
+        for (const version of latestVersions) {
+          await tx.reportAccessGrant.upsert({
+            where: { reportVersionId_investorId: { reportVersionId: version.id, investorId } },
+            update: {},
+            create: { reportVersionId: version.id, investorId },
+          });
+        }
+      }
     });
   } catch {
     return { error: GENERIC_ERROR };
