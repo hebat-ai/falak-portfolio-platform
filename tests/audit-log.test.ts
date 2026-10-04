@@ -372,7 +372,7 @@ test("createReportingCycleAction writes a reporting_cycle.created audit event", 
   setDbStub(db);
 
   const formData = new FormData();
-  formData.set("companyId", "co_1");
+  formData.append("companyIds", "co_1");
   formData.set("templateId", "tmpl_1");
   formData.set("periodLabel", "Q1 2026");
   formData.set("periodStart", "2026-01-01");
@@ -387,6 +387,69 @@ test("createReportingCycleAction writes a reporting_cycle.created audit event", 
   assert.equal(events[0].action, "reporting_cycle.created");
   assert.equal(events[0].targetType, "ReportingCycle");
   assert.equal(events[0].targetId, "cycle_new");
+});
+
+test("createReportingCycleAction creates one cycle per selected company, skipping any that already has one", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  let createCalls = 0;
+  const db = makeAdminActionDbStub({
+    falakRoles: ADMIN_ROLE,
+    models: {
+      reportingCycle: {
+        findUnique: async ({ where }: { where: { companyId_templateId_periodStart_periodEnd: { companyId: string } } }) =>
+          where.companyId_templateId_periodStart_periodEnd.companyId === "co_2" ? { id: "existing_cycle" } : null,
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          createCalls += 1;
+          return { id: `cycle_${createCalls}`, ...data };
+        },
+      },
+      companySubmission: { create: async ({ data }: { data: Record<string, unknown> }) => ({ id: "sub_new", ...data }) },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.append("companyIds", "co_1");
+  formData.append("companyIds", "co_2");
+  formData.append("companyIds", "co_3");
+  formData.set("templateId", "tmpl_1");
+  formData.set("periodLabel", "Q1 2026");
+  formData.set("periodStart", "2026-01-01");
+  formData.set("periodEnd", "2026-03-31");
+  formData.set("deadline", "2026-04-15");
+
+  const result = await actions.createReportingCycleAction({ error: null }, formData);
+  assert.equal(result.error, null);
+  assert.equal(result.success, true);
+  assert.equal(createCalls, 2, "co_2 already has a cycle and must be skipped");
+
+  const events = db.getAuditEvents();
+  assert.equal(events.length, 2, "one audit event per newly created cycle, not per selected company");
+});
+
+test("createReportingCycleAction fails when every selected company already has this exact cycle", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  const db = makeAdminActionDbStub({
+    falakRoles: ADMIN_ROLE,
+    models: {
+      reportingCycle: { findUnique: async () => ({ id: "existing_cycle" }) },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.append("companyIds", "co_1");
+  formData.set("templateId", "tmpl_1");
+  formData.set("periodLabel", "Q1 2026");
+  formData.set("periodStart", "2026-01-01");
+  formData.set("periodEnd", "2026-03-31");
+  formData.set("deadline", "2026-04-15");
+
+  const result = await actions.createReportingCycleAction({ error: null }, formData);
+  assert.ok(result.error);
+  assert.equal(result.success, undefined);
 });
 
 test("createCompanyInviteAction writes an invite.created audit event", async () => {

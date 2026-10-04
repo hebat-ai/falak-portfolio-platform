@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getAdminPortfolioData } from "@/lib/admin/queries";
+import { getReportingRequests } from "@/lib/admin/reporting-requests";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { ReviewWorkspaceClient } from "./ReviewWorkspaceClient";
 
@@ -11,8 +12,9 @@ export default async function ReviewWorkspacePage() {
   }
 
   let data;
+  let reportingRequests;
   try {
-    data = await getAdminPortfolioData();
+    [data, reportingRequests] = await Promise.all([getAdminPortfolioData(), getReportingRequests()]);
   } catch (error) {
     // ForbiddenError: authenticated, but not FALAK_ADMIN/FALAK_OPERATIONS.
     // UnauthenticatedError: defensive only (the getCurrentUser() check
@@ -24,5 +26,5 @@ export default async function ReviewWorkspacePage() {
     throw error;
   }
 
-  return <ReviewWorkspaceClient {...data} />;
+  return <ReviewWorkspaceClient {...data} reportingRequests={reportingRequests} />;
 }

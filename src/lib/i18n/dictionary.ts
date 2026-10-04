@@ -200,6 +200,7 @@ export interface Dictionary {
       submitLabel: string;
       archiveAction: string;
       companyLabel: string;
+      companiesLabel: string;
       vehicleLabel: string;
       investedAmountLabel: string;
       ownershipPctLabel: string;
@@ -351,6 +352,24 @@ export interface Dictionary {
       investment_review_notes: string;
       management_commentary: string;
     };
+    saveCorrectionsAction: string;
+    reportsLogTitle: string;
+    reportsLogCaption: string;
+    requestedColumn: string;
+    publishedColumn: string;
+    notPublishedValue: string;
+    editDeadlineAction: string;
+    newDeadlineLabel: string;
+    saveDeadlineAction: string;
+    cancelAction: string;
+    downloadReportAction: string;
+    resendToInvestorsAction: string;
+    resendPending: string;
+    resendSuccessMessage: string;
+    sentCountLabel: string;
+    pendingCountLabel: string;
+    failedCountLabel: string;
+    distributionColumn: string;
   };
   investorDashboard: {
     subtitle: string;
@@ -469,7 +488,7 @@ export const en = {
     vehicleDashboard: "Vehicle Dashboard",
     companyReports: "Company Reports",
     startupForm: "My Companies",
-    reviewWorkspace: "Review & Approval",
+    reviewWorkspace: "Reports Review and Approval",
     access: "Access Management",
     openMenu: "Open menu",
     closeMenu: "Close menu",
@@ -693,6 +712,7 @@ export const en = {
       submitLabel: "Create",
       archiveAction: "Archive",
       companyLabel: "Company",
+      companiesLabel: "Companies",
       vehicleLabel: "Vehicle",
       investedAmountLabel: "Invested Amount",
       ownershipPctLabel: "Ownership % (e.g. 0.10 for 10%)",
@@ -846,6 +866,24 @@ export const en = {
       investment_review_notes: "Investment Review Notes",
       management_commentary: "Management Commentary",
     },
+    saveCorrectionsAction: "Save Corrections",
+    reportsLogTitle: "Reports Log",
+    reportsLogCaption: "Every reporting cycle requested, per company and vehicle, with its current status.",
+    requestedColumn: "Requested",
+    publishedColumn: "Published",
+    notPublishedValue: "Not yet published",
+    editDeadlineAction: "Edit Deadline",
+    newDeadlineLabel: "New Deadline",
+    saveDeadlineAction: "Save",
+    cancelAction: "Cancel",
+    downloadReportAction: "Download Report",
+    resendToInvestorsAction: "Resend to Investors",
+    resendPending: "Sending...",
+    resendSuccessMessage: "Report sent to investors.",
+    sentCountLabel: "Sent",
+    pendingCountLabel: "Pending",
+    failedCountLabel: "Failed",
+    distributionColumn: "Sent to Investors",
   },
   investorDashboard: {
     subtitle: "Vehicle exposure and published company reports visible to your investor organization.",
@@ -968,7 +1006,7 @@ export const ar = {
     vehicleDashboard: "لوحة الأداة الاستثمارية",
     companyReports: "تقارير الشركات",
     startupForm: "شركاتي",
-    reviewWorkspace: "المراجعة والاعتماد",
+    reviewWorkspace: "مراجعة التقارير واعتمادها",
     access: "إدارة الوصول",
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",
@@ -1192,6 +1230,7 @@ export const ar = {
       submitLabel: "إنشاء",
       archiveAction: "أرشفة",
       companyLabel: "الشركة",
+      companiesLabel: "الشركات",
       vehicleLabel: "الأداة الاستثمارية",
       investedAmountLabel: "المبلغ المستثمر",
       ownershipPctLabel: "نسبة الملكية (مثال: 0.10 لنسبة 10%)",
@@ -1345,6 +1384,24 @@ export const ar = {
       investment_review_notes: "ملاحظات مراجعة الاستثمار",
       management_commentary: "تعليق الإدارة",
     },
+    saveCorrectionsAction: "حفظ التصحيحات",
+    reportsLogTitle: "سجل التقارير",
+    reportsLogCaption: "كل دورة تقرير مطلوبة، لكل شركة وصندوق، مع حالتها الحالية.",
+    requestedColumn: "تاريخ الطلب",
+    publishedColumn: "النشر",
+    notPublishedValue: "لم يُنشر بعد",
+    editDeadlineAction: "تعديل الموعد النهائي",
+    newDeadlineLabel: "الموعد النهائي الجديد",
+    saveDeadlineAction: "حفظ",
+    cancelAction: "إلغاء",
+    downloadReportAction: "تحميل التقرير",
+    resendToInvestorsAction: "إعادة الإرسال للمستثمرين",
+    resendPending: "جارٍ الإرسال...",
+    resendSuccessMessage: "تم إرسال التقرير إلى المستثمرين.",
+    sentCountLabel: "تم الإرسال",
+    pendingCountLabel: "قيد الانتظار",
+    failedCountLabel: "فشل",
+    distributionColumn: "أُرسل للمستثمرين",
   },
   investorDashboard: {
     subtitle: "الأدوات الاستثمارية المرتبطة وتقارير الشركات المنشورة المرئية لمؤسستك الاستثمارية.",

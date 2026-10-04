@@ -5,6 +5,7 @@ import { getVehicleNavSummary } from "@/lib/vehicle/nav";
 import { getVehicleCapitalSummary } from "@/lib/vehicle/capital";
 import { getPortfolioAlerts } from "@/lib/admin/alerts";
 import { getCompanyPerformanceTrends } from "@/lib/admin/company-trends";
+import { getReportingRequests } from "@/lib/admin/reporting-requests";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { VehicleDashboardView } from "../_components/VehicleDashboardView";
 
@@ -24,15 +25,17 @@ export default async function VehicleDashboardPage({ params }: { params: Promise
   let capital;
   let alerts;
   let companyTrends;
+  let reportingRequests;
   try {
     data = await getVehicleDashboardData(slug);
     if (data) {
       const companyIds = data.companies.map((c) => c.id);
-      [nav, capital, alerts, companyTrends] = await Promise.all([
+      [nav, capital, alerts, companyTrends, reportingRequests] = await Promise.all([
         getVehicleNavSummary(data.vehicle.id),
         getVehicleCapitalSummary(data.vehicle.id),
         getPortfolioAlerts(companyIds),
         getCompanyPerformanceTrends(companyIds),
+        getReportingRequests(companyIds),
       ]);
     }
   } catch (error) {
@@ -42,9 +45,18 @@ export default async function VehicleDashboardPage({ params }: { params: Promise
     throw error;
   }
 
-  if (!data || !nav || !capital || !alerts || !companyTrends) {
+  if (!data || !nav || !capital || !alerts || !companyTrends || !reportingRequests) {
     notFound();
   }
 
-  return <VehicleDashboardView {...data} nav={nav} capital={capital} alerts={alerts} companyTrends={companyTrends} />;
+  return (
+    <VehicleDashboardView
+      {...data}
+      nav={nav}
+      capital={capital}
+      alerts={alerts}
+      companyTrends={companyTrends}
+      reportingRequests={reportingRequests}
+    />
+  );
 }

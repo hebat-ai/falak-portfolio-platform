@@ -245,3 +245,79 @@ export async function sendPublishNotifications(result: PublishResult): Promise<v
     }
   }
 }
+
+/**
+ * Manually re-syncs and re-sends an already-published ReportVersion's
+ * investor distribution: re-resolves current investor exposure (so an
+ * investor who joined a vehicle, or took a new direct stake, AFTER the
+ * original publish still gets a grant + a send), then (re-)sends to
+ * every recipient whose own distribution isn't already Sent -- a
+ * Pending row (the original send never got attempted/completed for
+ * some reason) or a Failed one both get retried; an already-Sent row
+ * is left alone, so this never spams someone who already received it.
+ * Unlike sendPublishNotifications (fire-and-forget after a fresh
+ * publish), this is itself the explicit, on-demand action, so it does
+ * throw on auth/not-found -- the caller (resendReportToInvestorsAction)
+ * surfaces that as a real error, not a silently-swallowed one.
+ */
+export async function resendReportToInvestors(reportVersionId: string): Promise<void> {
+  const { user } = await requireFalakRole("FALAK_ADMIN");
+
+  const version = await db.reportVersion.findUnique({
+    where: { id: reportVersionId },
+    select: {
+      id: true,
+      report: { select: { companyId: true, periodLabel: true, company: { select: { slug: true, nameEn: true } } } },
+    },
+  });
+  if (!version || !version.report.companyId || !version.report.company) {
+    throw new InvalidTransitionError();
+  }
+  const { companyId, periodLabel, company } = version.report;
+
+  const investorIds = await db.$transaction(async (tx) => {
+    const ids = await resolveInvestorExposure(tx, companyId);
+    for (const investorId of ids) {
+      await tx.reportAccessGrant.upsert({
+        where: { reportVersionId_investorId: { reportVersionId, investorId } },
+        update: {},
+        create: { reportVersionId, investorId },
+      });
+    }
+    await writeAuditEvent(tx, {
+      actorId: user.id,
+      action: "report.resent_to_investors",
+      targetType: "ReportVersion",
+      targetId: reportVersionId,
+    });
+    return ids;
+  });
+
+  const notifications: PublishNotification[] = [];
+  for (const investorId of investorIds) {
+    const activeMembers = await db.investorMembership.findMany({
+      where: { investorId, revokedAt: null },
+      select: { user: { select: { email: true } } },
+    });
+    for (const member of activeMembers) {
+      const existing = await db.reportDistribution.findFirst({
+        where: { reportVersionId, investorId, recipientEmail: member.user.email },
+        orderBy: { createdAt: "desc" },
+      });
+      if (existing && existing.status === "Sent") continue;
+
+      const distribution = existing
+        ? await db.reportDistribution.update({ where: { id: existing.id }, data: { status: "Pending", failureReason: null } })
+        : await db.reportDistribution.create({
+            data: { reportVersionId, investorId, recipientEmail: member.user.email, channel: "Email", status: "Pending" },
+          });
+      notifications.push({ reportDistributionId: distribution.id, recipientEmail: member.user.email });
+    }
+  }
+
+  // reportId/versionNo aren't used by sendPublishNotifications itself
+  // (it only reads companySlug/companyNameEn/periodLabel/notifications)
+  // -- left blank here rather than fetching them just to satisfy the
+  // shared PublishResult shape.
+  await sendPublishNotifications({ reportId: "", versionNo: 0, companySlug: company.slug, companyNameEn: company.nameEn, periodLabel, notifications });
+}

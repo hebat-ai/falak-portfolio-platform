@@ -561,15 +561,15 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
     throw error;
   }
 
-  const companyId = readString(formData, "companyId");
+  const companyIds = formData.getAll("companyIds").filter((v): v is string => typeof v === "string" && v.length > 0);
   const templateId = readString(formData, "templateId");
   const periodLabel = readString(formData, "periodLabel");
   const periodStartRaw = readString(formData, "periodStart");
   const periodEndRaw = readString(formData, "periodEnd");
   const deadlineRaw = readString(formData, "deadline");
 
-  if (!companyId || !templateId || !isValidName(periodLabel) || !periodStartRaw || !periodEndRaw || !deadlineRaw) {
-    return { error: "Fill in every field with a valid value." };
+  if (companyIds.length === 0 || !templateId || !isValidName(periodLabel) || !periodStartRaw || !periodEndRaw || !deadlineRaw) {
+    return { error: "Select at least one company and fill in every field with a valid value." };
   }
 
   const periodStart = new Date(periodStartRaw);
@@ -579,37 +579,50 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
     return { error: "Enter valid, consistent dates." };
   }
 
-  const existing = await db.reportingCycle.findUnique({
-    where: { companyId_templateId_periodStart_periodEnd: { companyId, templateId, periodStart, periodEnd } },
-  });
-  if (existing) {
-    return { error: "A cycle already exists for this company, template, and period." };
-  }
-
+  // One reporting cycle (the "request" being logged) per selected
+  // company, all sharing the same template/period/deadline -- a
+  // company that already has a cycle for this exact
+  // (templateId, periodStart, periodEnd) is silently skipped rather
+  // than failing the whole batch, since "request this quarter from
+  // everyone except the two who already have it" is the normal case,
+  // not an error.
+  let createdCount = 0;
   try {
     await db.$transaction(async (tx) => {
-      const cycle = await tx.reportingCycle.create({
-        data: {
-          companyId,
-          templateId,
-          periodLabel,
-          periodStart,
-          periodEnd,
-          originalDeadline: deadline,
-          currentDeadline: deadline,
-          status: "Open",
-        },
-      });
-      await tx.companySubmission.create({ data: { cycleId: cycle.id, status: "draft" } });
-      await writeAuditEvent(tx, {
-        actorId: user.id,
-        action: "reporting_cycle.created",
-        targetType: "ReportingCycle",
-        targetId: cycle.id,
-      });
+      for (const companyId of companyIds) {
+        const existing = await tx.reportingCycle.findUnique({
+          where: { companyId_templateId_periodStart_periodEnd: { companyId, templateId, periodStart, periodEnd } },
+        });
+        if (existing) continue;
+
+        const cycle = await tx.reportingCycle.create({
+          data: {
+            companyId,
+            templateId,
+            periodLabel,
+            periodStart,
+            periodEnd,
+            originalDeadline: deadline,
+            currentDeadline: deadline,
+            status: "Open",
+          },
+        });
+        await tx.companySubmission.create({ data: { cycleId: cycle.id, status: "draft" } });
+        await writeAuditEvent(tx, {
+          actorId: user.id,
+          action: "reporting_cycle.created",
+          targetType: "ReportingCycle",
+          targetId: cycle.id,
+        });
+        createdCount += 1;
+      }
     });
   } catch {
     return { error: GENERIC_ERROR };
+  }
+
+  if (createdCount === 0) {
+    return { error: "Every selected company already has a cycle for this exact template and period." };
   }
 
   return { error: null, success: true };

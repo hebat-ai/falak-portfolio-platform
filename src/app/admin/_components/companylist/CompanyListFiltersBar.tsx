@@ -8,17 +8,22 @@ import { Button } from "@/components/ui/Button";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import type { CompanyListVehicleRef } from "@/lib/admin/company-list";
 import type { DisplayCurrency } from "@/lib/currency/convert";
+import type { Department } from "@/generated/prisma/client";
+
+const DEPARTMENTS: Department[] = ["VentureBuilder", "InvestmentDepartment"];
 
 export interface CompanyListFilterState {
   searchQuery: string;
   vehicleId: string | "all";
   investmentYear: string | "all";
+  department: Department | "all";
 }
 
 export const DEFAULT_COMPANY_LIST_FILTERS: CompanyListFilterState = {
   searchQuery: "",
   vehicleId: "all",
   investmentYear: "all",
+  department: "all",
 };
 
 interface CompanyListFiltersBarProps {
@@ -85,6 +90,22 @@ export function CompanyListFiltersBar({
             <option value="all">{t.admin.filters.allOption}</option>
             {investmentYears.map((y) => (
               <option key={y} value={y}>{y}</option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="flex w-full flex-col gap-1 sm:w-auto">
+          <label htmlFor="cl-department" className="text-xs font-medium text-muted-foreground">
+            {t.admin.manage.departmentLabel}
+          </label>
+          <Select
+            id="cl-department"
+            value={filters.department}
+            onChange={(e) => onChange({ ...filters, department: e.target.value as Department | "all" })}
+          >
+            <option value="all">{t.admin.filters.allOption}</option>
+            {DEPARTMENTS.map((d) => (
+              <option key={d} value={d}>{t.departments[d]}</option>
             ))}
           </Select>
         </div>

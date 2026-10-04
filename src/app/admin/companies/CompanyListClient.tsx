@@ -52,6 +52,9 @@ export function CompanyListClient({ companies }: CompanyListClientProps) {
       if (filters.investmentYear !== "all" && String(company.investmentYear) !== filters.investmentYear) {
         return false;
       }
+      if (filters.department !== "all" && company.department !== filters.department) {
+        return false;
+      }
       if (query) {
         const haystack = [
           company.nameEn,

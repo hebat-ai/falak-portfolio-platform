@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, type RefObject } from "react";
+import { useActionState, useEffect, useState, type RefObject } from "react";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
@@ -14,10 +14,13 @@ import {
   requestChangesAction,
   approveSubmissionAction,
   publishSubmissionAction,
+  getSubmissionMetricsForReviewAction,
   type ReviewActionState,
 } from "../actions";
+import { ReviewMetricsEditForm } from "./ReviewMetricsEditForm";
 import type { AdminCompanyDTO, AdminCompanyPeriodData, AdminPeriodOption } from "@/lib/admin/dto";
 import type { NarrativeKind } from "@/generated/prisma/client";
+import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
 
 const NARRATIVE_KINDS: NarrativeKind[] = [
   "operational_update",
@@ -52,6 +55,28 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
     effectiveData?.currentDeadline ? getOverdueDays(effectiveData.status, effectiveData.currentDeadline) : null;
   const companyName = company ? (lang === "ar" ? company.nameAr : company.nameEn) : null;
   const submissionId = effectiveData?.submissionId ?? null;
+
+  const isEditableStatus = effectiveData?.status === "submitted" || effectiveData?.status === "under_review";
+  // Keyed by the submissionId the fetch was actually for -- lets the
+  // render below ignore a stale result instead of needing a synchronous
+  // setState([]) in the effect body (which react-hooks/set-state-in-effect
+  // flags) every time the selection changes away from an editable status.
+  const [metricsResult, setMetricsResult] = useState<{ submissionId: string; metrics: SubmissionMetricFieldDTO[] } | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!submissionId || !isEditableStatus) return;
+    let cancelled = false;
+    getSubmissionMetricsForReviewAction(submissionId).then((result) => {
+      if (!cancelled) setMetricsResult({ submissionId, metrics: result });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [submissionId, isEditableStatus]);
+
+  const metrics = isEditableStatus && metricsResult?.submissionId === submissionId ? metricsResult.metrics : [];
 
   return (
     <Card>
@@ -94,6 +119,10 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
               </span>
             ) : null}
           </div>
+
+          {isEditableStatus && metrics.length > 0 ? (
+            <ReviewMetricsEditForm submissionId={submissionId} metrics={metrics} />
+          ) : null}
 
           <div className="flex flex-wrap gap-3">
             {effectiveData.status === "submitted" ? (

@@ -5,9 +5,12 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AdminCompanyTable } from "@/app/admin/_components/AdminCompanyTable";
 import { ReviewQueueFilters, type QueueStatusFilter } from "./_components/ReviewQueueFilters";
 import { ReviewActionPanel } from "./_components/ReviewActionPanel";
+import { ReportsLogTable } from "@/components/portfolio/ReportsLogTable";
+import { extendReportingCycleDeadlineAction, resendReportToInvestorsAction } from "./actions";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { AdminCompanyDTO, AdminPortfolioData } from "@/lib/admin/dto";
 import type { SubmissionStatus } from "@/generated/prisma/client";
+import type { ReportingRequestRow } from "@/lib/admin/reporting-requests";
 
 function matchesStatusFilter(status: SubmissionStatus, filter: QueueStatusFilter): boolean {
   if (filter === "all") return true;
@@ -15,7 +18,9 @@ function matchesStatusFilter(status: SubmissionStatus, filter: QueueStatusFilter
   return status === filter;
 }
 
-type ReviewWorkspaceClientProps = Pick<AdminPortfolioData, "companies" | "vehicles" | "ownershipLinks" | "periods">;
+type ReviewWorkspaceClientProps = Pick<AdminPortfolioData, "companies" | "vehicles" | "ownershipLinks" | "periods"> & {
+  reportingRequests: ReportingRequestRow[];
+};
 
 // Real Server Actions (see ../review/actions.ts) replace the former
 // in-memory overlay -- there is no local status simulation anymore.
@@ -23,7 +28,7 @@ type ReviewWorkspaceClientProps = Pick<AdminPortfolioData, "companies" | "vehicl
 // after any Server Action submitted via a <form> completes, so a
 // successful transition in ReviewActionPanel flows fresh data back here
 // with no manual refetch.
-export function ReviewWorkspaceClient({ companies, vehicles, ownershipLinks, periods }: ReviewWorkspaceClientProps) {
+export function ReviewWorkspaceClient({ companies, vehicles, ownershipLinks, periods, reportingRequests }: ReviewWorkspaceClientProps) {
   const { t } = useLanguage();
   const latestPeriodKey = periods.at(-1)?.key ?? "";
 
@@ -81,6 +86,13 @@ export function ReviewWorkspaceClient({ companies, vehicles, ownershipLinks, per
     setSelectedCompanyId(company.id);
   }
 
+  function handleSelectFromReportsLog(row: ReportingRequestRow) {
+    if (row.periodLabel !== period) {
+      handlePeriodChange(row.periodLabel);
+    }
+    setSelectedCompanyId(row.companyId);
+  }
+
   return (
     <AppShell title={t.nav.reviewWorkspace} subtitle={t.reviewWorkspace.subtitle}>
       <div className="space-y-6">
@@ -110,6 +122,16 @@ export function ReviewWorkspaceClient({ companies, vehicles, ownershipLinks, per
             headingRef={panelHeadingRef}
           />
         ) : null}
+
+        <div className="space-y-3">
+          <h2 className="font-heading text-sm font-semibold text-foreground">{t.reviewWorkspace.reportsLogTitle}</h2>
+          <ReportsLogTable
+            rows={reportingRequests}
+            onSelectForReview={handleSelectFromReportsLog}
+            extendDeadlineAction={extendReportingCycleDeadlineAction}
+            resendAction={resendReportToInvestorsAction}
+          />
+        </div>
       </div>
     </AppShell>
   );

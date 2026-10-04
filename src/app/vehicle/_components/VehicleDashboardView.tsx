@@ -12,6 +12,8 @@ import { VehicleNavPanel } from "./VehicleNavPanel";
 import { VehicleCapitalSummary } from "./VehicleCapitalSummary";
 import { PortfolioAlertsPanel } from "@/components/portfolio/AlertsPanel";
 import { CompanyTrendsTable } from "@/components/portfolio/CompanyTrendsTable";
+import { ReportsLogTable } from "@/components/portfolio/ReportsLogTable";
+import { extendReportingCycleDeadlineAction, resendReportToInvestorsAction } from "@/app/review/actions";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getOverdueDays } from "@/lib/reportingStatus";
 import { computeVehicleRevenueByCurrency } from "@/lib/vehicle/revenue";
@@ -20,15 +22,27 @@ import type { VehicleNavSummary } from "@/lib/vehicle/nav";
 import type { VehicleCapitalTotal } from "@/lib/vehicle/capital";
 import type { PortfolioAlert } from "@/lib/admin/alerts";
 import type { CompanyTrendDTO } from "@/lib/admin/company-trends";
+import type { ReportingRequestRow } from "@/lib/admin/reporting-requests";
 
 interface VehicleDashboardViewProps extends VehicleDashboardData {
   nav: VehicleNavSummary;
   capital: VehicleCapitalTotal[];
   alerts: PortfolioAlert[];
   companyTrends: CompanyTrendDTO[];
+  reportingRequests: ReportingRequestRow[];
 }
 
-export function VehicleDashboardView({ vehicle, periods, companies, investors, nav, capital, alerts, companyTrends }: VehicleDashboardViewProps) {
+export function VehicleDashboardView({
+  vehicle,
+  periods,
+  companies,
+  investors,
+  nav,
+  capital,
+  alerts,
+  companyTrends,
+  reportingRequests,
+}: VehicleDashboardViewProps) {
   const { t, lang } = useLanguage();
   const [selectedPeriodKey, setSelectedPeriodKey] = useState(periods[periods.length - 1]?.key ?? "");
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
@@ -127,6 +141,15 @@ export function VehicleDashboardView({ vehicle, periods, companies, investors, n
         <div className="space-y-3">
           <h2 className="font-heading text-sm font-semibold text-foreground">{t.vehicleReport.trendsTitle}</h2>
           <CompanyTrendsTable trends={companyTrends} linkQuery={`fromVehicle=${vehicle.slug}`} />
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="font-heading text-sm font-semibold text-foreground">{t.reviewWorkspace.reportsLogTitle}</h2>
+          <ReportsLogTable
+            rows={reportingRequests}
+            extendDeadlineAction={extendReportingCycleDeadlineAction}
+            resendAction={resendReportToInvestorsAction}
+          />
         </div>
 
         <div>

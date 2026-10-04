@@ -1,8 +1,9 @@
 import "server-only";
-import type { Prisma, MetricDataType } from "@/generated/prisma/client";
+import type { Prisma, MetricDataType, SubmissionStatus } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
-import { requireCompanyMembership } from "@/lib/auth/authorization";
+import { requireCompanyMembership, requireFalakRole } from "@/lib/auth/authorization";
 import { SUBMITTABLE_FROM_STATUSES } from "@/lib/reporting/submission-status";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
 
 /**
@@ -116,24 +117,97 @@ export async function saveMetricValues(
 
   try {
     await db.$transaction(async (tx) => {
-      for (const field of values) {
-        // Never trust a metricDefinitionId the form didn't actually
-        // receive from the server -- silently skipped, not an error,
-        // since a stale/tampered field here changes nothing about the
-        // fields that ARE valid.
-        const dataType = definitionsById.get(field.metricDefinitionId);
-        if (!dataType) continue;
-        if (field.rawValue.length > MAX_RAW_VALUE_LENGTH) continue;
+      await writeMetricValues(tx, submissionId, values, definitionsById);
+    });
+  } catch {
+    return { error: GENERIC_ERROR, success: false };
+  }
 
-        const data = toStoredValue(field, dataType);
-        if (data === "invalid") continue;
+  return { error: null, success: true };
+}
 
-        await tx.submissionMetricValue.upsert({
-          where: { submissionId_metricDefinitionId: { submissionId, metricDefinitionId: field.metricDefinitionId } },
-          update: data,
-          create: { submissionId, metricDefinitionId: field.metricDefinitionId, ...data },
-        });
-      }
+/**
+ * The actual per-field validate-and-upsert loop, shared by
+ * saveMetricValues (company member, draft/changes_requested only) and
+ * adminUpdateSubmissionMetricValues below (Falak admin, submitted/
+ * under_review only) -- the two callers differ only in who's allowed to
+ * call them and which statuses are editable, never in how a raw value
+ * actually gets validated and stored.
+ */
+async function writeMetricValues(
+  tx: Prisma.TransactionClient,
+  submissionId: string,
+  values: MetricValueInput[],
+  definitionsById: Map<string, MetricDataType>
+): Promise<void> {
+  for (const field of values) {
+    // Never trust a metricDefinitionId the form didn't actually receive
+    // from the server -- silently skipped, not an error, since a
+    // stale/tampered field here changes nothing about the fields that
+    // ARE valid.
+    const dataType = definitionsById.get(field.metricDefinitionId);
+    if (!dataType) continue;
+    if (field.rawValue.length > MAX_RAW_VALUE_LENGTH) continue;
+
+    const data = toStoredValue(field, dataType);
+    if (data === "invalid") continue;
+
+    await tx.submissionMetricValue.upsert({
+      where: { submissionId_metricDefinitionId: { submissionId, metricDefinitionId: field.metricDefinitionId } },
+      update: data,
+      create: { submissionId, metricDefinitionId: field.metricDefinitionId, ...data },
+    });
+  }
+}
+
+const ADMIN_EDITABLE_STATUSES: SubmissionStatus[] = ["submitted", "under_review"];
+
+/**
+ * Falak-admin counterpart to saveMetricValues -- lets staff correct a
+ * company's reported values directly while a submission is under
+ * review (submitted or under_review only; never draft/changes_requested,
+ * which are the company's own editable window, and never approved/
+ * published, which must stay an immutable historical record once
+ * finalized). Always audited (unlike the company-member save path,
+ * which is a draft-keystroke save, not a workflow transition) -- this
+ * is Falak overwriting what the company itself reported, so it must
+ * leave a trail.
+ */
+export async function adminUpdateSubmissionMetricValues(
+  submissionId: string,
+  values: MetricValueInput[]
+): Promise<SaveMetricValuesResult> {
+  const { user } = await requireFalakRole("FALAK_ADMIN");
+
+  const submission = await db.companySubmission.findFirst({
+    where: { id: submissionId, cycle: { company: { archivedAt: null } } },
+    select: { id: true, status: true },
+  });
+  if (!submission) {
+    return { error: GENERIC_ERROR, success: false };
+  }
+  if (!ADMIN_EDITABLE_STATUSES.includes(submission.status)) {
+    return { error: LOCKED_ERROR, success: false };
+  }
+
+  const definitionsById = new Map(
+    (
+      await db.metricDefinition.findMany({
+        where: { id: { in: values.map((v) => v.metricDefinitionId) } },
+        select: { id: true, dataType: true },
+      })
+    ).map((d) => [d.id, d.dataType] as const)
+  );
+
+  try {
+    await db.$transaction(async (tx) => {
+      await writeMetricValues(tx, submissionId, values, definitionsById);
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "submission.values_corrected_by_staff",
+        targetType: "CompanySubmission",
+        targetId: submissionId,
+      });
     });
   } catch {
     return { error: GENERIC_ERROR, success: false };

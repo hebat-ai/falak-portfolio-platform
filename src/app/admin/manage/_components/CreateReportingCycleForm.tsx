@@ -21,15 +21,17 @@ export function CreateReportingCycleForm({
 
   return (
     <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div className={fieldClass}>
-        <label className={labelClass} htmlFor="cy-company">{t.admin.manage.companyLabel}</label>
-        <Select id="cy-company" name="companyId" required defaultValue="">
-          <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
+      <fieldset className="sm:col-span-2">
+        <legend className={labelClass}>{t.admin.manage.companiesLabel}</legend>
+        <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {companies.map((c) => (
-            <option key={c.id} value={c.id}>{lang === "ar" ? c.nameAr : c.nameEn}</option>
+            <label key={c.id} className="inline-flex items-center gap-1.5 text-sm text-foreground">
+              <input type="checkbox" name="companyIds" value={c.id} />
+              {lang === "ar" ? c.nameAr : c.nameEn}
+            </label>
           ))}
-        </Select>
-      </div>
+        </div>
+      </fieldset>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="cy-template">{t.admin.manage.templateLabel}</label>
         <Select id="cy-template" name="templateId" required defaultValue="">

@@ -1,13 +1,28 @@
 "use server";
 
+import { db } from "@/lib/db";
+import { requireFalakRole } from "@/lib/auth/authorization";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { startReview, requestChanges, approveSubmission } from "@/lib/reporting/review-workflow";
-import { publishSubmission, sendPublishNotifications, type NarrativeInputs } from "@/lib/reporting/publish-workflow";
+import {
+  publishSubmission,
+  sendPublishNotifications,
+  resendReportToInvestors,
+  type NarrativeInputs,
+} from "@/lib/reporting/publish-workflow";
+import { adminUpdateSubmissionMetricValues, fetchSubmissionMetricFields, type MetricValueInput } from "@/lib/reporting/metrics";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
 import type { NarrativeKind } from "@/generated/prisma/client";
+import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
 
 export interface ReviewActionState {
   error: string | null;
+}
+
+export interface SaveMetricsActionState {
+  error: string | null;
+  success: boolean;
 }
 
 const GENERIC_ERROR = "That action isn't available for this submission right now.";
@@ -138,6 +153,152 @@ export async function publishSubmissionAction(_prevState: ReviewActionState, for
   // row instead), so there is nothing here for this action to report as
   // an error.
   await sendPublishNotifications(result);
+
+  return { error: null };
+}
+
+/**
+ * Read-only -- called directly (not via a <form>) from
+ * ReviewActionPanel's own effect whenever the selected submission
+ * changes, the same "a 'use server' export is callable as a plain
+ * async function, not only form-bound" capability Next.js Server
+ * Actions support. Falak-staff-only; an unknown/archived-company
+ * submissionId resolves to an empty list rather than throwing, so a
+ * stale selection never surfaces a raw error to the panel.
+ */
+export async function getSubmissionMetricsForReviewAction(submissionId: string): Promise<SubmissionMetricFieldDTO[]> {
+  await requireFalakRole("FALAK_OPERATIONS");
+
+  const submission = await db.companySubmission.findFirst({
+    where: { id: submissionId, cycle: { company: { archivedAt: null } } },
+    select: { id: true, cycle: { select: { templateId: true } } },
+  });
+  if (!submission) return [];
+
+  return fetchSubmissionMetricFields(db, submission.id, submission.cycle.templateId);
+}
+
+export async function adminUpdateSubmissionMetricValuesAction(
+  _prevState: SaveMetricsActionState,
+  formData: FormData
+): Promise<SaveMetricsActionState> {
+  const submissionId = readSubmissionId(formData);
+  if (!submissionId) {
+    return { error: GENERIC_ERROR, success: false };
+  }
+
+  const values: MetricValueInput[] = [];
+  for (const key of formData.keys()) {
+    if (!key.startsWith("value_")) continue;
+    const metricDefinitionId = key.slice("value_".length);
+    const rawValue = formData.get(key);
+    values.push({
+      metricDefinitionId,
+      rawValue: typeof rawValue === "string" ? rawValue : "",
+      isNa: formData.get(`na_${metricDefinitionId}`) !== null,
+    });
+  }
+
+  try {
+    const result = await adminUpdateSubmissionMetricValues(submissionId, values);
+    if (!result.success) {
+      return { error: result.error, success: false };
+    }
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED, success: false };
+    }
+    throw error;
+  }
+
+  return { error: null, success: true };
+}
+
+/**
+ * Edits an EXISTING reporting cycle's deadline -- the Reports Log's
+ * "Edit Deadline" action, writing a real
+ * ReportingCycleDeadlineExtension row (the model existed but had no
+ * writer anywhere in this codebase until now) rather than silently
+ * overwriting currentDeadline with no history.
+ */
+export async function extendReportingCycleDeadlineAction(
+  _prevState: ReviewActionState,
+  formData: FormData
+): Promise<ReviewActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const cycleId = formData.get("cycleId");
+  const newDeadlineRaw = formData.get("newDeadline");
+  if (typeof cycleId !== "string" || !cycleId || typeof newDeadlineRaw !== "string" || !newDeadlineRaw) {
+    return { error: GENERIC_ERROR };
+  }
+  const newDeadline = new Date(newDeadlineRaw);
+  if (Number.isNaN(newDeadline.getTime())) {
+    return { error: GENERIC_ERROR };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const cycle = await tx.reportingCycle.findUnique({ where: { id: cycleId }, select: { currentDeadline: true } });
+      if (!cycle) throw new InvalidTransitionError();
+
+      await tx.reportingCycleDeadlineExtension.create({
+        data: { cycleId, previousDeadline: cycle.currentDeadline, newDeadline, extendedById: user.id },
+      });
+      await tx.reportingCycle.update({ where: { id: cycleId }, data: { currentDeadline: newDeadline } });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "reporting_cycle.deadline_extended",
+        targetType: "ReportingCycle",
+        targetId: cycleId,
+      });
+    });
+  } catch (error) {
+    if (error instanceof InvalidTransitionError) {
+      return { error: GENERIC_ERROR };
+    }
+    return { error: GENERIC_ERROR };
+  }
+
+  return { error: null };
+}
+
+/**
+ * Manually re-triggers investor distribution for an already-published
+ * report version -- covers a failed original send or an investor who
+ * gained exposure (joined a vehicle, or a new direct stake) after that
+ * publish. Publishing itself still auto-sends on the first publish;
+ * this is the explicit "do it again, right now" control on top of
+ * that, requested separately from publish.
+ */
+export async function resendReportToInvestorsAction(
+  _prevState: ReviewActionState,
+  formData: FormData
+): Promise<ReviewActionState> {
+  const reportVersionId = formData.get("reportVersionId");
+  if (typeof reportVersionId !== "string" || !reportVersionId) {
+    return { error: GENERIC_ERROR };
+  }
+
+  try {
+    await resendReportToInvestors(reportVersionId);
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    if (error instanceof InvalidTransitionError) {
+      return { error: GENERIC_ERROR };
+    }
+    throw error;
+  }
 
   return { error: null };
 }
