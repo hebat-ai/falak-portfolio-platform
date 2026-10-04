@@ -326,6 +326,43 @@ test("linkVehicleToCompanyAction writes an ownership_position.linked audit event
   assert.equal(events[0].targetId, "pos_new");
 });
 
+test("linkVehicleToCompanyAction accepts a thousands-separator-formatted investedAmount (e.g. 1,000,000)", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  let storedAgreement: Record<string, unknown> | undefined;
+  const db = makeAdminActionDbStub({
+    falakRoles: ADMIN_ROLE,
+    models: {
+      company: { findUnique: async () => ({ id: "co_1", slug: "acme" }) },
+      vehicle: { findUnique: async () => ({ id: "veh_1", slug: "fund-one" }) },
+      ownershipPosition: {
+        findFirst: async () => null,
+        create: async ({ data }: { data: Record<string, unknown> }) => ({ id: "pos_new", ...data }),
+      },
+      investmentAgreement: {
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          storedAgreement = data;
+          return { id: "agr_new", ...data };
+        },
+      },
+      ownershipSnapshot: { create: async ({ data }: { data: Record<string, unknown> }) => ({ id: "snap_new", ...data }) },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("companyId", "co_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("investedAmount", "1,000,000");
+  formData.set("currency", "SAR");
+  formData.set("ownershipPct", "10");
+  formData.set("signedDate", "2026-01-01");
+
+  const result = await actions.linkVehicleToCompanyAction({ error: null }, formData);
+  assert.equal(result.error, null);
+  assert.equal(storedAgreement?.investedAmount, "1000000");
+});
+
 function makeInvestorVehicleLinkDbStub(options: {
   existingPosition?: { id: string } | null;
   vehicleAgreements?: { investedAmount: { toNumber: () => number } | null; currency: string | null }[];

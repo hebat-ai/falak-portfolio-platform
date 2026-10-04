@@ -167,7 +167,9 @@ test("createInvestorInviteAction returns an /accept-investor-invite link whose t
     falakRoles: [{ role: "FALAK_ADMIN" }],
     models: {
       investor: { findUnique: async () => ({ id: "inv_1", archivedAt: null }) },
+      investorMembership: { findFirst: async () => null },
       investorInvite: {
+        findFirst: async () => null,
         create: async ({ data }: { data: { investorId: string; email: string; tokenHash: string } }) => {
           stored = data;
           return { id: "iinv_1", ...data };
@@ -216,6 +218,63 @@ test("createInvestorInviteAction refuses an archived investor without creating a
 
   assert.ok(result.error);
   assert.equal(result.inviteUrl, undefined);
+  assert.equal(createCalled, false);
+});
+
+test("createInvestorInviteAction refuses a second invite while the investor already has an active member", async () => {
+  setCurrentUser(REAL_USER);
+  let createCalled = false;
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      models: {
+        investor: { findUnique: async () => ({ id: "inv_1", archivedAt: null }) },
+        investorMembership: { findFirst: async () => ({ id: "mem_1" }) },
+        investorInvite: {
+          findFirst: async () => null,
+          create: async () => {
+            createCalled = true;
+          },
+        },
+      },
+    })
+  );
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("email", "second@example.com");
+  const result = await actions.createInvestorInviteAction({ error: null }, formData);
+
+  assert.ok(result.error);
+  assert.equal(result.inviteUrl, undefined);
+  assert.equal(createCalled, false);
+});
+
+test("createInvestorInviteAction refuses a second invite while an earlier one is still pending", async () => {
+  setCurrentUser(REAL_USER);
+  let createCalled = false;
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      models: {
+        investor: { findUnique: async () => ({ id: "inv_1", archivedAt: null }) },
+        investorMembership: { findFirst: async () => null },
+        investorInvite: {
+          findFirst: async () => ({ id: "iinv_pending" }),
+          create: async () => {
+            createCalled = true;
+          },
+        },
+      },
+    })
+  );
+
+  const formData = new FormData();
+  formData.set("investorId", "inv_1");
+  formData.set("email", "second@example.com");
+  const result = await actions.createInvestorInviteAction({ error: null }, formData);
+
+  assert.ok(result.error);
   assert.equal(createCalled, false);
 });
 
@@ -314,6 +373,28 @@ test("createCompanyValuationAction: invalid amount/currency/type is rejected bef
     assert.ok(result.error);
   }
   assert.equal(createCalled, false);
+});
+
+test("createCompanyValuationAction: a thousands-separator-formatted amount (e.g. 5,000,000) is accepted, commas stripped before storing", async () => {
+  setCurrentUser(REAL_USER);
+  let stored: Record<string, unknown> | undefined;
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: [{ role: "FALAK_ADMIN" }],
+      models: {
+        companyValuationSnapshot: {
+          create: async ({ data }: { data: Record<string, unknown> }) => {
+            stored = data;
+            return { id: "val_1", ...data };
+          },
+        },
+      },
+    })
+  );
+
+  const result = await actions.createCompanyValuationAction({ error: null }, valuationFormData({ valuationAmount: "5,000,000" }));
+  assert.equal(result.error, null);
+  assert.equal(stored?.valuationAmount, "5000000");
 });
 
 test("createVehicleNavAction: success writes the row and one audit event", async () => {

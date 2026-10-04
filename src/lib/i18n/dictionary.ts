@@ -47,6 +47,7 @@ export interface Dictionary {
   vehicleTypes: Record<VehicleType, string>;
   investorTypes: Record<InvestorType, string>;
   departments: Record<Department, string>;
+  staffRoleNames: Record<"FALAK_ADMIN" | "FALAK_MANAGEMENT" | "FALAK_OPERATIONS", string>;
   valuationTypes: Record<CompanyValuationType, string>;
   capitalTransactionTypes: Record<InvestorCapitalTransactionType, string>;
   admin: {
@@ -217,6 +218,13 @@ export interface Dictionary {
       periodEndLabel: string;
       deadlineLabel: string;
       emailLabel: string;
+      roleLabel: string;
+      newPasswordLabel: string;
+      inviteStaffTitle: string;
+      manageStaffTitle: string;
+      staffListCaption: string;
+      setPasswordAction: string;
+      revokeAction: string;
       addMetricAction: string;
       metricKeyLabel: string;
       metricLabelEnLabel: string;
@@ -555,6 +563,11 @@ export const en = {
     VentureBuilder: "Venture Builder",
     InvestmentDepartment: "Investment Department",
   },
+  staffRoleNames: {
+    FALAK_ADMIN: "Admin",
+    FALAK_MANAGEMENT: "Management",
+    FALAK_OPERATIONS: "Investment Professional",
+  },
   valuationTypes: {
     LastRound: "Last Round",
     InternalMark: "Internal Mark",
@@ -736,6 +749,13 @@ export const en = {
       periodEndLabel: "Period End",
       deadlineLabel: "Submission Deadline",
       emailLabel: "Email",
+      roleLabel: "Role",
+      newPasswordLabel: "New Password",
+      inviteStaffTitle: "Invite Staff User",
+      manageStaffTitle: "Manage Staff",
+      staffListCaption: "Falak staff accounts, their role, and their department.",
+      setPasswordAction: "Set Password",
+      revokeAction: "Revoke",
       addMetricAction: "Add another metric",
       metricKeyLabel: "Metric Key (e.g. revenue_b2b)",
       metricLabelEnLabel: "Metric Label (English)",
@@ -1080,6 +1100,11 @@ export const ar = {
     VentureBuilder: "بناء المشاريع",
     InvestmentDepartment: "إدارة الاستثمار",
   },
+  staffRoleNames: {
+    FALAK_ADMIN: "مدير النظام",
+    FALAK_MANAGEMENT: "الإدارة",
+    FALAK_OPERATIONS: "محترف استثمار",
+  },
   valuationTypes: {
     LastRound: "آخر جولة تمويل",
     InternalMark: "تقييم داخلي",
@@ -1261,6 +1286,13 @@ export const ar = {
       periodEndLabel: "نهاية الفترة",
       deadlineLabel: "الموعد النهائي للتقديم",
       emailLabel: "البريد الإلكتروني",
+      roleLabel: "الدور",
+      newPasswordLabel: "كلمة المرور الجديدة",
+      inviteStaffTitle: "دعوة موظف",
+      manageStaffTitle: "إدارة الموظفين",
+      staffListCaption: "حسابات موظفي فلك، أدوارهم، وأقسامهم.",
+      setPasswordAction: "تعيين كلمة المرور",
+      revokeAction: "إلغاء الصلاحية",
       addMetricAction: "إضافة مؤشر آخر",
       metricKeyLabel: "معرّف المؤشر (مثال: revenue_b2b)",
       metricLabelEnLabel: "تسمية المؤشر (إنجليزي)",

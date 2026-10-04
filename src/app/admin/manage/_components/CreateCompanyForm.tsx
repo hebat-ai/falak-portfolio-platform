@@ -26,7 +26,7 @@ export function CreateCompanyForm() {
           id="c-nameEn"
           name="nameEn"
           required
-          onChange={(e) => {
+          onBlur={(e) => {
             if (!slugTouched) setSlug(slugify(e.target.value));
           }}
         />

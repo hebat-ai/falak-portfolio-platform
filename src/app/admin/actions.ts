@@ -10,6 +10,8 @@ import { normalizeEmail, MAX_RAW_EMAIL_LENGTH } from "@/lib/auth/utils";
 import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { convertToDisplay, type DisplayCurrency } from "@/lib/currency/convert";
+import { requestSignInLink } from "@/lib/auth/request-sign-in";
+import { hashPassword, MIN_PASSWORD_LENGTH, MAX_RAW_PASSWORD_LENGTH } from "@/lib/auth/password";
 import type {
   Currency,
   CustomerModel,
@@ -21,6 +23,7 @@ import type {
   CompanyValuationType,
   InvestorCapitalTransactionType,
   Department,
+  PlatformRole,
 } from "@/generated/prisma/client";
 
 export interface ActionState {
@@ -58,6 +61,12 @@ const MAX_VINTAGE_YEAR = 2100;
 function readString(formData: FormData, field: string): string | null {
   const value = formData.get(field);
   return typeof value === "string" ? value.trim() : null;
+}
+
+/** Same as readString, but also strips thousands-separator commas -- every amount field should read through this, not readString. */
+function readAmount(formData: FormData, field: string): string | null {
+  const value = readString(formData, field);
+  return value === null ? null : value.replace(/,/g, "");
 }
 
 function isValidName(value: string | null): value is string {
@@ -411,9 +420,9 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
 
   const companyId = readString(formData, "companyId");
   const vehicleId = readString(formData, "vehicleId");
-  const investedAmount = readString(formData, "investedAmount");
+  const investedAmount = readAmount(formData, "investedAmount");
   const currency = readString(formData, "currency");
-  const ownershipPct = readString(formData, "ownershipPct");
+  const ownershipPct = readAmount(formData, "ownershipPct");
   const signedDateRaw = readString(formData, "signedDate");
 
   if (
@@ -510,8 +519,8 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
   const vehicleId = readString(formData, "vehicleId");
   const currency = readString(formData, "currency");
   const effectiveFromRaw = readString(formData, "effectiveFrom");
-  const commitmentAmount = readString(formData, "commitmentAmount");
-  const calledAmount = readString(formData, "calledAmount");
+  const commitmentAmount = readAmount(formData, "commitmentAmount");
+  const calledAmount = readAmount(formData, "calledAmount");
 
   if (
     !investorId ||
@@ -889,6 +898,21 @@ export async function createInvestorInviteAction(_prevState: InviteActionState, 
     return { error: GENERIC_ERROR };
   }
 
+  // Investors get exactly one user per account -- block a second invite
+  // outright while either an active membership or a still-live,
+  // unaccepted invite already exists for this investor. Falak must
+  // revoke the first (membership or invite) before inviting a
+  // replacement.
+  const [activeMembership, pendingInvite] = await Promise.all([
+    db.investorMembership.findFirst({ where: { investorId, revokedAt: null } }),
+    db.investorInvite.findFirst({
+      where: { investorId, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
+    }),
+  ]);
+  if (activeMembership || pendingInvite) {
+    return { error: "This investor already has a user. Revoke their access before inviting a replacement." };
+  }
+
   const rawToken = randomBytes(32).toString("hex");
   const tokenHash = hashInviteToken(rawToken);
   const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
@@ -933,7 +957,7 @@ export async function createCompanyValuationAction(_prevState: ActionState, form
 
   const companyId = readString(formData, "companyId");
   const asOfDateRaw = readString(formData, "asOfDate");
-  const valuationAmount = readString(formData, "valuationAmount");
+  const valuationAmount = readAmount(formData, "valuationAmount");
   const currency = readString(formData, "currency");
   const valuationType = readString(formData, "valuationType");
   const sourceInput = readString(formData, "source");
@@ -1002,7 +1026,7 @@ export async function createVehicleNavAction(_prevState: ActionState, formData: 
 
   const vehicleId = readString(formData, "vehicleId");
   const asOfDateRaw = readString(formData, "asOfDate");
-  const navAmount = readString(formData, "navAmount");
+  const navAmount = readAmount(formData, "navAmount");
   const currency = readString(formData, "currency");
   const sourceInput = readString(formData, "source");
 
@@ -1079,7 +1103,7 @@ export async function recordInvestorCapitalTransactionAction(_prevState: ActionS
   const investorId = readString(formData, "investorId");
   const vehicleIdInput = readString(formData, "vehicleId");
   const type = readString(formData, "type");
-  const amount = readString(formData, "amount");
+  const amount = readAmount(formData, "amount");
   const currency = readString(formData, "currency");
   const transactionDateRaw = readString(formData, "transactionDate");
   const descriptionInput = readString(formData, "description");
@@ -1131,4 +1155,204 @@ export async function recordInvestorCapitalTransactionAction(_prevState: ActionS
   }
 
   return { error: null, success: true };
+}
+
+// ============================================================
+// Staff management (invite, department, password, revoke)
+// ============================================================
+
+// FALAK_ADMIN is deliberately never an option here -- granting the
+// platform-owner tier stays a manual, out-of-band action (not exposed
+// through self-service UI, to prevent privilege escalation via this
+// form), same reasoning AccessRequestedRole's own self-serve sign-up
+// never offers it either.
+const INVITABLE_STAFF_ROLES = ["FALAK_MANAGEMENT", "FALAK_OPERATIONS"] as const;
+type InvitableStaffRole = (typeof INVITABLE_STAFF_ROLES)[number];
+
+/**
+ * Admin-only: directly provisions a Falak-staff account (find-or-create
+ * the User by email, grant the role, set the department) and sends them
+ * a sign-in link for their first login -- staff accounts are Falak-
+ * provisioned, not self-service, so there is no separate invite-token/
+ * accept-page flow the way company/investor invites have; the user row
+ * and the role grant are created in the same step an invite would
+ * otherwise just prepare.
+ */
+export async function inviteStaffUserAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let actor;
+  try {
+    ({ user: actor } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const emailInput = formData.get("email");
+  const role = readString(formData, "role");
+  const department = readString(formData, "department");
+
+  if (
+    typeof emailInput !== "string" ||
+    !emailInput.trim() ||
+    emailInput.length > MAX_RAW_EMAIL_LENGTH ||
+    !role ||
+    !(INVITABLE_STAFF_ROLES as readonly string[]).includes(role) ||
+    !department ||
+    !DEPARTMENTS.includes(department as Department)
+  ) {
+    return { error: "Fill in every field with a valid value." };
+  }
+  const email = normalizeEmail(emailInput);
+
+  try {
+    await db.$transaction(async (tx) => {
+      const staffUser = await tx.user.upsert({
+        where: { email },
+        update: { department: department as Department },
+        create: { email, department: department as Department },
+      });
+
+      const existingActiveRole = await tx.userRoleAssignment.findFirst({
+        where: { userId: staffUser.id, role: role as InvitableStaffRole, revokedAt: null },
+      });
+      if (!existingActiveRole) {
+        await tx.userRoleAssignment.create({ data: { userId: staffUser.id, role: role as InvitableStaffRole } });
+      }
+
+      await writeAuditEvent(tx, {
+        actorId: actor.id,
+        action: "staff_user.invited",
+        targetType: "User",
+        targetId: staffUser.id,
+      });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+
+  // Outside the transaction, same "never let a slow/failed email
+  // provider call hold open or roll back a real write" discipline as
+  // publish-workflow.ts's own sendPublishNotifications.
+  try {
+    await requestSignInLink(email);
+  } catch {
+    return { error: "Staff access was granted, but the sign-in email failed to send. Ask them to use \"Forgot password\" instead." };
+  }
+
+  return { error: null, success: true };
+}
+
+export async function adminSetStaffDepartmentAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let actor;
+  try {
+    ({ user: actor } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const userId = readString(formData, "userId");
+  const department = readString(formData, "department");
+  if (!userId || !department || !DEPARTMENTS.includes(department as Department)) {
+    return { error: "Fill in every field with a valid value." };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { department: department as Department } });
+      await writeAuditEvent(tx, {
+        actorId: actor.id,
+        action: "staff_user.department_changed",
+        targetType: "User",
+        targetId: userId,
+      });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+
+  return { error: null, success: true };
+}
+
+/**
+ * Admin-only password override -- unlike /account's own change-password
+ * flow, this never requires or checks the user's OLD password: Admin is
+ * setting it directly on their behalf (e.g. because they're locked out),
+ * not proving they already know it.
+ */
+export async function adminSetUserPasswordAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let actor;
+  try {
+    ({ user: actor } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const userId = readString(formData, "userId");
+  const newPassword = formData.get("newPassword");
+  if (
+    !userId ||
+    typeof newPassword !== "string" ||
+    newPassword.length < MIN_PASSWORD_LENGTH ||
+    newPassword.length > MAX_RAW_PASSWORD_LENGTH
+  ) {
+    return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { passwordHash } });
+      await writeAuditEvent(tx, {
+        actorId: actor.id,
+        action: "staff_user.password_reset_by_admin",
+        targetType: "User",
+        targetId: userId,
+      });
+    });
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+
+  return { error: null, success: true };
+}
+
+export async function revokeStaffRoleAction(formData: FormData): Promise<void> {
+  let actor;
+  try {
+    ({ user: actor } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      redirect("/sign-in");
+    }
+    if (error instanceof ForbiddenError) {
+      return;
+    }
+    throw error;
+  }
+
+  const userId = readString(formData, "userId");
+  const role = readString(formData, "role");
+  if (!userId || !role) return;
+
+  await db.$transaction(async (tx) => {
+    await tx.userRoleAssignment.updateMany({
+      where: { userId, role: role as PlatformRole, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await writeAuditEvent(tx, {
+      actorId: actor.id,
+      action: "staff_user.role_revoked",
+      targetType: "User",
+      targetId: userId,
+    });
+  });
 }
