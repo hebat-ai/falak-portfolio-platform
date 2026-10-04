@@ -932,6 +932,8 @@ export interface InvestorVehiclePositionFixtureForQueries {
   investorId: string;
   vehicleId: string;
   status: string;
+  commitmentAmount?: number | null;
+  currency?: string;
 }
 
 export interface VehicleFixture {
@@ -950,6 +952,15 @@ export interface OwnershipLinkFixture {
   companyNameEn?: string;
   companyNameAr?: string;
   companySlug?: string;
+  companySectorEn?: string;
+  companySectorAr?: string;
+}
+
+export interface NavSnapshotFixtureForQueries {
+  vehicleId: string;
+  asOfDate: Date;
+  navAmount: number;
+  currency: string;
 }
 
 /**
@@ -969,12 +980,14 @@ export function makeInvestorQueriesDbStub(options: {
   investorVehiclePositions?: InvestorVehiclePositionFixtureForQueries[];
   vehicles?: VehicleFixture[];
   ownershipLinks?: OwnershipLinkFixture[];
+  navSnapshots?: NavSnapshotFixtureForQueries[];
 }) {
   const memberships = options.memberships ?? [];
   const grants = options.reportAccessGrants ?? [];
   const vehiclePositions = options.investorVehiclePositions ?? [];
   const vehicles = options.vehicles ?? [];
   const ownershipLinks = options.ownershipLinks ?? [];
+  const navSnapshots = options.navSnapshots ?? [];
 
   return {
     investorMembership: {
@@ -1045,10 +1058,33 @@ export function makeInvestorQueriesDbStub(options: {
           })),
     },
     investorVehiclePosition: {
-      findMany: async ({ where }: { where: { investorId: { in: string[] }; status: string } }) =>
+      // Two shapes: this org's positions (investorId filter), and every
+      // investor's positions on the org's vehicles (vehicleId filter).
+      findMany: async ({
+        where,
+      }: {
+        where: { investorId?: { in: string[] }; vehicleId?: { in: string[] }; status: string };
+      }) =>
         vehiclePositions
-          .filter((p) => where.investorId.in.includes(p.investorId) && p.status === where.status)
-          .map((p) => ({ investorId: p.investorId, vehicleId: p.vehicleId })),
+          .filter(
+            (p) =>
+              p.status === where.status &&
+              (!where.investorId || where.investorId.in.includes(p.investorId)) &&
+              (!where.vehicleId || where.vehicleId.in.includes(p.vehicleId))
+          )
+          .map((p) => ({
+            investorId: p.investorId,
+            vehicleId: p.vehicleId,
+            commitmentAmount: p.commitmentAmount == null ? null : { toNumber: () => p.commitmentAmount },
+            currency: p.currency ?? "SAR",
+          })),
+    },
+    vehicleNavSnapshot: {
+      findMany: async ({ where }: { where: { vehicleId: { in: string[] } } }) =>
+        navSnapshots
+          .filter((n) => where.vehicleId.in.includes(n.vehicleId))
+          .sort((a, b) => a.asOfDate.getTime() - b.asOfDate.getTime())
+          .map((n) => ({ vehicleId: n.vehicleId, asOfDate: n.asOfDate, navAmount: { toNumber: () => n.navAmount }, currency: n.currency })),
     },
     vehicle: {
       findMany: async ({ where }: { where: { id: { in: string[] }; archivedAt: null } }) =>
@@ -1067,6 +1103,8 @@ export function makeInvestorQueriesDbStub(options: {
               slug: l.companySlug ?? l.companyId,
               nameEn: l.companyNameEn ?? l.companyId,
               nameAr: l.companyNameAr ?? l.companyId,
+              sectorEn: l.companySectorEn ?? "SaaS",
+              sectorAr: l.companySectorAr ?? "SaaS",
             },
           })),
     },
@@ -1745,62 +1783,6 @@ export function makeAttachmentUploadDbStub(options: {
       },
     },
     getCreatedAttachments: () => createdAttachments,
-  };
-}
-
-export interface DocumentGrantFixture {
-  investorId: string;
-  revoked?: boolean;
-  reportId: string;
-  versionNo: number;
-  reportVersionId: string;
-  publishedAt: Date | null;
-  companySlug: string;
-  companyNameEn: string;
-  companyNameAr: string;
-  companyArchived?: boolean;
-  periodLabel: string;
-  attachments?: { id: string; fileName: string }[];
-}
-
-export interface DocumentMembershipFixture {
-  userId: string;
-  investorId: string;
-  revoked?: boolean;
-  investorArchived?: boolean;
-}
-
-/** Backs getInvestorDocuments (src/lib/investor/documents.ts). */
-export function makeInvestorDocumentsDbStub(options: {
-  memberships?: DocumentMembershipFixture[];
-  grants?: DocumentGrantFixture[];
-}) {
-  const memberships = options.memberships ?? [];
-  const grants = options.grants ?? [];
-
-  return {
-    investorMembership: {
-      findMany: async ({ where }: { where: { userId: string } }) =>
-        memberships.filter((m) => m.userId === where.userId && !m.revoked && !m.investorArchived).map((m) => ({ investorId: m.investorId })),
-    },
-    reportAccessGrant: {
-      findMany: async ({ where }: { where: { investorId: { in: string[] } } }) =>
-        grants
-          .filter((g) => where.investorId.in.includes(g.investorId) && !g.revoked && !g.companyArchived)
-          .map((g) => ({
-            reportVersion: {
-              id: g.reportVersionId,
-              versionNo: g.versionNo,
-              publishedAt: g.publishedAt,
-              report: {
-                id: g.reportId,
-                periodLabel: g.periodLabel,
-                company: { slug: g.companySlug, nameEn: g.companyNameEn, nameAr: g.companyNameAr },
-              },
-              attachments: g.attachments ?? [],
-            },
-          })),
-    },
   };
 }
 

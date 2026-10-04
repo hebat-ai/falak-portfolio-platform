@@ -2,6 +2,8 @@ import "server-only";
 import { db } from "@/lib/db";
 import { requireCurrentUser } from "@/lib/auth/authorization";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
+import { convertToDisplay } from "@/lib/currency/convert";
+import type { Currency } from "@/generated/prisma/client";
 import type {
   InvestorPortfolioData,
   InvestorOrgOption,
@@ -186,7 +188,7 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
   }
 
   const vehicleIds = [...new Set(dedupedPositions.map((p) => p.vehicleId))];
-  const [vehicles, ownershipLinks] = await Promise.all([
+  const [vehicles, ownershipLinks, allVehiclePositions, navSnapshots] = await Promise.all([
     vehicleIds.length
       ? db.vehicle.findMany({
           where: { id: { in: vehicleIds }, archivedAt: null },
@@ -201,7 +203,26 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
     vehicleIds.length
       ? db.ownershipPosition.findMany({
           where: { vehicleId: { in: vehicleIds }, holderType: "VEHICLE", company: { archivedAt: null } },
-          select: { vehicleId: true, company: { select: { id: true, slug: true, nameEn: true, nameAr: true } } },
+          select: {
+            vehicleId: true,
+            company: { select: { id: true, slug: true, nameEn: true, nameAr: true, sectorEn: true, sectorAr: true } },
+          },
+        })
+      : Promise.resolve([]),
+    // Every investor's Active position on these vehicles -- needed only
+    // to compute this org's ownership share; other investors' amounts
+    // never leave this function.
+    vehicleIds.length
+      ? db.investorVehiclePosition.findMany({
+          where: { vehicleId: { in: vehicleIds }, status: "Active", investor: { archivedAt: null } },
+          select: { investorId: true, vehicleId: true, commitmentAmount: true, currency: true },
+        })
+      : Promise.resolve([]),
+    vehicleIds.length
+      ? db.vehicleNavSnapshot.findMany({
+          where: { vehicleId: { in: vehicleIds } },
+          orderBy: { asOfDate: "asc" },
+          select: { vehicleId: true, asOfDate: true, navAmount: true, currency: true },
         })
       : Promise.resolve([]),
   ]);
@@ -222,6 +243,18 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
         return true;
       });
 
+    const vehiclePositionsHere = allVehiclePositions.filter(
+      (p) => p.vehicleId === vehicle.id && p.commitmentAmount !== null
+    );
+    const contributions = vehiclePositionsHere
+      .filter((p) => p.investorId === position.investorId)
+      .map((p) => ({ amount: p.commitmentAmount!.toNumber(), currency: p.currency }));
+    const inVehicleCurrency = (amounts: { amount: number; currency: Currency }[]) =>
+      amounts.reduce((s, a) => s + convertToDisplay(a.amount, a.currency, vehicle.currency), 0);
+    const totalContributed = inVehicleCurrency(
+      vehiclePositionsHere.map((p) => ({ amount: p.commitmentAmount!.toNumber(), currency: p.currency }))
+    );
+
     vehicleExposures.push({
       id: vehicle.id,
       slug: vehicle.slug,
@@ -231,6 +264,11 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
       currency: vehicle.currency,
       investorOrgId: position.investorId,
       linkedCompanies,
+      contributions,
+      ownershipShare: totalContributed > 0 ? inVehicleCurrency(contributions) / totalContributed : null,
+      navHistory: navSnapshots
+        .filter((n) => n.vehicleId === vehicle.id)
+        .map((n) => ({ asOfDate: toDateOnly(n.asOfDate), amount: n.navAmount.toNumber(), currency: n.currency })),
     });
   }
 

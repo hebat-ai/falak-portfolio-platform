@@ -59,6 +59,17 @@ export interface InvestorVehicleExposureCompanyDTO {
   slug: string;
   nameEn: string;
   nameAr: string;
+  sectorEn: string;
+  sectorAr: string;
+}
+
+export interface InvestorMoneyAmount {
+  amount: number;
+  currency: Currency;
+}
+
+export interface InvestorNavPoint extends InvestorMoneyAmount {
+  asOfDate: string;
 }
 
 export interface InvestorVehicleExposureDTO {
@@ -70,6 +81,14 @@ export interface InvestorVehicleExposureDTO {
   currency: Currency;
   investorOrgId: string;
   linkedCompanies: InvestorVehicleExposureCompanyDTO[];
+  // This org's own contributions to the vehicle.
+  contributions: InvestorMoneyAmount[];
+  // This org's share of all investors' contributions to the vehicle --
+  // only the ratio is exposed, never other investors' amounts. null when
+  // nothing has been contributed to the vehicle yet.
+  ownershipShare: number | null;
+  // The vehicle's whole-fund NAV marks, oldest first.
+  navHistory: InvestorNavPoint[];
 }
 
 export interface InvestorPortfolioData {

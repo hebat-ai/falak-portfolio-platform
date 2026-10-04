@@ -309,6 +309,7 @@ export interface Dictionary {
     customerMetricsTitle: string;
     disclaimerText: string;
     viewFormattedReportLabel: string;
+    viewLatestReportLabel: string;
     notPublishedMessage: string;
   };
   vehicleReport: {
@@ -405,8 +406,12 @@ export interface Dictionary {
     companiesTableCaption: string;
     noApprovedReports: string;
     noOrgAccess: string;
-    documentsTitle: string;
-    noDocumentsMessage: string;
+    investedCapitalLabel: string;
+    sectorDistributionTitle: string;
+    noSectorDataMessage: string;
+    navChartTitle: string;
+    navSeriesLabel: string;
+    noNavMessage: string;
     attachmentsLabel: string;
     returnsTitle: string;
     noReturnsMessage: string;
@@ -850,6 +855,7 @@ export const en = {
     disclaimerText:
       "Figures are self-reported by the company and compiled by Falak Ventures for informational purposes only. This document does not constitute investment advice.",
     viewFormattedReportLabel: "View Formatted Report",
+    viewLatestReportLabel: "View Latest Report",
     notPublishedMessage: "A formatted report is not yet available for this period.",
   },
   vehicleReport: {
@@ -939,7 +945,7 @@ export const en = {
   investorDashboard: {
     subtitle: "Vehicle exposure and published company reports visible to your investor organization.",
     investorSelectLabel: "Investor",
-    companiesInScopeLabel: "Companies (Approved)",
+    companiesInScopeLabel: "Companies",
     vehicleExposureTitle: "Vehicle Exposure",
     visibleCompaniesLabel: "Visible companies this period",
     noStartupsInVehicle: "No startups linked to this vehicle yet.",
@@ -947,8 +953,12 @@ export const en = {
     companiesTableCaption: "Companies visible to this investor for the selected period, approved only",
     noApprovedReports: "No published reports for this organization and period yet.",
     noOrgAccess: "You don't have access to any investor organization yet.",
-    documentsTitle: "Documents",
-    noDocumentsMessage: "No documents available yet.",
+    investedCapitalLabel: "Invested Capital",
+    sectorDistributionTitle: "Startups by Sector",
+    noSectorDataMessage: "No startups in your vehicles yet.",
+    navChartTitle: "NAV",
+    navSeriesLabel: "Your NAV",
+    noNavMessage: "No NAV has been recorded for your vehicles yet.",
     attachmentsLabel: "Attachments",
     returnsTitle: "Returns",
     noReturnsMessage: "No capital transactions recorded yet for this organization.",
@@ -1396,6 +1406,7 @@ export const ar = {
     disclaimerText:
       "الأرقام مُقدَّمة ذاتيًا من الشركة ومُجمَّعة من قِبل فلك فينتشرز لأغراض إعلامية فقط. لا يُشكّل هذا المستند نصيحة استثمارية.",
     viewFormattedReportLabel: "عرض التقرير المنسّق",
+    viewLatestReportLabel: "عرض أحدث تقرير",
     notPublishedMessage: "التقرير المنسّق غير متاح بعد لهذه الفترة.",
   },
   vehicleReport: {
@@ -1485,7 +1496,7 @@ export const ar = {
   investorDashboard: {
     subtitle: "الأدوات الاستثمارية المرتبطة وتقارير الشركات المنشورة المرئية لمؤسستك الاستثمارية.",
     investorSelectLabel: "المستثمر",
-    companiesInScopeLabel: "الشركات (المعتمدة)",
+    companiesInScopeLabel: "الشركات",
     vehicleExposureTitle: "الأدوات الاستثمارية المرتبطة",
     visibleCompaniesLabel: "الشركات المرئية لهذه الفترة",
     noStartupsInVehicle: "لا توجد شركات ناشئة مرتبطة بهذه الأداة الاستثمارية بعد.",
@@ -1493,8 +1504,12 @@ export const ar = {
     companiesTableCaption: "الشركات المرئية لهذا المستثمر للفترة المحددة، المعتمدة فقط",
     noApprovedReports: "لا توجد تقارير منشورة لهذه المؤسسة والفترة بعد.",
     noOrgAccess: "ليس لديك وصول إلى أي مؤسسة استثمارية بعد.",
-    documentsTitle: "المستندات",
-    noDocumentsMessage: "لا توجد مستندات متاحة بعد.",
+    investedCapitalLabel: "رأس المال المستثمر",
+    sectorDistributionTitle: "توزيع الشركات الناشئة حسب القطاع",
+    noSectorDataMessage: "لا توجد شركات ناشئة في أدواتك الاستثمارية بعد.",
+    navChartTitle: "صافي قيمة الأصول",
+    navSeriesLabel: "صافي قيمة أصولك",
+    noNavMessage: "لم يُسجَّل صافي قيمة أصول لأدواتك الاستثمارية بعد.",
     attachmentsLabel: "المرفقات",
     returnsTitle: "العوائد",
     noReturnsMessage: "لا توجد حركات رأس مال مسجلة لهذه المؤسسة بعد.",

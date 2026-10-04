@@ -6,17 +6,23 @@ import { AppShell } from "@/components/layout/AppShell";
 import { InvestorCompanyTable } from "./_components/InvestorCompanyTable";
 import { InvestorKpis } from "./_components/InvestorKpis";
 import { InvestorReturnsPanel } from "./_components/InvestorReturnsPanel";
+import { InvestorNavChart } from "./_components/InvestorNavChart";
+import { DistributionPieChart } from "@/app/admin/_components/companylist/DistributionPieChart";
 import { Num } from "@/components/ui/Num";
 import { Select } from "@/components/ui/Select";
-import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { computeInvestorRevenueByCurrency } from "@/lib/investor/revenue";
+import {
+  computeInvestedCapital,
+  computeInvestorNavSeries,
+  computeSectorDistribution,
+} from "@/lib/investor/dashboard-compute";
+import type { DisplayCurrency } from "@/lib/currency/convert";
 import type { InvestorPortfolioData } from "@/lib/investor/dto";
-import type { InvestorDocumentDTO } from "@/lib/investor/documents";
 import type { InvestorReturnSummary } from "@/lib/investor/returns";
 
+const DISPLAY_CURRENCIES: DisplayCurrency[] = ["USD", "SAR"];
+
 interface InvestorPortfolioClientProps extends InvestorPortfolioData {
-  documents: InvestorDocumentDTO[];
   returnsByOrgId: Record<string, InvestorReturnSummary[]>;
 }
 
@@ -25,12 +31,14 @@ export function InvestorPortfolioClient({
   periods,
   companies,
   vehicleExposures,
-  documents,
   returnsByOrgId,
 }: InvestorPortfolioClientProps) {
   const { t, lang } = useLanguage();
   const [orgId, setOrgId] = useState(orgs[0]?.id ?? "");
   const [periodKey, setPeriodKey] = useState(periods[periods.length - 1]?.key ?? "");
+  const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>(
+    vehicleExposures.find((v) => v.investorOrgId === orgs[0]?.id)?.currency ?? "SAR"
+  );
 
   // Every derived number on this page traces back to this one
   // computation, so a KPI, a vehicle card, and the companies table can
@@ -49,14 +57,29 @@ export function InvestorPortfolioClient({
       return { vehicle, companies, visibleCount: companies.filter((c) => c.hasVisibleReport).length };
     });
 
+    // Latest period per company across every period this org can see,
+    // regardless of the period selected above.
+    const periodStartByKey = new Map(periods.map((p) => [p.key, p.periodStart]));
+    const latestPeriodByCompanyId: Record<string, string> = {};
+    for (const c of companies) {
+      if (c.investorOrgId !== orgId) continue;
+      const current = latestPeriodByCompanyId[c.id];
+      if (!current || (periodStartByKey.get(c.periodKey) ?? "") > (periodStartByKey.get(current) ?? "")) {
+        latestPeriodByCompanyId[c.id] = c.periodKey;
+      }
+    }
+
     return {
       vehiclesExposedCount: orgVehicles.length,
       vehicleCards,
       inScopeCompanies,
       companiesInScopeCount: inScopeCompanies.length,
-      revenueByCurrency: computeInvestorRevenueByCurrency(inScopeCompanies),
+      latestPeriodByCompanyId,
+      sectorDistribution: computeSectorDistribution(orgVehicles),
+      investedCapital: computeInvestedCapital(orgVehicles, displayCurrency),
+      navSeries: computeInvestorNavSeries(orgVehicles, displayCurrency),
     };
-  }, [companies, vehicleExposures, orgId, periodKey]);
+  }, [companies, periods, vehicleExposures, orgId, periodKey, displayCurrency]);
 
   if (orgs.length === 0) {
     return (
@@ -106,12 +129,43 @@ export function InvestorPortfolioClient({
               )}
             </Select>
           </div>
+
+          <div className="flex w-full flex-col gap-1 sm:w-auto">
+            <label htmlFor="investor-display-currency" className="text-xs font-medium text-muted-foreground">
+              {t.admin.charts.currencyToggleLabel}
+            </label>
+            <Select
+              id="investor-display-currency"
+              value={displayCurrency}
+              onChange={(e) => setDisplayCurrency(e.target.value as DisplayCurrency)}
+            >
+              {DISPLAY_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {t.currencyNames[c]}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <DistributionPieChart
+            title={t.investorDashboard.sectorDistributionTitle}
+            data={scope.sectorDistribution}
+            labelFor={(key) => {
+              const slice = scope.sectorDistribution.find((s) => s.key === key);
+              return slice ? (lang === "ar" ? slice.labelAr : slice.labelEn) : key;
+            }}
+            emptyMessage={t.investorDashboard.noSectorDataMessage}
+          />
+          <InvestorNavChart series={scope.navSeries} displayCurrency={displayCurrency} />
         </div>
 
         <InvestorKpis
           vehiclesExposedCount={scope.vehiclesExposedCount}
           companiesInScopeCount={scope.companiesInScopeCount}
-          revenueByCurrency={scope.revenueByCurrency}
+          investedCapital={scope.investedCapital}
+          displayCurrency={displayCurrency}
         />
 
         <InvestorReturnsPanel returns={returnsByOrgId[orgId] ?? []} />
@@ -174,57 +228,10 @@ export function InvestorPortfolioClient({
           </h2>
           <InvestorCompanyTable
             companies={scope.inScopeCompanies}
+            latestPeriodByCompanyId={scope.latestPeriodByCompanyId}
             caption={t.investorDashboard.companiesTableCaption}
             emptyStateText={t.investorDashboard.noApprovedReports}
           />
-        </section>
-
-        <section aria-labelledby="investor-documents-heading" className="space-y-3">
-          <h2 id="investor-documents-heading" className="font-heading text-sm font-semibold text-foreground">
-            {t.investorDashboard.documentsTitle}
-          </h2>
-          {documents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t.investorDashboard.noDocumentsMessage}</p>
-          ) : (
-            <ul className="space-y-2">
-              {documents.map((doc, i) => (
-                <li key={i} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium text-foreground">{lang === "ar" ? doc.companyNameAr : doc.companyNameEn}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.periodLabel}
-                        {doc.publishedAt ? ` · ${formatDate(doc.publishedAt.slice(0, 10), lang)}` : ""}
-                      </p>
-                    </div>
-                    <Link
-                      href={`/company/${doc.companySlug}/report?period=${encodeURIComponent(doc.periodLabel)}`}
-                      className="chamfer-br-sm inline-flex items-center px-2.5 py-1 text-xs font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
-                    >
-                      {t.quarterlyReport.viewFormattedReportLabel}
-                    </Link>
-                  </div>
-                  {doc.attachments.length > 0 ? (
-                    <div className="mt-2 border-t border-border-subtle pt-2">
-                      <p className="text-xs font-medium text-muted-foreground">{t.investorDashboard.attachmentsLabel}</p>
-                      <ul className="mt-1 space-y-1">
-                        {doc.attachments.map((a) => (
-                          <li key={a.id}>
-                            <a
-                              href={`/api/attachments/${a.id}`}
-                              className="chamfer-br-sm text-sm text-link-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground"
-                            >
-                              {a.fileName}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
       </div>
     </AppShell>

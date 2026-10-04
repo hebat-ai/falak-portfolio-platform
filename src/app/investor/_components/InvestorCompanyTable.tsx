@@ -21,11 +21,14 @@ import type { InvestorVisibleCompanyDTO } from "@/lib/investor/dto";
 // re-checks, so there's no new access surface opened by linking it.
 interface InvestorCompanyTableProps {
   companies: InvestorVisibleCompanyDTO[];
+  // Each company's most recent period this org can see a report for,
+  // independent of the period currently selected on the page.
+  latestPeriodByCompanyId: Record<string, string>;
   caption: string;
   emptyStateText: string;
 }
 
-export function InvestorCompanyTable({ companies, caption, emptyStateText }: InvestorCompanyTableProps) {
+export function InvestorCompanyTable({ companies, latestPeriodByCompanyId, caption, emptyStateText }: InvestorCompanyTableProps) {
   const { t, lang } = useLanguage();
   const columnCount = 8;
 
@@ -41,7 +44,7 @@ export function InvestorCompanyTable({ companies, caption, emptyStateText }: Inv
           <Th>{t.admin.table.revenueColumn}</Th>
           <Th>{t.admin.table.lastUpdatedColumn}</Th>
           <Th>
-            <span className="sr-only">{t.quarterlyReport.viewFormattedReportLabel}</span>
+            <span className="sr-only">{t.quarterlyReport.viewLatestReportLabel}</span>
           </Th>
         </Tr>
       </THead>
@@ -53,7 +56,9 @@ export function InvestorCompanyTable({ companies, caption, emptyStateText }: Inv
             </Td>
           </Tr>
         ) : (
-          companies.map((company) => (
+          companies.map((company) => {
+            const latestPeriod = latestPeriodByCompanyId[company.id] ?? company.periodKey;
+            return (
             <Tr key={company.id} className="hover:bg-surface-muted/60">
               <Td className="font-medium">{lang === "ar" ? company.nameAr : company.nameEn}</Td>
               <Td>{lang === "ar" ? company.sectorAr : company.sectorEn}</Td>
@@ -71,15 +76,19 @@ export function InvestorCompanyTable({ companies, caption, emptyStateText }: Inv
                 <time dateTime={company.lastUpdated}>{formatDate(company.lastUpdated, lang)}</time>
               </Td>
               <Td>
-                <Link
-                  href={`/company/${company.slug}/report?period=${company.periodKey}`}
-                  className="chamfer-br-sm inline-flex items-center px-2.5 py-1 text-xs font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
-                >
-                  {t.quarterlyReport.viewFormattedReportLabel}
-                </Link>
+                <div className="flex flex-col items-start gap-1">
+                  <Link
+                    href={`/company/${company.slug}/report?period=${encodeURIComponent(latestPeriod)}`}
+                    className="chamfer-br-sm inline-flex items-center whitespace-nowrap px-2.5 py-1 text-xs font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
+                  >
+                    {t.quarterlyReport.viewLatestReportLabel}
+                  </Link>
+                  <span className="text-xs text-muted-foreground">{latestPeriod}</span>
+                </div>
               </Td>
             </Tr>
-          ))
+            );
+          })
         )}
       </TBody>
     </Table>

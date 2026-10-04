@@ -243,3 +243,33 @@ test("an archived vehicle is excluded from exposure cards", async () => {
   const result = await getInvestorPortfolioData();
   assert.equal(result.vehicleExposures.length, 0);
 });
+
+test("vehicle exposure carries this org's contributions, its share of all contributions, NAV history, and sectors", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeInvestorQueriesDbStub({
+      memberships: [MEMBERSHIP],
+      reportAccessGrants: [],
+      investorVehiclePositions: [
+        { investorId: "inv_1", vehicleId: "veh_1", status: "Active", commitmentAmount: 750_000, currency: "SAR" },
+        // Another investor in the same vehicle: 100,000 USD = 375,000 SAR.
+        { investorId: "inv_other", vehicleId: "veh_1", status: "Active", commitmentAmount: 100_000, currency: "USD" },
+        { investorId: "inv_other", vehicleId: "veh_1", status: "Exited", commitmentAmount: 9_000_000, currency: "SAR" },
+      ],
+      vehicles: [{ id: "veh_1", slug: "fund-one", nameEn: "Fund One", nameAr: "الصندوق الأول", type: "Fund", currency: "SAR" }],
+      ownershipLinks: [{ vehicleId: "veh_1", companyId: "co_1", companySectorEn: "Fintech", companySectorAr: "تقنية مالية" }],
+      navSnapshots: [
+        { vehicleId: "veh_1", asOfDate: new Date("2026-06-30"), navAmount: 3_000_000, currency: "SAR" },
+        { vehicleId: "veh_1", asOfDate: new Date("2026-03-31"), navAmount: 2_000_000, currency: "SAR" },
+      ],
+    })
+  );
+  const [exposure] = (await getInvestorPortfolioData()).vehicleExposures;
+  assert.deepEqual(exposure.contributions, [{ amount: 750_000, currency: "SAR" }]);
+  assert.ok(Math.abs(exposure.ownershipShare! - 750_000 / 1_125_000) < 1e-12);
+  assert.deepEqual(
+    exposure.navHistory.map((n) => n.asOfDate),
+    ["2026-03-31", "2026-06-30"]
+  );
+  assert.equal(exposure.linkedCompanies[0].sectorEn, "Fintech");
+});
