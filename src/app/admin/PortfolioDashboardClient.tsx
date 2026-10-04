@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/Select";
 import { PortfolioSummaryKpis } from "./_components/PortfolioSummaryKpis";
 import { PortfolioAlertsPanel } from "@/components/portfolio/AlertsPanel";
 import { PortfolioNavPanel } from "./_components/PortfolioNavPanel";
+import { PortfolioReturnsPanel } from "./_components/PortfolioReturnsPanel";
 import { ReportingStatusPanel } from "./_components/ReportingStatusPanel";
 import { DashboardViewSwitcher, type DashboardView } from "./_components/charts/DashboardViewSwitcher";
 import { CompaniesByStageBarChart } from "./_components/charts/CompaniesByStageBarChart";
@@ -25,6 +26,7 @@ import type { PortfolioAlert } from "@/lib/admin/alerts";
 import type { CompanyBenchmark } from "@/lib/admin/benchmarking";
 import type { PortfolioTrendPoint } from "@/lib/admin/portfolio-trend";
 import type { CompanyTrendDTO } from "@/lib/admin/company-trends";
+import type { PortfolioReturnSummary } from "@/lib/admin/portfolio-returns";
 
 interface PortfolioDashboardClientProps extends AdminPortfolioData {
   valuationData: PortfolioValuationData;
@@ -32,6 +34,7 @@ interface PortfolioDashboardClientProps extends AdminPortfolioData {
   trend: PortfolioTrendPoint[];
   benchmarksByPeriod: Record<string, CompanyBenchmark[]>;
   companyTrends: CompanyTrendDTO[];
+  portfolioReturns: PortfolioReturnSummary[];
 }
 
 // Portfolio-wide KPIs and the Reporting Status panel always reflect the
@@ -49,6 +52,7 @@ export function PortfolioDashboardClient({
   trend,
   benchmarksByPeriod,
   companyTrends,
+  portfolioReturns,
 }: PortfolioDashboardClientProps) {
   const { t } = useLanguage();
   const latestPeriodKey = periods.at(-1)?.key ?? "";
@@ -104,6 +108,7 @@ export function PortfolioDashboardClient({
           </div>
         ) : null}
         <PortfolioNavPanel vehicles={valuationData.vehicles} vehicleId={navVehicleId} onVehicleChange={setNavVehicleId} />
+        <PortfolioReturnsPanel returns={portfolioReturns} />
         <PortfolioAlertsPanel alerts={alerts} linkQuery="from=admin" />
 
         <div className="space-y-3">

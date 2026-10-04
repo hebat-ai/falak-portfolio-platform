@@ -138,6 +138,7 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, fro
               currency={company.currency}
               revenue={periodData.revenue}
               previousRevenue={previousRevenue}
+              benchmarks={periodData.benchmarks}
             />
 
             {periods.length > 1 ? (

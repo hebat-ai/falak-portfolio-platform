@@ -204,3 +204,25 @@ test("two companies' cycles both in the fixture set: only the target company's p
     ["Q1 2026"]
   );
 });
+
+test("a Falak-staff viewer gets a populated benchmarks array (computed via getPortfolioBenchmarks)", async () => {
+  setCurrentUser(REAL_USER);
+  const db = makeCompanyReportDbStub({ falakRoles: ADMIN_ROLE, companies: [{ ...BASE_COMPANY, cycles: [Q1_CYCLE] }] });
+  setDbStub(db);
+  const result = await getCompanyReportData("tadween-saas");
+  assert.ok(Array.isArray(result!.company.periods["Q1 2026"].benchmarks));
+  assert.ok(db.getCompanyFindManyCallCount() > 0, "a staff viewer must trigger getPortfolioBenchmarks' own company.findMany");
+});
+
+test("a company-member viewer always gets an empty benchmarks array, and getPortfolioBenchmarks is never called", async () => {
+  setCurrentUser(REAL_USER);
+  const db = makeCompanyReportDbStub({
+    falakRoles: [],
+    companyMemberships: [MEMBER_OF_CO1],
+    companies: [{ ...BASE_COMPANY, cycles: [Q1_CYCLE] }],
+  });
+  setDbStub(db);
+  const result = await getCompanyReportData("tadween-saas");
+  assert.deepEqual(result!.company.periods["Q1 2026"].benchmarks, []);
+  assert.equal(db.getCompanyFindManyCallCount(), 0, "a company member must never trigger the portfolio-wide benchmark query");
+});

@@ -145,6 +145,12 @@ export interface Dictionary {
       burnChangeQoqColumn: string;
       runwayColumn: string;
       noTrendDataMessage: string;
+      portfolioReturnsTitle: string;
+      investedCapitalLabel: string;
+      distributedCapitalLabel: string;
+      currentAttributableValueLabel: string;
+      portfolioMoicLabel: string;
+      moicNotAvailableLabel: string;
     };
     manage: {
       sectionTitle: string;
@@ -610,6 +616,12 @@ export const en = {
       burnChangeQoqColumn: "Burn Change (QoQ)",
       runwayColumn: "Runway",
       noTrendDataMessage: "No reporting history yet for the selected scope.",
+      portfolioReturnsTitle: "Portfolio Returns",
+      investedCapitalLabel: "Invested Capital",
+      distributedCapitalLabel: "Distributed",
+      currentAttributableValueLabel: "Current Attributable Value",
+      portfolioMoicLabel: "Blended MOIC",
+      moicNotAvailableLabel: "Not available",
     },
     manage: {
       sectionTitle: "Manage Portfolio",
@@ -1081,6 +1093,12 @@ export const ar = {
       burnChangeQoqColumn: "تغير الحرق النقدي (ربع سنوي)",
       runwayColumn: "مدة الاستمرارية",
       noTrendDataMessage: "لا يوجد سجل تقارير بعد ضمن النطاق المحدد.",
+      portfolioReturnsTitle: "عوائد المحفظة",
+      investedCapitalLabel: "رأس المال المستثمر",
+      distributedCapitalLabel: "التوزيعات",
+      currentAttributableValueLabel: "القيمة الحالية المنسوبة",
+      portfolioMoicLabel: "مضاعف رأس المال المجمّع (MOIC)",
+      moicNotAvailableLabel: "غير متاح",
     },
     manage: {
       sectionTitle: "إدارة المحفظة",

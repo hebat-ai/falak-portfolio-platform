@@ -9,6 +9,7 @@ import type {
   CompanyValuationType,
 } from "@/generated/prisma/client";
 import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
+import type { CompanyMetricBenchmark } from "@/lib/admin/benchmarking";
 
 export interface CompanyReportNarrativeDTO {
   kind: NarrativeKind;
@@ -35,6 +36,13 @@ export interface CompanyReportPeriodData {
   // the company's own reported operating numbers, not a fund-controlled
   // mark.
   metrics: SubmissionMetricFieldDTO[];
+  // Falak-staff-only (always [] for a company member, same visibility
+  // rule as valuation below) -- this company's own percentile rank
+  // against its portfolio peers for the same period, from the exact
+  // same getPortfolioBenchmarks computation BenchmarksView uses. A
+  // company's own members never see how they compare to other portfolio
+  // companies' internals.
+  benchmarks: CompanyMetricBenchmark[];
 }
 
 export interface CompanyReportPeriodOption {

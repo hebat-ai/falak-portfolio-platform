@@ -4,6 +4,7 @@ import { requireCurrentUser, requireFalakRole, requireCompanyMembership } from "
 import { ForbiddenError } from "@/lib/auth/authorization-errors";
 import { REVENUE_METRIC_KEYS, sumRevenueMetricValues } from "@/lib/reporting/revenue-metrics";
 import { fetchSubmissionMetricFields } from "@/lib/reporting/metrics";
+import { getPortfolioBenchmarks } from "@/lib/admin/benchmarking";
 import type {
   CompanyReportData,
   CompanyReportDTO,
@@ -134,6 +135,16 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
       const revenue = submission ? sumRevenueMetricValues(submission.metricValues) : null;
       const metrics = submission ? await fetchSubmissionMetricFields(db, submission.id, cycle.templateId) : [];
 
+      // Falak-staff-only, same gate as valuations below -- a company
+      // member never sees this. getPortfolioBenchmarks re-verifies
+      // FALAK_OPERATIONS itself; calling it when viewerRole is already
+      // known to be FALAK_STAFF is always a no-op re-confirmation, never
+      // a surprise ForbiddenError.
+      const benchmarks =
+        viewerRole === "FALAK_STAFF"
+          ? (await getPortfolioBenchmarks(cycle.periodLabel)).find((b) => b.companyId === company.id)?.metrics ?? []
+          : [];
+
       const matchingReport = company.reports.find(
         (r) => toDateOnly(r.periodStart) === toDateOnly(cycle.periodStart) && toDateOnly(r.periodEnd) === toDateOnly(cycle.periodEnd)
       );
@@ -146,6 +157,7 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
         submissionId: submission?.id ?? null,
         currentDeadline: toDateOnly(cycle.currentDeadline),
         narratives: matchingReport?.versions[0]?.narratives ?? [],
+        benchmarks,
         metrics,
       };
     })

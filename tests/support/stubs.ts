@@ -1036,8 +1036,10 @@ export function makeCompanyReportDbStub(options: {
 }) {
   const companies = options.companies ?? [];
   const findUniqueCalls: string[] = [];
+  let companyFindManyCallCount = 0;
 
   return {
+    getCompanyFindManyCallCount: () => companyFindManyCallCount,
     userRoleAssignment: {
       findMany: async ({ where }: { where: Record<string, unknown> }) => {
         const roleFilter = where.role as { in: string[] };
@@ -1069,6 +1071,31 @@ export function makeCompanyReportDbStub(options: {
       },
     },
     company: {
+      // Backs getPortfolioBenchmarks' own internal company.findMany
+      // (called from getCompanyReportData for a FALAK_STAFF viewer, to
+      // compute this company's own inline percentile) -- metricDefinition/
+      // submissionMetricValue both resolve to [] above, so every company
+      // ends up with zero benchmark metrics here, which is a safe, valid
+      // result for every test in this suite (none of them assert on
+      // `benchmarks`).
+      findMany: async ({ select }: { select?: { cycles?: { where?: { periodLabel?: string } } } } = {}) => {
+        companyFindManyCallCount += 1;
+        const periodLabel = select?.cycles?.where?.periodLabel;
+        return companies
+          .filter((c) => !c.archivedAt)
+          .map((c) => ({
+            id: c.id,
+            slug: c.slug,
+            nameEn: c.nameEn,
+            nameAr: c.nameAr,
+            cycles: (c.cycles ?? [])
+              .filter((cy) => !periodLabel || cy.periodLabel === periodLabel)
+              .map((cy) => ({
+                templateId: "stub-template",
+                submission: cy.submission === null ? null : { id: cy.submission.id },
+              })),
+          }));
+      },
       findUnique: async ({ where }: { where: { slug: string } }) => {
         findUniqueCalls.push(where.slug);
         const c = companies.find((cc) => cc.slug === where.slug);
@@ -1862,6 +1889,84 @@ export function makeInvestorReturnsDbStub(options: {
         if (!match) return null;
         return { navAmount: { toNumber: () => match.navAmount }, currency: match.currency };
       },
+    },
+  };
+}
+
+export interface PortfolioReturnsAgreementFixture {
+  investedAmount: number | null;
+  currency: string | null;
+  status: string;
+}
+
+export interface PortfolioReturnsCashFlowFixture {
+  type: string;
+  amount: number;
+  currency: string;
+}
+
+export interface PortfolioReturnsPositionFixture {
+  companyId: string;
+  // Only the latest snapshot matters -- this stub always returns
+  // exactly this one row for `snapshots` (as the real distinct/orderBy/
+  // take:1 query would), so a test wanting "no snapshot yet" passes null.
+  ownershipPct: number | null;
+}
+
+export interface PortfolioReturnsValuationFixture {
+  companyId: string;
+  valuationAmount: number;
+  currency: string;
+}
+
+/** Backs getPortfolioReturns (src/lib/admin/portfolio-returns.ts). */
+export function makePortfolioReturnsDbStub(options: {
+  falakRoles?: FalakRoleFixture[];
+  agreements?: PortfolioReturnsAgreementFixture[];
+  cashFlows?: PortfolioReturnsCashFlowFixture[];
+  positions?: PortfolioReturnsPositionFixture[];
+  valuations?: PortfolioReturnsValuationFixture[];
+}) {
+  const agreements = options.agreements ?? [];
+  const cashFlows = options.cashFlows ?? [];
+  const positions = options.positions ?? [];
+  const valuations = options.valuations ?? [];
+
+  return {
+    userRoleAssignment: {
+      findMany: async ({ where }: { where: Record<string, unknown> }) => {
+        const roleFilter = where.role as { in: string[] };
+        return (options.falakRoles ?? [])
+          .filter((r) => !r.revoked && roleFilter.in.includes(r.role))
+          .map((r) => ({ role: r.role }));
+      },
+    },
+    investmentAgreement: {
+      findMany: async ({ where }: { where?: { status?: { in: string[] } } } = {}) =>
+        agreements
+          .filter((a) => !where?.status || where.status.in.includes(a.status))
+          .map((a) => ({
+            investedAmount: a.investedAmount === null ? null : { toNumber: () => a.investedAmount },
+            currency: a.currency,
+          })),
+    },
+    agreementCashFlow: {
+      findMany: async () => cashFlows.map((cf) => ({ amount: { toNumber: () => cf.amount }, currency: cf.currency })),
+    },
+    ownershipPosition: {
+      findMany: async () =>
+        positions.map((p) => ({
+          companyId: p.companyId,
+          snapshots: p.ownershipPct === null ? [] : [{ ownershipPct: { toNumber: () => p.ownershipPct } }],
+        })),
+    },
+    companyValuationSnapshot: {
+      findMany: async () =>
+        valuations.map((v) => ({
+          companyId: v.companyId,
+          valuationAmount: { toNumber: () => v.valuationAmount },
+          currency: v.currency,
+        })),
     },
   };
 }

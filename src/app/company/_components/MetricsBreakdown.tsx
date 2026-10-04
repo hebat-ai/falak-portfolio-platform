@@ -9,6 +9,7 @@ import { computeGrossMargin, computeNetMargin, percentChange } from "@/lib/repor
 import { findNumericMetricValue, formatMetricValue } from "@/lib/reporting/metric-format";
 import type { Currency } from "@/generated/prisma/client";
 import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
+import type { CompanyMetricBenchmark } from "@/lib/admin/benchmarking";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 // Same key-prefix convention as MetricsEntryForm (the submit-side
@@ -59,9 +60,16 @@ interface MetricsBreakdownProps {
   // so Revenue Growth here always matches the KPI card above it.
   revenue: number | null;
   previousRevenue: number | null;
+  // Falak-staff-only -- always [] for a company member (see
+  // CompanyReportPeriodData.benchmarks' own comment on why). Shown
+  // inline next to the matching metric row, the same percentile figure
+  // BenchmarksView shows in its portfolio-wide table, so a staff viewer
+  // doesn't have to leave this page to see how this company compares to
+  // its peers for the period they're already looking at.
+  benchmarks: CompanyMetricBenchmark[];
 }
 
-export function MetricsBreakdown({ metrics, currency, revenue, previousRevenue }: MetricsBreakdownProps) {
+export function MetricsBreakdown({ metrics, currency, revenue, previousRevenue, benchmarks }: MetricsBreakdownProps) {
   const { t, lang } = useLanguage();
 
   if (metrics.length === 0) {
@@ -71,13 +79,34 @@ export function MetricsBreakdown({ metrics, currency, revenue, previousRevenue }
   const groups = groupMetrics(metrics);
   const naDisplay = <span className="text-muted-foreground">{t.companyReport.naValueDisplay}</span>;
 
+  function percentileHint(key: string) {
+    const benchmark = benchmarks.find((b) => b.key === key);
+    if (!benchmark || benchmark.percentile === null) return null;
+    return (
+      <span className="ms-1.5 text-xs text-muted-foreground">
+        (<Num>{formatPercent(benchmark.percentile / 100, lang)}</Num> {t.admin.charts.percentileLabel})
+      </span>
+    );
+  }
+
   function formatFieldValue(field: SubmissionMetricFieldDTO) {
     const formatted = formatMetricValue(field, currency, lang);
     if (formatted === null) return naDisplay;
+    const hint = percentileHint(field.key);
     if (field.dataType === "Text" || field.dataType === "Boolean") {
-      return <span className="whitespace-pre-wrap">{formatted}</span>;
+      return (
+        <>
+          <span className="whitespace-pre-wrap">{formatted}</span>
+          {hint}
+        </>
+      );
     }
-    return <Num>{formatted}</Num>;
+    return (
+      <>
+        <Num>{formatted}</Num>
+        {hint}
+      </>
+    );
   }
 
   const cogs = findNumericMetricValue(metrics, "fin_cogs");
