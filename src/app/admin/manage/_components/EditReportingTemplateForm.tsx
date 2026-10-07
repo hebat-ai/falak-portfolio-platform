@@ -129,7 +129,7 @@ function TemplateFields({
 
         {Array.from({ length: newRows }, (_, i) => (
           <div key={`new-${i}`} className="chamfer-br-sm grid grid-cols-1 gap-2 p-3 shadow-[var(--inner-line)] sm:grid-cols-4">
-            <Input name={`newKey_${i}`} placeholder={t.admin.manage.metricKeyLabel} defaultValue={text(`newKey_${i}`, "")} />
+            <Input name={`newKey_${i}`} placeholder={t.admin.manage.metricKeyOptionalLabel} defaultValue={text(`newKey_${i}`, "")} />
             <Input name={`newLabelEn_${i}`} placeholder={t.admin.manage.metricLabelEnLabel} defaultValue={text(`newLabelEn_${i}`, "")} />
             <Input
               name={`newLabelAr_${i}`}

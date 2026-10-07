@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
 import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { deleteCompanyCascade, deleteVehicleCascade } from "@/lib/admin/entity-delete";
+import { validateNewTemplate, toMetricKey } from "@/lib/admin/template-validation";
 import { deleteAttachment } from "@/lib/storage/blob";
 import {
   validateCompany,
@@ -773,37 +774,11 @@ export async function createReportingTemplateAction(_prevState: ActionState, for
     throw error;
   }
 
-  const nameEn = readString(formData, "nameEn");
-  const nameAr = readString(formData, "nameAr");
-  if (!isValidName(nameEn) || !isValidName(nameAr)) {
-    return { error: "Fill in every field with a valid value." };
+  const { values, errors, input } = validateNewTemplate(formData);
+  if (!input) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: errors, values };
   }
-
-  const metrics: { key: string; labelEn: string; labelAr: string; dataType: MetricDataType; sortOrder: number }[] = [];
-  for (let i = 0; i < MAX_METRIC_ROWS; i++) {
-    const key = readString(formData, `metricKey_${i}`);
-    if (!key) continue;
-    const labelEn = readString(formData, `metricLabelEn_${i}`);
-    const labelAr = readString(formData, `metricLabelAr_${i}`);
-    const dataType = readString(formData, `metricDataType_${i}`);
-    if (
-      !/^[a-z][a-z0-9_]*$/.test(key) ||
-      !isValidName(labelEn) ||
-      !isValidName(labelAr) ||
-      !dataType ||
-      !METRIC_DATA_TYPES.includes(dataType as MetricDataType)
-    ) {
-      return { error: "Every metric row needs a valid key, both labels, and a data type." };
-    }
-    metrics.push({ key, labelEn, labelAr, dataType: dataType as MetricDataType, sortOrder: metrics.length + 1 });
-  }
-  if (metrics.length === 0) {
-    return { error: "Add at least one metric." };
-  }
-  const uniqueKeys = new Set(metrics.map((m) => m.key));
-  if (uniqueKeys.size !== metrics.length) {
-    return { error: "Metric keys must be unique within a template." };
-  }
+  const { nameEn, nameAr, metrics } = input;
 
   try {
     await db.$transaction(async (tx) => {
@@ -819,7 +794,7 @@ export async function createReportingTemplateAction(_prevState: ActionState, for
       });
     });
   } catch {
-    return { error: GENERIC_ERROR };
+    return { error: GENERIC_ERROR, values };
   }
 
   return { error: null, success: true };
@@ -1645,7 +1620,7 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
     const labelEn = readString(formData, `labelEn_${m.id}`);
     const labelAr = readString(formData, `labelAr_${m.id}`);
     const sortOrder = Number(readString(formData, `sortOrder_${m.id}`));
-    const key = locked ? m.key : readString(formData, `key_${m.id}`);
+    const key = locked ? m.key : toMetricKey(readString(formData, `key_${m.id}`) ?? "");
     const dataType = locked ? m.dataType : readString(formData, `dataType_${m.id}`);
     if (
       !isValidName(labelEn) ||
@@ -1676,11 +1651,13 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
   const added: { key: string; labelEn: string; labelAr: string; dataType: MetricDataType; sortOrder: number }[] = [];
   let nextOrder = Math.max(0, ...existing.map((m) => m.sortOrder)) + 1;
   for (let i = 0; i < MAX_METRIC_ROWS; i++) {
-    const key = readString(formData, `newKey_${i}`);
-    if (!key) continue;
+    const rawKey = readString(formData, `newKey_${i}`) ?? "";
     const labelEn = readString(formData, `newLabelEn_${i}`);
     const labelAr = readString(formData, `newLabelAr_${i}`);
     const dataType = readString(formData, `newDataType_${i}`);
+    if (!rawKey && !labelEn && !labelAr && !dataType) continue;
+    // Same as creating a template: key optional, any spelling normalised.
+    const key = toMetricKey(rawKey || labelEn || "");
     if (
       !METRIC_KEY_PATTERN.test(key) ||
       !isValidName(labelEn) ||

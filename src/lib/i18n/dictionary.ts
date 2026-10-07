@@ -232,6 +232,8 @@ export interface Dictionary {
       revokeAction: string;
       addMetricAction: string;
       metricKeyLabel: string;
+      metricKeyOptionalLabel: string;
+      metricKeyHint: string;
       metricLabelEnLabel: string;
       metricLabelArLabel: string;
       metricDataTypeLabel: string;
@@ -836,6 +838,8 @@ export const en = {
       revokeAction: "Revoke",
       addMetricAction: "Add another metric",
       metricKeyLabel: "Metric Key (e.g. revenue_b2b)",
+      metricKeyOptionalLabel: "Metric Key (optional)",
+      metricKeyHint: "Leave the key empty to create it from the English label (\"Revenue B2B\" becomes revenue_b2b). Any spelling you type is converted the same way. Empty rows are ignored.",
       metricLabelEnLabel: "Metric Label (English)",
       metricLabelArLabel: "Metric Label (Arabic)",
       metricDataTypeLabel: "Data Type",
@@ -1446,6 +1450,8 @@ export const ar = {
       revokeAction: "إلغاء الصلاحية",
       addMetricAction: "إضافة مؤشر آخر",
       metricKeyLabel: "معرّف المؤشر (مثال: revenue_b2b)",
+      metricKeyOptionalLabel: "معرّف المؤشر (اختياري)",
+      metricKeyHint: "اترك المعرّف فارغاً ليُنشأ تلقائياً من التسمية الإنجليزية (\"Revenue B2B\" يصبح revenue_b2b). يُحوَّل أي معرّف تكتبه بالطريقة نفسها. يتم تجاهل الصفوف الفارغة.",
       metricLabelEnLabel: "تسمية المؤشر (إنجليزي)",
       metricLabelArLabel: "تسمية المؤشر (عربي)",
       metricDataTypeLabel: "نوع البيانات",
