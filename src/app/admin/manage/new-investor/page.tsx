@@ -28,7 +28,7 @@ export default async function NewInvestorPage() {
     <ManageSubsectionShell titleKey="createInvestorTitle">
       <NewEntityWithList listTitleKey="investorsListTitle">
         <CreateInvestorForm />
-        <ArchivableList items={data.investors} action={archiveInvestorAction} fieldName="investorId" />
+        <ArchivableList items={data.investors} action={archiveInvestorAction} fieldName="investorId" editBasePath="/admin/manage/edit-investor" />
       </NewEntityWithList>
     </ManageSubsectionShell>
   );

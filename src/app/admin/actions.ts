@@ -5,6 +5,14 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
 import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
+import {
+  validateCompany,
+  validateVehicle,
+  validateInvestor,
+  FIX_HIGHLIGHTED,
+  type FieldErrors,
+  type FormValues,
+} from "@/lib/admin/entity-validation";
 import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-errors";
 import { hashInviteToken } from "@/lib/auth/invite-token";
 import { normalizeEmail, MAX_RAW_EMAIL_LENGTH } from "@/lib/auth/utils";
@@ -15,11 +23,6 @@ import { requestSignInLink } from "@/lib/auth/request-sign-in";
 import { hashPassword, MIN_PASSWORD_LENGTH, MAX_RAW_PASSWORD_LENGTH } from "@/lib/auth/password";
 import type {
   Currency,
-  CustomerModel,
-  RevenueModel,
-  FundingStage,
-  VehicleType,
-  InvestorType,
   MetricDataType,
   CompanyValuationType,
   InvestorCapitalTransactionType,
@@ -30,6 +33,10 @@ import type {
 export interface ActionState {
   error: string | null;
   success?: boolean;
+  // Per-field messages, keyed by input name -- the form highlights exactly these.
+  fieldErrors?: FieldErrors;
+  // What was submitted, so a rejected form keeps everything the user typed.
+  values?: FormValues;
 }
 
 export interface InviteActionState {
@@ -38,15 +45,8 @@ export interface InviteActionState {
 }
 
 const GENERIC_ERROR = "Something went wrong. Check your input and try again.";
-const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_NAME_LENGTH = 200;
-const MAX_SLUG_LENGTH = 80;
 const CURRENCIES: Currency[] = ["SAR", "USD"];
-const CUSTOMER_MODELS: CustomerModel[] = ["B2B", "B2C", "B2B_B2C"];
-const REVENUE_MODELS: RevenueModel[] = ["SaaS", "Marketplace", "ECommerce", "TransactionBased", "Subscription", "Other"];
-const FUNDING_STAGES: FundingStage[] = ["PreSeed", "Seed", "SeriesA", "SeriesB", "Later"];
-const VEHICLE_TYPES: VehicleType[] = ["Fund", "SPV"];
-const INVESTOR_TYPES: InvestorType[] = ["Institutional", "FamilyOffice", "Individual"];
 const METRIC_DATA_TYPES: MetricDataType[] = ["Currency", "Percent", "Number", "Text", "Boolean"];
 // Bumped from 20 -- a comprehensive template (financial + health +
 // customer + qualitative fields, matching a real investor-reporting
@@ -100,10 +100,6 @@ function isValidName(value: string | null): value is string {
   return value !== null && value.length > 0 && value.length <= MAX_NAME_LENGTH;
 }
 
-function isValidSlug(value: string | null): value is string {
-  return value !== null && value.length > 0 && value.length <= MAX_SLUG_LENGTH && SLUG_PATTERN.test(value);
-}
-
 // ============================================================
 // Company
 // ============================================================
@@ -120,64 +116,17 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
     throw error;
   }
 
-  const slug = readString(formData, "slug");
-  const nameEn = readString(formData, "nameEn");
-  const nameAr = readString(formData, "nameAr");
-  const sectorEn = readString(formData, "sectorEn");
-  const sectorAr = readString(formData, "sectorAr");
-  const customerModel = readString(formData, "customerModel");
-  const currency = readString(formData, "currency");
-  const entryStage = readString(formData, "entryStage");
-  const currentStage = readString(formData, "currentStage");
-  const department = readString(formData, "department");
-  const revenueModels = formData.getAll("revenueModels").filter((v): v is string => typeof v === "string");
-
-  if (
-    !isValidSlug(slug) ||
-    !isValidName(nameEn) ||
-    !isValidName(nameAr) ||
-    !isValidName(sectorEn) ||
-    !isValidName(sectorAr) ||
-    !customerModel ||
-    !CUSTOMER_MODELS.includes(customerModel as CustomerModel) ||
-    !currency ||
-    !CURRENCIES.includes(currency as Currency) ||
-    !entryStage ||
-    !FUNDING_STAGES.includes(entryStage as FundingStage) ||
-    !currentStage ||
-    !FUNDING_STAGES.includes(currentStage as FundingStage) ||
-    !department ||
-    !DEPARTMENTS.includes(department as Department) ||
-    revenueModels.some((m) => !REVENUE_MODELS.includes(m as RevenueModel))
-  ) {
-    return { error: "Fill in every field with a valid value." };
+  const { values, errors, input } = validateCompany(formData, departments);
+  if (!input) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: errors, values };
   }
-  if (!inDepartment(departments, department as Department)) {
-    return { error: OUT_OF_DEPARTMENT };
-  }
-
-  const existing = await db.company.findUnique({ where: { slug } });
-  if (existing) {
-    return { error: "That slug is already in use by another company." };
+  if (await db.company.findUnique({ where: { slug: input.slug } })) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: { slug: "That slug is already used by another company." }, values };
   }
 
   try {
     await db.$transaction(async (tx) => {
-      const company = await tx.company.create({
-        data: {
-          slug,
-          nameEn,
-          nameAr,
-          sectorEn,
-          sectorAr,
-          customerModel: customerModel as CustomerModel,
-          revenueModels: revenueModels as RevenueModel[],
-          currency: currency as Currency,
-          entryStage: entryStage as FundingStage,
-          currentStage: currentStage as FundingStage,
-          department: department as Department,
-        },
-      });
+      const company = await tx.company.create({ data: input });
       await writeAuditEvent(tx, {
         actorId: user.id,
         action: "company.created",
@@ -186,10 +135,48 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
       });
     });
   } catch {
-    return { error: GENERIC_ERROR };
+    return { error: GENERIC_ERROR, values };
   }
 
   return { error: null, success: true };
+}
+
+export async function updateCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  let departments: Department[] | null = null;
+  try {
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const companyId = readString(formData, "companyId");
+  if (!companyId || !(await companyInDepartment(departments, companyId))) {
+    return { error: OUT_OF_DEPARTMENT };
+  }
+
+  const { values, errors, input } = validateCompany(formData, departments);
+  if (!input) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: errors, values };
+  }
+  const slugOwner = await db.company.findUnique({ where: { slug: input.slug }, select: { id: true } });
+  if (slugOwner && slugOwner.id !== companyId) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: { slug: "That slug is already used by another company." }, values };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.company.update({ where: { id: companyId }, data: input });
+      await writeAuditEvent(tx, { actorId: user.id, action: "company.updated", targetType: "Company", targetId: companyId });
+    });
+  } catch {
+    return { error: GENERIC_ERROR, values };
+  }
+
+  return { error: null, success: true, values };
 }
 
 // Plain (formData) => void signature -- used directly as a <form
@@ -279,57 +266,62 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
     throw error;
   }
 
-  const slug = readString(formData, "slug");
-  const nameEn = readString(formData, "nameEn");
-  const nameAr = readString(formData, "nameAr");
-  const type = readString(formData, "type");
-  const currency = readString(formData, "currency");
-  const vintageYearRaw = readString(formData, "vintageYear");
-  const vintageYear = vintageYearRaw ? Number(vintageYearRaw) : null;
-
-  if (
-    !isValidSlug(slug) ||
-    !isValidName(nameEn) ||
-    !isValidName(nameAr) ||
-    !type ||
-    !VEHICLE_TYPES.includes(type as VehicleType) ||
-    !currency ||
-    !CURRENCIES.includes(currency as Currency) ||
-    (vintageYearRaw !== null &&
-      (!Number.isInteger(vintageYear) || vintageYear! < MIN_VINTAGE_YEAR || vintageYear! > MAX_VINTAGE_YEAR))
-  ) {
-    return { error: "Fill in every field with a valid value." };
+  const { values, errors, input } = validateVehicle(formData, departments);
+  if (!input) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: errors, values };
   }
-
-  const existing = await db.vehicle.findUnique({ where: { slug } });
-  if (existing) {
-    return { error: "That slug is already in use by another vehicle." };
-  }
-  // A scoped user's new vehicle belongs to their department; Admin keeps the schema default.
-  if (departments !== null && departments.length === 0) {
-    return { error: OUT_OF_DEPARTMENT };
+  if (await db.vehicle.findUnique({ where: { slug: input.slug } })) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: { slug: "That slug is already used by another vehicle." }, values };
   }
 
   try {
     await db.$transaction(async (tx) => {
-      const vehicle = await tx.vehicle.create({
-        data: {
-          slug,
-          nameEn,
-          nameAr,
-          type: type as VehicleType,
-          currency: currency as Currency,
-          vintageYear,
-          department: departments?.[0],
-        },
-      });
+      const vehicle = await tx.vehicle.create({ data: input });
       await writeAuditEvent(tx, { actorId: user.id, action: "vehicle.created", targetType: "Vehicle", targetId: vehicle.id });
     });
   } catch {
-    return { error: GENERIC_ERROR };
+    return { error: GENERIC_ERROR, values };
   }
 
   return { error: null, success: true };
+}
+
+export async function updateVehicleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  let departments: Department[] | null = null;
+  try {
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const vehicleId = readString(formData, "vehicleId");
+  if (!vehicleId || !(await vehicleInDepartment(departments, vehicleId))) {
+    return { error: OUT_OF_DEPARTMENT };
+  }
+
+  const { values, errors, input } = validateVehicle(formData, departments);
+  if (!input) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: errors, values };
+  }
+  const slugOwner = await db.vehicle.findUnique({ where: { slug: input.slug }, select: { id: true } });
+  if (slugOwner && slugOwner.id !== vehicleId) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: { slug: "That slug is already used by another vehicle." }, values };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.vehicle.update({ where: { id: vehicleId }, data: input });
+      await writeAuditEvent(tx, { actorId: user.id, action: "vehicle.updated", targetType: "Vehicle", targetId: vehicleId });
+    });
+  } catch {
+    return { error: GENERIC_ERROR, values };
+  }
+
+  return { error: null, success: true, values };
 }
 
 // Sets an EXISTING vehicle's vintage year -- same "new field, old rows
@@ -418,29 +410,55 @@ export async function createInvestorAction(_prevState: ActionState, formData: Fo
     throw error;
   }
 
-  const nameEn = readString(formData, "nameEn");
-  const nameAr = readString(formData, "nameAr");
-  const type = readString(formData, "type");
-
-  if (!isValidName(nameEn) || !isValidName(nameAr) || !type || !INVESTOR_TYPES.includes(type as InvestorType)) {
-    return { error: "Fill in every field with a valid value." };
-  }
-  if (departments !== null && departments.length === 0) {
-    return { error: OUT_OF_DEPARTMENT };
+  const { values, errors, input } = validateInvestor(formData, departments);
+  if (!input) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: errors, values };
   }
 
   try {
     await db.$transaction(async (tx) => {
-      const investor = await tx.investor.create({
-        data: { nameEn, nameAr, type: type as InvestorType, department: departments?.[0] },
-      });
+      const investor = await tx.investor.create({ data: input });
       await writeAuditEvent(tx, { actorId: user.id, action: "investor.created", targetType: "Investor", targetId: investor.id });
     });
   } catch {
-    return { error: GENERIC_ERROR };
+    return { error: GENERIC_ERROR, values };
   }
 
   return { error: null, success: true };
+}
+
+export async function updateInvestorAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  let departments: Department[] | null = null;
+  try {
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const investorId = readString(formData, "investorId");
+  if (!investorId || !(await investorInDepartment(departments, investorId))) {
+    return { error: OUT_OF_DEPARTMENT };
+  }
+
+  const { values, errors, input } = validateInvestor(formData, departments);
+  if (!input) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors: errors, values };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.investor.update({ where: { id: investorId }, data: input });
+      await writeAuditEvent(tx, { actorId: user.id, action: "investor.updated", targetType: "Investor", targetId: investorId });
+    });
+  } catch {
+    return { error: GENERIC_ERROR, values };
+  }
+
+  return { error: null, success: true, values };
 }
 
 export async function archiveInvestorAction(formData: FormData): Promise<void> {

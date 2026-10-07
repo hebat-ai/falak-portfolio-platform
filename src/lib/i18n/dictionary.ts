@@ -245,6 +245,12 @@ export interface Dictionary {
       investorLabel: string;
       vehiclesListTitle: string;
       investorsListTitle: string;
+      companiesListTitle: string;
+      editCompanyTitle: string;
+      editVehicleTitle: string;
+      editInvestorTitle: string;
+      editAction: string;
+      saveChangesLabel: string;
       successMessage: string;
       inviteCreatedMessage: string;
       auditLogTitle: string;
@@ -796,6 +802,12 @@ export const en = {
       investorLabel: "Investor",
       vehiclesListTitle: "Vehicles",
       investorsListTitle: "Investors",
+      companiesListTitle: "Startups",
+      editCompanyTitle: "Edit Startup",
+      editVehicleTitle: "Edit Vehicle",
+      editInvestorTitle: "Edit Investor",
+      editAction: "Edit",
+      saveChangesLabel: "Save Changes",
       successMessage: "Saved.",
       inviteCreatedMessage: "Invite created. Copy this link and send it to the company yourself — email delivery isn't wired up yet.",
       auditLogTitle: "Audit Log",
@@ -1353,6 +1365,12 @@ export const ar = {
       investorLabel: "المستثمر",
       vehiclesListTitle: "الأدوات الاستثمارية",
       investorsListTitle: "المستثمرون",
+      companiesListTitle: "الشركات الناشئة",
+      editCompanyTitle: "تعديل الشركة الناشئة",
+      editVehicleTitle: "تعديل الأداة الاستثمارية",
+      editInvestorTitle: "تعديل المستثمر",
+      editAction: "تعديل",
+      saveChangesLabel: "حفظ التغييرات",
       successMessage: "تم الحفظ.",
       inviteCreatedMessage: "تم إنشاء الدعوة. انسخ هذا الرابط وأرسله إلى الشركة بنفسك — إرسال البريد الإلكتروني التلقائي غير مُفعّل بعد.",
       auditLogTitle: "سجل التدقيق",

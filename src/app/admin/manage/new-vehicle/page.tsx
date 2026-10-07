@@ -28,7 +28,7 @@ export default async function NewVehiclePage() {
     <ManageSubsectionShell titleKey="createVehicleTitle">
       <NewEntityWithList listTitleKey="vehiclesListTitle">
         <CreateVehicleForm />
-        <ArchivableList items={data.vehicles} action={archiveVehicleAction} fieldName="vehicleId" />
+        <ArchivableList items={data.vehicles} action={archiveVehicleAction} fieldName="vehicleId" editBasePath="/admin/manage/edit-vehicle" />
       </NewEntityWithList>
     </ManageSubsectionShell>
   );

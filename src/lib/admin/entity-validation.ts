@@ -1,0 +1,202 @@
+import type {
+  Currency,
+  CustomerModel,
+  Department,
+  FundingStage,
+  InvestorType,
+  RevenueModel,
+  VehicleType,
+} from "@/generated/prisma/client";
+
+// Pure validation for the company / vehicle / investor forms, shared by
+// their create and edit actions. Returns one message per bad field so the
+// form can highlight exactly those fields, plus the submitted values so
+// nothing the user typed is lost.
+
+export type FieldErrors = Record<string, string>;
+export type FormValues = Record<string, string | string[]>;
+
+export const FIX_HIGHLIGHTED = "Fix the highlighted fields and try again.";
+export const OUT_OF_DEPARTMENT_FIELD = "You can only use your own department.";
+
+const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const MAX_NAME_LENGTH = 200;
+const MAX_SLUG_LENGTH = 80;
+const MIN_VINTAGE_YEAR = 1990;
+const MAX_VINTAGE_YEAR = 2100;
+
+const CURRENCIES: Currency[] = ["SAR", "USD"];
+const CUSTOMER_MODELS: CustomerModel[] = ["B2B", "B2C", "B2B_B2C"];
+const REVENUE_MODELS: RevenueModel[] = ["SaaS", "Marketplace", "ECommerce", "TransactionBased", "Subscription", "Other"];
+const FUNDING_STAGES: FundingStage[] = ["PreSeed", "Seed", "SeriesA", "SeriesB", "Later"];
+const VEHICLE_TYPES: VehicleType[] = ["Fund", "SPV"];
+const INVESTOR_TYPES: InvestorType[] = ["Institutional", "FamilyOffice", "Individual"];
+const DEPARTMENTS: Department[] = ["VentureBuilder", "InvestmentDepartment"];
+
+const MSG = {
+  slug: "Use lowercase letters, numbers and single hyphens, e.g. startup-x.",
+  name: `Required, up to ${MAX_NAME_LENGTH} characters.`,
+  choose: "Choose an option.",
+  revenueModels: "Choose only from the listed options.",
+  vintageYear: `Enter a year between ${MIN_VINTAGE_YEAR} and ${MAX_VINTAGE_YEAR}, or leave it empty.`,
+};
+
+function read(formData: FormData, field: string): string {
+  const value = formData.get(field);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isName(value: string): boolean {
+  return value.length > 0 && value.length <= MAX_NAME_LENGTH;
+}
+
+function isSlug(value: string): boolean {
+  return value.length > 0 && value.length <= MAX_SLUG_LENGTH && SLUG_PATTERN.test(value);
+}
+
+function oneOf<T extends string>(value: string, options: readonly T[]): value is T {
+  return (options as readonly string[]).includes(value);
+}
+
+/** Department checks are scope-aware: null departments = Admin (any department). */
+function checkDepartment(value: string, scope: Department[] | null, errors: FieldErrors): Department | null {
+  if (!oneOf(value, DEPARTMENTS)) {
+    errors.department = MSG.choose;
+    return null;
+  }
+  if (scope !== null && !scope.includes(value)) {
+    errors.department = OUT_OF_DEPARTMENT_FIELD;
+    return null;
+  }
+  return value;
+}
+
+export interface Validated<T> {
+  values: FormValues;
+  errors: FieldErrors;
+  input: T | null;
+}
+
+export interface CompanyInput {
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  sectorEn: string;
+  sectorAr: string;
+  customerModel: CustomerModel;
+  revenueModels: RevenueModel[];
+  currency: Currency;
+  entryStage: FundingStage;
+  currentStage: FundingStage;
+  department: Department;
+}
+
+export function validateCompany(formData: FormData, scope: Department[] | null): Validated<CompanyInput> {
+  const v = {
+    slug: read(formData, "slug"),
+    nameEn: read(formData, "nameEn"),
+    nameAr: read(formData, "nameAr"),
+    sectorEn: read(formData, "sectorEn"),
+    sectorAr: read(formData, "sectorAr"),
+    customerModel: read(formData, "customerModel"),
+    currency: read(formData, "currency"),
+    entryStage: read(formData, "entryStage"),
+    currentStage: read(formData, "currentStage"),
+    department: read(formData, "department"),
+  };
+  const revenueModels = formData.getAll("revenueModels").filter((x): x is string => typeof x === "string");
+  const errors: FieldErrors = {};
+
+  if (!isSlug(v.slug)) errors.slug = MSG.slug;
+  for (const f of ["nameEn", "nameAr", "sectorEn", "sectorAr"] as const) {
+    if (!isName(v[f])) errors[f] = MSG.name;
+  }
+  if (!oneOf(v.customerModel, CUSTOMER_MODELS)) errors.customerModel = MSG.choose;
+  if (!oneOf(v.currency, CURRENCIES)) errors.currency = MSG.choose;
+  if (!oneOf(v.entryStage, FUNDING_STAGES)) errors.entryStage = MSG.choose;
+  if (!oneOf(v.currentStage, FUNDING_STAGES)) errors.currentStage = MSG.choose;
+  if (revenueModels.some((m) => !oneOf(m, REVENUE_MODELS))) errors.revenueModels = MSG.revenueModels;
+  const department = checkDepartment(v.department, scope, errors);
+
+  const values: FormValues = { ...v, revenueModels };
+  if (Object.keys(errors).length > 0 || !department) return { values, errors, input: null };
+  return {
+    values,
+    errors,
+    input: {
+      ...v,
+      customerModel: v.customerModel as CustomerModel,
+      currency: v.currency as Currency,
+      entryStage: v.entryStage as FundingStage,
+      currentStage: v.currentStage as FundingStage,
+      revenueModels: revenueModels as RevenueModel[],
+      department,
+    },
+  };
+}
+
+export interface VehicleInput {
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  type: VehicleType;
+  currency: Currency;
+  vintageYear: number | null;
+  department: Department;
+}
+
+export function validateVehicle(formData: FormData, scope: Department[] | null): Validated<VehicleInput> {
+  const v = {
+    slug: read(formData, "slug"),
+    nameEn: read(formData, "nameEn"),
+    nameAr: read(formData, "nameAr"),
+    type: read(formData, "type"),
+    currency: read(formData, "currency"),
+    vintageYear: read(formData, "vintageYear"),
+    department: read(formData, "department"),
+  };
+  const errors: FieldErrors = {};
+
+  if (!isSlug(v.slug)) errors.slug = MSG.slug;
+  if (!isName(v.nameEn)) errors.nameEn = MSG.name;
+  if (!isName(v.nameAr)) errors.nameAr = MSG.name;
+  if (!oneOf(v.type, VEHICLE_TYPES)) errors.type = MSG.choose;
+  if (!oneOf(v.currency, CURRENCIES)) errors.currency = MSG.choose;
+  const vintageYear = v.vintageYear === "" ? null : Number(v.vintageYear);
+  if (vintageYear !== null && (!Number.isInteger(vintageYear) || vintageYear < MIN_VINTAGE_YEAR || vintageYear > MAX_VINTAGE_YEAR)) {
+    errors.vintageYear = MSG.vintageYear;
+  }
+  const department = checkDepartment(v.department, scope, errors);
+
+  if (Object.keys(errors).length > 0 || !department) return { values: v, errors, input: null };
+  return {
+    values: v,
+    errors,
+    input: { ...v, type: v.type as VehicleType, currency: v.currency as Currency, vintageYear, department },
+  };
+}
+
+export interface InvestorInput {
+  nameEn: string;
+  nameAr: string;
+  type: InvestorType;
+  department: Department;
+}
+
+export function validateInvestor(formData: FormData, scope: Department[] | null): Validated<InvestorInput> {
+  const v = {
+    nameEn: read(formData, "nameEn"),
+    nameAr: read(formData, "nameAr"),
+    type: read(formData, "type"),
+    department: read(formData, "department"),
+  };
+  const errors: FieldErrors = {};
+
+  if (!isName(v.nameEn)) errors.nameEn = MSG.name;
+  if (!isName(v.nameAr)) errors.nameAr = MSG.name;
+  if (!oneOf(v.type, INVESTOR_TYPES)) errors.type = MSG.choose;
+  const department = checkDepartment(v.department, scope, errors);
+
+  if (Object.keys(errors).length > 0 || !department) return { values: v, errors, input: null };
+  return { values: v, errors, input: { ...v, type: v.type as InvestorType, department } };
+}

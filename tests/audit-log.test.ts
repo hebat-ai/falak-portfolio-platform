@@ -213,6 +213,7 @@ test("createVehicleAction writes a vehicle.created audit event", async () => {
   formData.set("nameAr", "fund-one-ar");
   formData.set("type", "Fund");
   formData.set("currency", "SAR");
+  formData.set("department", "InvestmentDepartment");
 
   const result = await actions.createVehicleAction({ error: null }, formData);
   assert.equal(result.error, null);
@@ -259,6 +260,7 @@ test("createInvestorAction writes an investor.created audit event", async () => 
   formData.set("nameEn", "Investor One");
   formData.set("nameAr", "investor-one-ar");
   formData.set("type", "Individual");
+  formData.set("department", "InvestmentDepartment");
 
   const result = await actions.createInvestorAction({ error: null }, formData);
   assert.equal(result.error, null);

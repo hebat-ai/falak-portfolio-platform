@@ -5,7 +5,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 interface NewEntityWithListProps {
-  listTitleKey: keyof Pick<Dictionary["admin"]["manage"], "vehiclesListTitle" | "investorsListTitle">;
+  listTitleKey: keyof Pick<Dictionary["admin"]["manage"], "vehiclesListTitle" | "investorsListTitle" | "companiesListTitle">;
   children: ReactNode;
 }
 

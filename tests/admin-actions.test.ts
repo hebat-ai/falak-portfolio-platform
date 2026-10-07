@@ -505,7 +505,10 @@ test("department scope: ...but not in another department", async () => {
   const created: Record<string, unknown>[] = [];
   setDbStub(companyCreateStub(created));
   const result = await actions.createCompanyAction({ error: null }, companyForm("VentureBuilder"));
-  assert.match(result.error ?? "", /own department/);
+  assert.match(result.fieldErrors?.department ?? "", /own department/);
+  // Only the department is flagged, and everything typed comes back.
+  assert.deepEqual(Object.keys(result.fieldErrors ?? {}), ["department"]);
+  assert.equal(result.values?.nameEn, "Acme");
   assert.equal(created.length, 0);
 });
 
@@ -532,7 +535,7 @@ test("department scope: archiving another department's company does nothing", as
   assert.equal(updates.length, 0);
 });
 
-test("department scope: a new vehicle from an Investment Professional is placed in their department", async () => {
+test("department scope: an Investment Professional creates vehicles in their department, not another", async () => {
   setCurrentUser(REAL_USER);
   const created: Record<string, unknown>[] = [];
   setDbStub(
@@ -550,10 +553,15 @@ test("department scope: a new vehicle from an Investment Professional is placed 
     })
   );
   const fd = new FormData();
-  for (const [k, v] of Object.entries({ slug: "fund-x", nameEn: "Fund X", nameAr: "صندوق", type: "Fund", currency: "SAR" })) fd.set(k, v);
+  for (const [k, v] of Object.entries({ slug: "fund-x", nameEn: "Fund X", nameAr: "صندوق", type: "Fund", currency: "SAR", department: "InvestmentDepartment" })) fd.set(k, v);
   const result = await actions.createVehicleAction({ error: null }, fd);
   assert.equal(result.error, null);
   assert.equal(created[0].department, "InvestmentDepartment");
+
+  fd.set("department", "VentureBuilder");
+  const refused = await actions.createVehicleAction({ error: null }, fd);
+  assert.match(refused.fieldErrors?.department ?? "", /own department/);
+  assert.equal(created.length, 1);
 });
 
 test("department scope: a staff user with no department assigned cannot create anything", async () => {
@@ -574,8 +582,62 @@ test("department scope: a staff user with no department assigned cannot create a
     })
   );
   const fd = new FormData();
-  for (const [k, v] of Object.entries({ nameEn: "LP", nameAr: "LP", type: "Institutional" })) fd.set(k, v);
+  for (const [k, v] of Object.entries({ nameEn: "LP", nameAr: "LP", type: "Institutional", department: "InvestmentDepartment" })) fd.set(k, v);
   const result = await actions.createInvestorAction({ error: null }, fd);
-  assert.match(result.error ?? "", /own department/);
+  assert.match(result.fieldErrors?.department ?? "", /own department/);
   assert.equal(created.length, 0);
+});
+
+// ============================================================
+// Editing existing records
+// ============================================================
+
+function companyUpdateStub(options: { department: string; slugOwnerId: string | null }, updates: Record<string, unknown>[]) {
+  return makeAdminActionDbStub({
+    falakRoles: OPS,
+    models: {
+      company: {
+        findUnique: async ({ where }: { where: { id?: string; slug?: string } }) =>
+          where.id ? { department: options.department } : options.slugOwnerId ? { id: options.slugOwnerId } : null,
+        update: async (args: Record<string, unknown>) => {
+          updates.push(args);
+          return {};
+        },
+      },
+    },
+  });
+}
+
+test("edit: saving a company keeps its own slug and writes the new values", async () => {
+  setCurrentUser(REAL_USER);
+  const updates: Record<string, unknown>[] = [];
+  setDbStub(companyUpdateStub({ department: "InvestmentDepartment", slugOwnerId: "co_1" }, updates));
+  const fd = companyForm("InvestmentDepartment");
+  fd.set("companyId", "co_1");
+  fd.set("nameEn", "Acme Renamed");
+  const result = await actions.updateCompanyAction({ error: null }, fd);
+  assert.equal(result.error, null);
+  assert.equal((updates[0] as { data: { nameEn: string } }).data.nameEn, "Acme Renamed");
+});
+
+test("edit: a slug taken by another company is flagged on the slug field only", async () => {
+  setCurrentUser(REAL_USER);
+  const updates: Record<string, unknown>[] = [];
+  setDbStub(companyUpdateStub({ department: "InvestmentDepartment", slugOwnerId: "co_other" }, updates));
+  const fd = companyForm("InvestmentDepartment");
+  fd.set("companyId", "co_1");
+  const result = await actions.updateCompanyAction({ error: null }, fd);
+  assert.deepEqual(Object.keys(result.fieldErrors ?? {}), ["slug"]);
+  assert.equal(updates.length, 0);
+});
+
+test("edit: another department's company cannot be edited", async () => {
+  setCurrentUser(REAL_USER);
+  const updates: Record<string, unknown>[] = [];
+  setDbStub(companyUpdateStub({ department: "VentureBuilder", slugOwnerId: null }, updates));
+  const fd = companyForm("InvestmentDepartment");
+  fd.set("companyId", "co_vb");
+  const result = await actions.updateCompanyAction({ error: null }, fd);
+  assert.match(result.error ?? "", /own department/);
+  assert.equal(updates.length, 0);
 });

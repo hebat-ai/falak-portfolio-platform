@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { requireFalakRole } from "@/lib/auth/authorization";
+import { getAdminPortfolioData } from "@/lib/admin/queries";
 import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-errors";
 import { ManageSubsectionShell } from "../_components/ManageSubsectionShell";
 import { CreateCompanyForm } from "../_components/CreateCompanyForm";
+import { ArchivableList } from "../_components/ArchivableList";
+import { NewEntityWithList } from "../_components/NewEntityWithList";
+import { archiveCompanyAction } from "../../actions";
 
 export default async function NewCompanyPage() {
   const currentUser = await getCurrentUser();
@@ -11,8 +14,9 @@ export default async function NewCompanyPage() {
     redirect("/sign-in");
   }
 
+  let data;
   try {
-    await requireFalakRole("FALAK_OPERATIONS");
+    data = await getAdminPortfolioData();
   } catch (error) {
     if (error instanceof ForbiddenError || error instanceof UnauthenticatedError) {
       redirect("/account");
@@ -22,7 +26,15 @@ export default async function NewCompanyPage() {
 
   return (
     <ManageSubsectionShell titleKey="createCompanyTitle">
-      <CreateCompanyForm />
+      <NewEntityWithList listTitleKey="companiesListTitle">
+        <CreateCompanyForm />
+        <ArchivableList
+          items={data.companies}
+          action={archiveCompanyAction}
+          fieldName="companyId"
+          editBasePath="/admin/manage/edit-company"
+        />
+      </NewEntityWithList>
     </ManageSubsectionShell>
   );
 }
