@@ -10,6 +10,8 @@ import { Select } from "@/components/ui/Select";
 import { CompanyKpis } from "./CompanyKpis";
 import { MetricsBreakdown } from "./MetricsBreakdown";
 import { CompanyMetricsTrendChart } from "./CompanyMetricsTrendChart";
+import { QuarterlyRevenueChart } from "./QuarterlyRevenueChart";
+import { computeAnnualRevenue, quarterOf } from "@/lib/reporting/annual-revenue";
 import { ReportingHistoryList } from "./ReportingHistoryList";
 import { ValuationHistoryChart } from "./ValuationHistoryChart";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -131,6 +133,14 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, fro
               previousRevenue={previousRevenue}
               previousPeriodLabel={previousPeriodOption?.label ?? null}
               latestValuation={latestValuation}
+            />
+
+            <QuarterlyRevenueChart
+              currency={company.currency}
+              summary={computeAnnualRevenue(
+                periods.map((p) => ({ label: p.label, periodStart: p.periodStart, revenue: company.periods[p.key]?.revenue ?? null })),
+                quarterOf(periods[selectedIndex].label, periods[selectedIndex].periodStart).year
+              )}
             />
 
             <MetricsBreakdown

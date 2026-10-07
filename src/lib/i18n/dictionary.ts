@@ -287,6 +287,12 @@ export interface Dictionary {
     netMarginLabel: string;
     naValueDisplay: string;
     trendTitle: string;
+    quarterlyRevenueTitle: string;
+    annualActualLabel: string;
+    annualProjectedLabel: string;
+    projectionMethodNote: string;
+    reportedSeriesLabel: string;
+    projectedSeriesLabel: string;
   };
   quarterlyReport: {
     backToReport: string;
@@ -832,6 +838,12 @@ export const en = {
     netMarginLabel: "Net Margin",
     naValueDisplay: "N/A",
     trendTitle: "Revenue & Burn Trend",
+    quarterlyRevenueTitle: "Quarterly Revenue",
+    annualActualLabel: "Annual Revenue (Actual)",
+    annualProjectedLabel: "Annualized Revenue (Projected)",
+    projectionMethodNote: "Reported quarters to date, plus the latest quarter repeated for each remaining quarter.",
+    reportedSeriesLabel: "Reported",
+    projectedSeriesLabel: "Projected",
   },
   quarterlyReport: {
     backToReport: "Back to Company Report",
@@ -1383,6 +1395,12 @@ export const ar = {
     netMarginLabel: "هامش الربح الصافي",
     naValueDisplay: "غير متاح",
     trendTitle: "اتجاه الإيرادات والحرق النقدي",
+    quarterlyRevenueTitle: "الإيرادات الربع سنوية",
+    annualActualLabel: "الإيرادات السنوية (فعلية)",
+    annualProjectedLabel: "الإيرادات السنوية (متوقعة)",
+    projectionMethodNote: "الأرباع المُبلغ عنها حتى تاريخه، مع تكرار آخر ربع لكل ربع متبقٍ.",
+    reportedSeriesLabel: "مُبلغ عنها",
+    projectedSeriesLabel: "متوقعة",
   },
   quarterlyReport: {
     backToReport: "العودة إلى تقرير الشركة",
