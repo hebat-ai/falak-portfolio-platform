@@ -72,7 +72,7 @@ export interface SaveMetricValuesResult {
 const GENERIC_ERROR = "Something went wrong. Check your input and try again.";
 const LOCKED_ERROR = "This report can no longer be edited.";
 const MAX_RAW_VALUE_LENGTH = 4000;
-const FIX_FIELDS_ERROR = "Fix the highlighted fields and try again. Nothing was saved.";
+export const FIX_FIELDS_ERROR = "Fix the highlighted fields and try again. Nothing was saved.";
 
 const INVALID_MESSAGE: Record<MetricDataType, string> = {
   Currency: "Enter a number, e.g. 250,000 or 1250.50.",
@@ -87,7 +87,7 @@ const INVALID_MESSAGE: Record<MetricDataType, string> = {
  * Checked before anything is written, so a save either stores everything
  * or nothing -- a bad value is never silently dropped.
  */
-function invalidMetricFields(values: MetricValueInput[], definitionsById: Map<string, MetricDataType>): Record<string, string> {
+export function invalidMetricFields(values: MetricValueInput[], definitionsById: Map<string, MetricDataType>): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const field of values) {
     const dataType = definitionsById.get(field.metricDefinitionId);
@@ -168,7 +168,7 @@ export async function saveMetricValues(
  * call them and which statuses are editable, never in how a raw value
  * actually gets validated and stored.
  */
-async function writeMetricValues(
+export async function writeMetricValues(
   tx: Prisma.TransactionClient,
   submissionId: string,
   values: MetricValueInput[],

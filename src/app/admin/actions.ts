@@ -877,7 +877,7 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
   // than failing the whole batch, since "request this quarter from
   // everyone except the two who already have it" is the normal case,
   // not an error.
-  const createdCompanyIds: string[] = [];
+  const created: { cycleId: string; companyId: string }[] = [];
   try {
     await db.$transaction(async (tx) => {
       for (const companyId of companyIds) {
@@ -905,20 +905,20 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
           targetType: "ReportingCycle",
           targetId: cycle.id,
         });
-        createdCompanyIds.push(companyId);
+        created.push({ cycleId: cycle.id, companyId });
       }
     });
   } catch {
     return { error: GENERIC_ERROR };
   }
 
-  if (createdCompanyIds.length === 0) {
+  if (created.length === 0) {
     const message = "Every selected startup already has this template for this period.";
     return { error: message, fieldErrors: { companyIds: message } };
   }
 
   // Outside the transaction: the requests exist regardless of email delivery.
-  const notified = await notifyReportRequest(createdCompanyIds, { periodLabel, deadline }, user.id);
+  const notified = await notifyReportRequest(created, { periodLabel, deadline }, user.id);
   return { error: null, success: true, notice: describeNotifyResult(notified) };
 }
 
@@ -949,18 +949,62 @@ export async function resendReportRequestAction(_prevState: ActionState, formDat
       company: { archivedAt: null, ...(departments ? { department: { in: departments } } : {}) },
       submission: { status: { in: ["draft", "changes_requested"] } },
     },
-    select: { companyId: true, periodLabel: true, currentDeadline: true },
+    select: { id: true, companyId: true, periodLabel: true, currentDeadline: true },
   });
   if (cycles.length === 0) {
     return { error: null, success: true, notice: "Every startup in this request has already submitted; nobody was emailed." };
   }
 
   const notified = await notifyReportRequest(
-    cycles.map((c) => c.companyId),
+    cycles.map((c) => ({ cycleId: c.id, companyId: c.companyId })),
     { periodLabel: cycles[0].periodLabel, deadline: cycles[0].currentDeadline },
     user.id
   );
   return { error: null, success: true, notice: describeNotifyResult(notified) };
+}
+
+/**
+ * Emails one startup's reporting request again (from the request's page).
+ * Only while the startup can still fill it in -- once submitted there is
+ * nothing to ask for.
+ */
+export async function resendCycleRequestAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  let departments: Department[] | null = null;
+  try {
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
+  } catch (error) {
+    if (isAuthError(error)) return { error: GENERIC_ACCESS_DENIED };
+    throw error;
+  }
+
+  const cycleId = readString(formData, "cycleId");
+  if (!cycleId) return { error: GENERIC_ERROR };
+  const cycle = await db.reportingCycle.findFirst({
+    where: { id: cycleId, company: { archivedAt: null } },
+    select: {
+      id: true,
+      companyId: true,
+      periodLabel: true,
+      currentDeadline: true,
+      company: { select: { department: true } },
+      submission: { select: { status: true } },
+    },
+  });
+  if (!cycle) return { error: GENERIC_ERROR };
+  if (!inDepartment(departments, cycle.company.department)) return { error: OUT_OF_DEPARTMENT };
+  if (cycle.submission && !["draft", "changes_requested"].includes(cycle.submission.status)) {
+    return { error: "This startup has already submitted this report, so there is nothing to ask for." };
+  }
+
+  const notified = await notifyReportRequest(
+    [{ cycleId: cycle.id, companyId: cycle.companyId }],
+    { periodLabel: cycle.periodLabel, deadline: cycle.currentDeadline },
+    user.id
+  );
+  const notice = describeNotifyResult(notified);
+  if (notified.emailed.length === 0 && notified.invited.length === 0) return { error: notice || GENERIC_ERROR };
+  return { error: null, success: true, notice };
 }
 
 // ============================================================

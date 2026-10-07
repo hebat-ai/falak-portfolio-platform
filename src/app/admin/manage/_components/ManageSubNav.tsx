@@ -24,6 +24,8 @@ interface SubNavItem {
     | "investorVehicleAssignmentTitle"
   >;
   href: string;
+  /** Pages under this path also highlight the item. */
+  activeUnder?: string;
 }
 
 const SUB_NAV_ITEMS: SubNavItem[] = [
@@ -31,7 +33,7 @@ const SUB_NAV_ITEMS: SubNavItem[] = [
   { key: "createVehicleTitle", href: "/admin/manage/new-vehicle" },
   { key: "createInvestorTitle", href: "/admin/manage/new-investor" },
   { key: "createTemplateTitle", href: "/admin/manage/new-reporting-template" },
-  { key: "createCycleTitle", href: "/admin/manage/new-reporting-cycle" },
+  { key: "createCycleTitle", href: "/admin/manage/new-reporting-cycle", activeUnder: "/admin/manage/reporting-requests/" },
   { key: "invitesSectionTitle", href: "/admin/manage/invites" },
   { key: "vehicleAssignmentTitle", href: "/admin/manage/vehicle-assignment" },
   { key: "investorVehicleAssignmentTitle", href: "/admin/manage/investor-vehicle-assignment" },
@@ -65,7 +67,7 @@ export function ManageSubNav() {
         {t.admin.manage.sectionTitle}
       </Link>
       {SUB_NAV_ITEMS.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || (item.activeUnder !== undefined && pathname.startsWith(item.activeUnder));
         return (
           <Link
             key={item.key}

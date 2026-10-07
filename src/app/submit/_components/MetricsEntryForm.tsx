@@ -23,7 +23,9 @@ function sectionFor(key: string): keyof Pick<Dictionary["submitReport"], "sectio
   return "sectionQualitative";
 }
 
-function groupMetrics(metrics: SubmissionMetricFieldDTO[]) {
+export const METRIC_SECTIONS = ["sectionFinancial", "sectionHealth", "sectionCustomer", "sectionQualitative"] as const;
+
+export function groupMetrics(metrics: SubmissionMetricFieldDTO[]) {
   const groups: Record<string, SubmissionMetricFieldDTO[]> = {
     sectionFinancial: [],
     sectionHealth: [],
@@ -36,7 +38,7 @@ function groupMetrics(metrics: SubmissionMetricFieldDTO[]) {
   return groups;
 }
 
-function MetricField({
+export function MetricField({
   field,
   lang,
   naLabel,
@@ -105,7 +107,7 @@ export function MetricsEntryForm({ companyId, submissionId, slug, metrics }: Met
 
   return (
     <form {...formProps} className="space-y-6">
-      {(["sectionFinancial", "sectionHealth", "sectionCustomer", "sectionQualitative"] as const).map((sectionKey) =>
+      {METRIC_SECTIONS.map((sectionKey) =>
         groups[sectionKey].length > 0 ? (
           <div key={sectionKey} className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground">{t.submitReport[sectionKey]}</h3>

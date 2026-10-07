@@ -77,6 +77,7 @@ model User {
   ownershipSnapshotsRecorded OwnershipSnapshot[]
   distributionsSent          ReportDistribution[]              @relation("ReportDistributionSentBy")
   distributionsReceived      ReportDistribution[]              @relation("ReportDistributionRecipient")
+  reportRequestEmailsSent    ReportRequestEmail[]
   reviewCommentsAuthored     ReviewComment[]                   @relation("ReviewCommentAuthor")
   reviewCommentsResolved     ReviewComment[]                   @relation("ReviewCommentResolvedBy")
   deadlineExtensionsMade     ReportingCycleDeadlineExtension[]
@@ -707,10 +708,33 @@ model ReportingCycle {
 
   obligationCoverage ReportingCycleObligation[]
   deadlineExtensions ReportingCycleDeadlineExtension[]
+  requestEmails      ReportRequestEmail[]
   submission         CompanySubmission?
 
   @@unique([companyId, templateId, periodStart, periodEnd])
   @@map("reporting_cycles")
+}
+
+// One row per email sent about a reporting request: the request itself,
+// a founder invitation carrying it, or a deadline reminder. A log for
+// staff ("who was emailed, when, did it go through") -- append-only.
+model ReportRequestEmail {
+  id             String         @id @default(cuid())
+  cycle          ReportingCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  cycleId        String
+  recipientEmail String
+  // "request" | "invite" | "reminder_upcoming" | "reminder_overdue"
+  kind           String
+  // "sent" | "failed"
+  status         String
+  failureReason  String?
+  // Null for the automatic reminder sweep.
+  sentBy         User?          @relation(fields: [sentById], references: [id], onDelete: SetNull)
+  sentById       String?
+  sentAt         DateTime       @default(now())
+
+  @@index([cycleId])
+  @@map("report_request_emails")
 }
 
 model ReportingCycleDeadlineExtension {

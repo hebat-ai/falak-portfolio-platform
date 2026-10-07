@@ -277,6 +277,38 @@ export interface Dictionary {
       editAction: string;
       saveChangesLabel: string;
       emailAgainAction: string;
+      requestDetailTitle: string;
+      requestEntryTitle: string;
+      requestDetailIntro: string;
+      requestStartupsCount: string;
+      startupColumn: string;
+      cycleColumn: string;
+      lastEmailedColumn: string;
+      neverEmailedValue: string;
+      emailHistoryAction: string;
+      dataColumn: string;
+      answeredOfLabel: string;
+      resendAction: string;
+      enterDataAction: string;
+      editDataAction: string;
+      viewDataAction: string;
+      emailSentLabel: string;
+      emailFailedLabel: string;
+      emailAutomaticLabel: string;
+      emailLogUnavailable: string;
+      entryIntro: string;
+      entrySaveAction: string;
+      entrySubmitAction: string;
+      entrySubmitHint: string;
+      entrySavedMessage: string;
+      entrySubmittedMessage: string;
+      entryLockedMessage: string;
+      goToReviewAction: string;
+      openStartupPageAction: string;
+      emailKindRequest: string;
+      emailKindInvite: string;
+      emailKindReminderUpcoming: string;
+      emailKindReminderOverdue: string;
       editTemplateTitle: string;
       templatesListTitle: string;
       templateActiveLabel: string;
@@ -925,6 +957,38 @@ export const en = {
       editAction: "Edit",
       saveChangesLabel: "Save Changes",
       emailAgainAction: "Email again",
+      requestDetailTitle: "Report request",
+      requestEntryTitle: "Enter report data",
+      requestDetailIntro: "Every startup this request went to, every email sent about it, and where each report stands. Use Enter data when figures reach you another way (by email or in a meeting): they go into the startup's report exactly as if the startup had filled in the form.",
+      requestStartupsCount: "{count} startup(s) · {submitted} submitted",
+      startupColumn: "Startup",
+      cycleColumn: "Reporting cycle",
+      lastEmailedColumn: "Last emailed",
+      neverEmailedValue: "Not emailed yet",
+      emailHistoryAction: "{count} email(s)",
+      dataColumn: "Data entered",
+      answeredOfLabel: "{answered} of {total} fields",
+      resendAction: "Resend",
+      enterDataAction: "Enter data",
+      editDataAction: "Edit data",
+      viewDataAction: "View data",
+      emailSentLabel: "Sent",
+      emailFailedLabel: "Failed",
+      emailAutomaticLabel: "automatic",
+      emailLogUnavailable: "The email history can't be shown right now.",
+      entryIntro: "Figures entered here are saved to {startup}'s {period} report, exactly as if the startup had entered them, and are recorded in the audit log.",
+      entrySaveAction: "Save",
+      entrySubmitAction: "Save and submit for review",
+      entrySubmitHint: "Submitting moves the report to Review, where it is approved and published to the quarterly report.",
+      entrySavedMessage: "Saved.",
+      entrySubmittedMessage: "Saved and submitted. Approve and publish it from Review.",
+      entryLockedMessage: "This report has been approved or published, so its figures are shown read-only.",
+      goToReviewAction: "Open Review",
+      openStartupPageAction: "Startup page",
+      emailKindRequest: "Request",
+      emailKindInvite: "Founder invitation",
+      emailKindReminderUpcoming: "Deadline reminder",
+      emailKindReminderOverdue: "Overdue reminder",
       editTemplateTitle: "Edit Reporting Template",
       templatesListTitle: "Templates",
       templateActiveLabel: "Active (offered for new reporting cycles)",
@@ -1579,6 +1643,38 @@ export const ar = {
       editAction: "تعديل",
       saveChangesLabel: "حفظ التغييرات",
       emailAgainAction: "إرسال البريد مجدداً",
+      requestDetailTitle: "طلب التقرير",
+      requestEntryTitle: "إدخال بيانات التقرير",
+      requestDetailIntro: "جميع الشركات الناشئة التي أُرسل إليها هذا الطلب، وكل رسالة بريد أُرسلت بشأنه، وحالة كل تقرير. استخدم «إدخال البيانات» عندما تصلك الأرقام بطريقة أخرى (بالبريد أو في اجتماع): تُحفظ في تقرير الشركة تماماً كما لو أن الشركة عبّأت النموذج.",
+      requestStartupsCount: "{count} شركة ناشئة · {submitted} مقدّمة",
+      startupColumn: "الشركة الناشئة",
+      cycleColumn: "دورة التقرير",
+      lastEmailedColumn: "آخر بريد",
+      neverEmailedValue: "لم يُرسل بريد بعد",
+      emailHistoryAction: "{count} رسالة",
+      dataColumn: "البيانات المدخلة",
+      answeredOfLabel: "{answered} من {total} حقلاً",
+      resendAction: "إعادة الإرسال",
+      enterDataAction: "إدخال البيانات",
+      editDataAction: "تعديل البيانات",
+      viewDataAction: "عرض البيانات",
+      emailSentLabel: "أُرسلت",
+      emailFailedLabel: "فشلت",
+      emailAutomaticLabel: "تلقائي",
+      emailLogUnavailable: "لا يمكن عرض سجل البريد حالياً.",
+      entryIntro: "تُحفظ الأرقام المدخلة هنا في تقرير {startup} لفترة {period}، تماماً كما لو أدخلتها الشركة، وتُسجَّل في سجل التدقيق.",
+      entrySaveAction: "حفظ",
+      entrySubmitAction: "حفظ وتقديم للمراجعة",
+      entrySubmitHint: "يؤدي التقديم إلى نقل التقرير إلى المراجعة، حيث تتم الموافقة عليه ونشره في التقرير الربعي.",
+      entrySavedMessage: "تم الحفظ.",
+      entrySubmittedMessage: "تم الحفظ والتقديم. وافق عليه وانشره من صفحة المراجعة.",
+      entryLockedMessage: "تمت الموافقة على هذا التقرير أو نشره، لذا تُعرض أرقامه للقراءة فقط.",
+      goToReviewAction: "فتح المراجعة",
+      openStartupPageAction: "صفحة الشركة",
+      emailKindRequest: "طلب",
+      emailKindInvite: "دعوة المؤسس",
+      emailKindReminderUpcoming: "تذكير بالموعد",
+      emailKindReminderOverdue: "تذكير بالتأخر",
       editTemplateTitle: "تعديل قالب التقارير",
       templatesListTitle: "القوالب",
       templateActiveLabel: "نشط (متاح لدورات التقارير الجديدة)",
