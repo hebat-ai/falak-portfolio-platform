@@ -312,3 +312,17 @@ body {
     break-inside: avoid;
   }
 }
+
+/* A field the server rejected (see useForm / fieldErrors). */
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px var(--danger) !important;
+}
+input[type="checkbox"][aria-invalid="true"],
+input[type="radio"][aria-invalid="true"],
+input[type="file"][aria-invalid="true"] {
+  box-shadow: none !important;
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}

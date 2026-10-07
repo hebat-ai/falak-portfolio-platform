@@ -6,6 +6,7 @@ import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-e
 
 export interface UploadReportAttachmentState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   success: boolean;
 }
 
@@ -21,13 +22,13 @@ export async function uploadReportAttachmentAction(
 ): Promise<UploadReportAttachmentState> {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { error: GENERIC_UPLOAD_ERROR, success: false };
+    return { error: GENERIC_UPLOAD_ERROR, fieldErrors: { file: "Choose a file to upload." }, success: false };
   }
 
   try {
     const result = await uploadReportVersionAttachment(reportVersionId, file);
     if (!result.success) {
-      return { error: result.error, success: false };
+      return { error: result.error, fieldErrors: result.error ? { file: result.error } : undefined, success: false };
     }
   } catch (error) {
     if (error instanceof UnauthenticatedError || error instanceof ForbiddenError) {

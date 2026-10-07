@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Num } from "@/components/ui/Num";
@@ -50,10 +51,11 @@ interface ReviewActionPanelProps {
 export function ReviewActionPanel({ company, period, effectiveData, headingRef }: ReviewActionPanelProps) {
   const { t, lang } = useLanguage();
 
-  const [startState, startFormAction, startPending] = useActionState(startReviewAction, initialActionState);
-  const [changesState, changesFormAction, changesPending] = useActionState(requestChangesAction, initialActionState);
-  const [approveState, approveFormAction, approvePending] = useActionState(approveSubmissionAction, initialActionState);
-  const [publishState, publishFormAction, publishPending] = useActionState(publishSubmissionAction, initialActionState);
+  const start = useForm(startReviewAction, initialActionState);
+  const changes = useForm(requestChangesAction, initialActionState);
+  const approve = useForm(approveSubmissionAction, initialActionState);
+  // The publish form shows the report's text, so it keeps it after publishing.
+  const publish = useForm(publishSubmissionAction, initialActionState, { resetOnSuccess: false });
 
   const overdueDays =
     effectiveData?.currentDeadline ? getOverdueDays(effectiveData.status, effectiveData.currentDeadline) : null;
@@ -180,14 +182,14 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
 
           <div className="flex flex-wrap gap-3">
             {effectiveData.status === "submitted" ? (
-              <form action={startFormAction} className="flex flex-col gap-1">
+              <form {...start.formProps} className="flex flex-col gap-1">
                 <input type="hidden" name="submissionId" value={submissionId} />
-                <Button type="submit" disabled={startPending}>
+                <Button type="submit" disabled={start.isPending}>
                   {t.reviewWorkspace.startReviewAction}
                 </Button>
-                {startState.error ? (
+                {start.state.error ? (
                   <p role="alert" className="text-xs font-semibold text-danger">
-                    {startState.error}
+                    {start.state.error}
                   </p>
                 ) : null}
               </form>
@@ -195,30 +197,31 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
 
             {effectiveData.status === "under_review" ? (
               <>
-                <form action={changesFormAction} className="flex w-full flex-col gap-2 sm:max-w-sm">
+                <form {...changes.formProps} className="flex w-full flex-col gap-2 sm:max-w-sm">
                   <label htmlFor="review-comment" className="text-xs font-medium text-muted-foreground">
                     {t.reviewWorkspace.requestChangesAction}
                   </label>
                   <input type="hidden" name="submissionId" value={submissionId} />
                   <Textarea id="review-comment" name="comment" required rows={2} />
-                  <Button type="submit" variant="outline" disabled={changesPending} className="w-fit">
+                  {changes.errorFor("comment")}
+                  <Button type="submit" variant="outline" disabled={changes.isPending} className="w-fit">
                     {t.reviewWorkspace.requestChangesAction}
                   </Button>
-                  {changesState.error ? (
+                  {changes.state.error && !changes.state.fieldErrors ? (
                     <p role="alert" className="text-xs font-semibold text-danger">
-                      {changesState.error}
+                      {changes.state.error}
                     </p>
                   ) : null}
                 </form>
 
-                <form action={approveFormAction} className="flex flex-col gap-1">
+                <form {...approve.formProps} className="flex flex-col gap-1">
                   <input type="hidden" name="submissionId" value={submissionId} />
-                  <Button type="submit" disabled={approvePending}>
+                  <Button type="submit" disabled={approve.isPending}>
                     {t.reviewWorkspace.approveAction}
                   </Button>
-                  {approveState.error ? (
+                  {approve.state.error ? (
                     <p role="alert" className="text-xs font-semibold text-danger">
-                      {approveState.error}
+                      {approve.state.error}
                     </p>
                   ) : null}
                 </form>
@@ -228,7 +231,7 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
             {effectiveData.status === "approved" ? (
               <form
                 key={`${submissionId}:${narrativesLoaded ? "loaded" : "loading"}`}
-                action={publishFormAction}
+                {...publish.formProps}
                 className="flex w-full flex-col gap-3"
               >
                 <input type="hidden" name="submissionId" value={submissionId} />
@@ -241,6 +244,7 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                           {t.reviewWorkspace.narrativeEnLabel}
                         </label>
                         <Textarea id={`${kind}En`} name={`${kind}En`} rows={3} defaultValue={existingNarrative(kind)?.textEn ?? ""} />
+                        {publish.errorFor(`${kind}En`)}
                       </div>
                       <div className="flex flex-col gap-1">
                         <label htmlFor={`${kind}Ar`} className="text-xs text-muted-foreground">
@@ -253,16 +257,17 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                           rows={3}
                           defaultValue={existingNarrative(kind)?.textAr ?? ""}
                         />
+                        {publish.errorFor(`${kind}Ar`)}
                       </div>
                     </div>
                   </div>
                 ))}
-                <Button type="submit" disabled={publishPending} className="w-fit">
+                <Button type="submit" disabled={publish.isPending} className="w-fit">
                   {t.reviewWorkspace.publishAction}
                 </Button>
-                {publishState.error ? (
+                {publish.state.error ? (
                   <p role="alert" className="text-xs font-semibold text-danger">
-                    {publishState.error}
+                    {publish.state.error}
                   </p>
                 ) : null}
               </form>

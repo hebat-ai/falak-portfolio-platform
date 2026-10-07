@@ -64,12 +64,41 @@ export interface MetricValueInput {
 
 export interface SaveMetricValuesResult {
   error: string | null;
+  // Per field, keyed by the form input name `value_<metricDefinitionId>`.
+  fieldErrors?: Record<string, string>;
   success: boolean;
 }
 
 const GENERIC_ERROR = "Something went wrong. Check your input and try again.";
 const LOCKED_ERROR = "This report can no longer be edited.";
 const MAX_RAW_VALUE_LENGTH = 4000;
+const FIX_FIELDS_ERROR = "Fix the highlighted fields and try again. Nothing was saved.";
+
+const INVALID_MESSAGE: Record<MetricDataType, string> = {
+  Currency: "Enter a number, e.g. 250,000 or 1250.50.",
+  Number: "Enter a number, e.g. 1,200.",
+  Percent: "Enter a percentage, e.g. 12.5.",
+  Boolean: "Choose Yes or No.",
+  Text: `Up to ${MAX_RAW_VALUE_LENGTH} characters.`,
+};
+
+/**
+ * Every submitted value that can't be stored, keyed by its input name.
+ * Checked before anything is written, so a save either stores everything
+ * or nothing -- a bad value is never silently dropped.
+ */
+function invalidMetricFields(values: MetricValueInput[], definitionsById: Map<string, MetricDataType>): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const field of values) {
+    const dataType = definitionsById.get(field.metricDefinitionId);
+    if (!dataType) continue;
+    if (field.rawValue.length > MAX_RAW_VALUE_LENGTH || toStoredValue(field, dataType) === "invalid") {
+      errors[`value_${field.metricDefinitionId}`] =
+        field.rawValue.length > MAX_RAW_VALUE_LENGTH ? `Up to ${MAX_RAW_VALUE_LENGTH} characters.` : INVALID_MESSAGE[dataType];
+    }
+  }
+  return errors;
+}
 
 /**
  * Re-verifies company membership AND that the submission is still in an
@@ -114,6 +143,11 @@ export async function saveMetricValues(
       })
     ).map((d) => [d.id, d.dataType] as const)
   );
+
+  const fieldErrors = invalidMetricFields(values, definitionsById);
+  if (Object.keys(fieldErrors).length > 0) {
+    return { error: FIX_FIELDS_ERROR, fieldErrors, success: false };
+  }
 
   try {
     await db.$transaction(async (tx) => {
@@ -199,6 +233,11 @@ export async function adminUpdateSubmissionMetricValues(
     ).map((d) => [d.id, d.dataType] as const)
   );
 
+  const fieldErrors = invalidMetricFields(values, definitionsById);
+  if (Object.keys(fieldErrors).length > 0) {
+    return { error: FIX_FIELDS_ERROR, fieldErrors, success: false };
+  }
+
   try {
     await db.$transaction(async (tx) => {
       await writeMetricValues(tx, submissionId, values, definitionsById);
@@ -236,8 +275,10 @@ function toStoredValue(field: MetricValueInput, dataType: MetricDataType): Store
     case "Currency":
     case "Percent":
     case "Number": {
-      if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return "invalid";
-      return { numericValue: trimmed, textValue: null, isNa: false };
+      // Accept "1,250,000", "1 250 000" and (for percentages) "12.5%".
+      const normalised = trimmed.replace(/[,\s]/g, "").replace(/%$/, "");
+      if (!/^-?\d+(\.\d+)?$/.test(normalised)) return "invalid";
+      return { numericValue: normalised, textValue: null, isNa: false };
     }
     case "Boolean": {
       if (trimmed !== "Yes" && trimmed !== "No") return "invalid";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -11,10 +11,10 @@ import type { AdminCompanyDTO, AdminVehicleDTO } from "@/lib/admin/dto";
 
 export function LinkVehicleToCompanyForm({ companies, vehicles }: { companies: AdminCompanyDTO[]; vehicles: AdminVehicleDTO[] }) {
   const { t, lang } = useLanguage();
-  const [state, formAction, isPending] = useActionState(linkVehicleToCompanyAction, initialActionState);
+  const { state, isPending, errorFor, formProps } = useForm(linkVehicleToCompanyAction, initialActionState);
 
   return (
-    <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <form {...formProps} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-company">{t.admin.manage.companyLabel}</label>
         <Select id="l-company" name="companyId" required defaultValue="">
@@ -23,6 +23,7 @@ export function LinkVehicleToCompanyForm({ companies, vehicles }: { companies: A
             <option key={c.id} value={c.id}>{lang === "ar" ? c.nameAr : c.nameEn}</option>
           ))}
         </Select>
+        {errorFor("companyId")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-vehicle">{t.admin.manage.vehicleLabel}</label>
@@ -32,10 +33,12 @@ export function LinkVehicleToCompanyForm({ companies, vehicles }: { companies: A
             <option key={v.id} value={v.id}>{lang === "ar" ? v.nameAr : v.nameEn}</option>
           ))}
         </Select>
+        {errorFor("vehicleId")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-amount">{t.admin.manage.investedAmountLabel}</label>
         <Input id="l-amount" name="investedAmount" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required />
+        {errorFor("investedAmount")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-currency">{t.admin.manage.currencyLabel}</label>
@@ -44,14 +47,17 @@ export function LinkVehicleToCompanyForm({ companies, vehicles }: { companies: A
           <option value="SAR">{t.currencyNames.SAR}</option>
           <option value="USD">{t.currencyNames.USD}</option>
         </Select>
+        {errorFor("currency")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-pct">{t.admin.manage.ownershipPctLabel}</label>
         <Input id="l-pct" name="ownershipPct" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required />
+        {errorFor("ownershipPct")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="l-date">{t.admin.manage.signedDateLabel}</label>
         <Input id="l-date" name="signedDate" type="date" required />
+        {errorFor("signedDate")}
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />

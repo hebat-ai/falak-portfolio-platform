@@ -89,6 +89,33 @@ async function checkMetricCompleteness(
   return { hasApplicableMetrics: true, requiredMetricsComplete };
 }
 
+/**
+ * The required metrics still unanswered in this company's submission, so a
+ * rejected submit can point at exactly those fields. Company members only.
+ */
+export async function getMissingRequiredMetricIds(companyId: string, submissionId: string): Promise<string[]> {
+  await requireCompanyMembership(companyId, "MEMBER");
+  const submission = await db.companySubmission.findFirst({
+    where: { id: submissionId, cycle: { companyId } },
+    select: { cycle: { select: { templateId: true } } },
+  });
+  if (!submission) return [];
+  const required = await db.metricDefinition.findMany({
+    where: { templateId: submission.cycle.templateId, isActive: true, required: true },
+    select: { id: true },
+  });
+  const answered = await db.submissionMetricValue.findMany({
+    where: { submissionId, metricDefinitionId: { in: required.map((d) => d.id) } },
+    select: { metricDefinitionId: true, isNa: true, numericValue: true, textValue: true },
+  });
+  const done = new Set(
+    answered
+      .filter((v) => v.isNa || v.numericValue !== null || (v.textValue !== null && v.textValue.trim().length > 0))
+      .map((v) => v.metricDefinitionId)
+  );
+  return required.map((d) => d.id).filter((id) => !done.has(id));
+}
+
 function toSubmissionDTO(
   row: SubmissionRow,
   completeness: { hasApplicableMetrics: boolean; requiredMetricsComplete: boolean },

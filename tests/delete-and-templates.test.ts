@@ -221,6 +221,6 @@ test("templates: a duplicate metric key is refused and the submitted values come
       newDataType_0: "Number",
     })
   );
-  assert.match(result.error ?? "", /used twice/);
+  assert.match(result.fieldErrors?.newKey_0 ?? "", /used by another metric/);
   assert.equal(result.values?.newLabelEn_0, "Dup");
 });

@@ -5,6 +5,7 @@ import { MAX_RAW_PASSWORD_LENGTH } from "@/lib/auth/password";
 
 export interface ConfirmResetState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   success: boolean;
 }
 
@@ -23,12 +24,15 @@ export async function confirmPasswordResetAction(_prevState: ConfirmResetState, 
     return { error: GENERIC_ERROR, success: false };
   }
   if (password !== confirmPassword) {
-    return { error: MISMATCH_ERROR, success: false };
+    return { error: MISMATCH_ERROR, fieldErrors: { confirmPassword: MISMATCH_ERROR }, success: false };
   }
 
   const result = await consumePasswordResetToken(token, password);
   if (!result.success) {
-    return { error: result.error, success: false };
+    // A too-short password is the one error tied to a field; an
+    // invalid/expired link is not.
+    const weak = result.error !== null && /at least/i.test(result.error);
+    return { error: result.error, fieldErrors: weak ? { password: result.error! } : undefined, success: false };
   }
 
   return { error: null, success: true };

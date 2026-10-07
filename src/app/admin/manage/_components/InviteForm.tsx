@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useForm } from "@/components/forms/useForm";
+import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -22,12 +23,12 @@ interface InviteFormProps {
 
 export function InviteForm({ action, idPrefix, selectName, selectLabel, options }: InviteFormProps) {
   const { t, lang } = useLanguage();
-  const [state, formAction, isPending] = useActionState(action, initialInviteState);
+  const { state, isPending, errorFor, formProps } = useForm(action, initialInviteState);
   const [copied, setCopied] = useState(false);
   const fullUrl = state.inviteUrl && typeof window !== "undefined" ? `${window.location.origin}${state.inviteUrl}` : state.inviteUrl;
 
   return (
-    <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <form {...formProps} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor={`${idPrefix}-org`}>{selectLabel}</label>
         <Select id={`${idPrefix}-org`} name={selectName} required defaultValue="">
@@ -36,10 +37,12 @@ export function InviteForm({ action, idPrefix, selectName, selectLabel, options 
             <option key={o.id} value={o.id}>{lang === "ar" ? o.nameAr : o.nameEn}</option>
           ))}
         </Select>
+        {errorFor(selectName)}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor={`${idPrefix}-email`}>{t.admin.manage.emailLabel}</label>
         <Input id={`${idPrefix}-email`} name="email" type="email" required />
+        {errorFor("email")}
       </div>
       <div className="sm:col-span-2">
         {state.error ? (

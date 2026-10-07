@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useForm } from "@/components/forms/useForm";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -13,7 +14,7 @@ const initialState: SetPasswordState = { error: null, success: false };
 // account-management utility pages, kept bare-bones rather than wired
 // into the dictionary like the rest of the app).
 export function SetPasswordForm({ hasPassword }: { hasPassword: boolean }) {
-  const [state, formAction, isPending] = useActionState(setPasswordAction, initialState);
+  const { state, isPending, formProps } = useForm(setPasswordAction, initialState);
   const router = useRouter();
 
   // Re-fetches the page's hasPassword prop after a successful set/change
@@ -28,7 +29,7 @@ export function SetPasswordForm({ hasPassword }: { hasPassword: boolean }) {
   }, [state.success, router]);
 
   return (
-    <form action={formAction} className="space-y-3" noValidate>
+    <form {...formProps} className="space-y-3" noValidate>
       <h2 className="text-sm font-semibold text-foreground">{hasPassword ? "Change password" : "Set a password"}</h2>
       <p className="text-xs text-muted-foreground">
         {hasPassword

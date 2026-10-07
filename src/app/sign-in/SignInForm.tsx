@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { requestSignInLinkAction, type SignInState } from "./actions";
@@ -8,7 +8,7 @@ import { requestSignInLinkAction, type SignInState } from "./actions";
 const initialState: SignInState = { error: null, sent: false };
 
 export function SignInForm() {
-  const [state, formAction, isPending] = useActionState(requestSignInLinkAction, initialState);
+  const { state, isPending, formProps } = useForm(requestSignInLinkAction, initialState);
 
   if (state.sent) {
     return (
@@ -19,7 +19,7 @@ export function SignInForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form {...formProps} className="space-y-4" noValidate>
       <div className="space-y-1">
         <label htmlFor="sign-in-email" className="text-xs font-medium text-muted-foreground">
           Email

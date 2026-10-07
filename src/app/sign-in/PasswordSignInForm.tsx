@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -9,10 +9,10 @@ import { signInWithPasswordAction, type PasswordSignInState } from "./actions";
 const initialState: PasswordSignInState = { error: null };
 
 export function PasswordSignInForm() {
-  const [state, formAction, isPending] = useActionState(signInWithPasswordAction, initialState);
+  const { state, isPending, formProps } = useForm(signInWithPasswordAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form {...formProps} className="space-y-4" noValidate>
       <div className="space-y-1">
         <label htmlFor="password-sign-in-email" className="text-xs font-medium text-muted-foreground">
           Email

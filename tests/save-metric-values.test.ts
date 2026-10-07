@@ -92,13 +92,18 @@ test("valid Currency value is stored as numericValue", async () => {
   assert.equal(result.success, true);
 });
 
-test("non-numeric Currency value is silently skipped, not stored", async () => {
+test("a non-numeric Currency value is rejected and flagged on its field; nothing is saved", async () => {
   setCurrentUser(REAL_USER);
   setDbStub(makeReportingDbStub({ membership: MEMBER_CO1, submission: DRAFT_SUBMISSION, metricDefinitions: CURRENCY_METRIC }));
   const result = await saveMetricValues("co_1", "sub_1", [{ metricDefinitionId: "metric_1", rawValue: "not-a-number", isNa: false }]);
-  // Invalid fields are skipped, not a transaction failure -- the save as
-  // a whole still reports success so a company's other valid fields on
-  // the same submit aren't lost to one bad field.
+  assert.equal(result.success, false);
+  assert.deepEqual(Object.keys(result.fieldErrors ?? {}), ["value_metric_1"]);
+});
+
+test("Currency values typed with thousands separators are accepted", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(makeReportingDbStub({ membership: MEMBER_CO1, submission: DRAFT_SUBMISSION, metricDefinitions: CURRENCY_METRIC }));
+  const result = await saveMetricValues("co_1", "sub_1", [{ metricDefinitionId: "metric_1", rawValue: "1,250,000", isNa: false }]);
   assert.equal(result.success, true);
 });
 
@@ -117,9 +122,8 @@ test("Boolean field accepts Yes/No only", async () => {
 
   setDbStub(makeReportingDbStub({ membership: MEMBER_CO1, submission: DRAFT_SUBMISSION, metricDefinitions: BOOLEAN_METRIC }));
   const invalid = await saveMetricValues("co_1", "sub_1", [{ metricDefinitionId: "metric_2", rawValue: "Maybe", isNa: false }]);
-  // Still reports success overall (field silently skipped), same
-  // "skip the bad field, don't fail the whole save" rule as Currency.
-  assert.equal(invalid.success, true);
+  assert.equal(invalid.success, false);
+  assert.deepEqual(Object.keys(invalid.fieldErrors ?? {}), ["value_metric_2"]);
 });
 
 test("unknown metricDefinitionId (not on this template) is silently skipped", async () => {

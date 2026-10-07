@@ -8,6 +8,7 @@ import { MAX_RAW_PASSWORD_LENGTH } from "@/lib/auth/password";
 
 export interface SignInState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   sent: boolean;
 }
 
@@ -16,16 +17,10 @@ const GENERIC_INFRA_ERROR = "Something went wrong. Try again in a moment.";
 export async function requestSignInLinkAction(_prevState: SignInState, formData: FormData): Promise<SignInState> {
   const emailInput = formData.get("email");
 
-  if (typeof emailInput !== "string") {
-    return { error: "Enter your email.", sent: false };
-  }
   // Reject oversized raw input before ANY operation that traverses or
   // transforms it -- same ordering discipline as the former password flow.
-  if (emailInput.length > MAX_RAW_EMAIL_LENGTH) {
-    return { error: "Enter your email.", sent: false };
-  }
-  if (!emailInput.trim()) {
-    return { error: "Enter your email.", sent: false };
+  if (typeof emailInput !== "string" || emailInput.length > MAX_RAW_EMAIL_LENGTH || !emailInput.trim()) {
+    return { error: "Enter your email.", fieldErrors: { email: "Enter your email." }, sent: false };
   }
 
   try {
@@ -43,6 +38,7 @@ export async function requestSignInLinkAction(_prevState: SignInState, formData:
 
 export interface PasswordSignInState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
 }
 
 const INVALID_CREDENTIALS = "Invalid email or password.";
@@ -63,20 +59,24 @@ export async function signInWithPasswordAction(
   const emailInput = formData.get("email");
   const passwordInput = formData.get("password");
 
-  if (typeof emailInput !== "string" || typeof passwordInput !== "string") {
-    return { error: INVALID_CREDENTIALS };
-  }
-  if (emailInput.length === 0 || emailInput.length > MAX_RAW_EMAIL_LENGTH) {
-    return { error: INVALID_CREDENTIALS };
-  }
-  if (passwordInput.length === 0 || passwordInput.length > MAX_RAW_PASSWORD_LENGTH) {
-    return { error: INVALID_CREDENTIALS };
+  const emailOk = typeof emailInput === "string" && emailInput.length > 0 && emailInput.length <= MAX_RAW_EMAIL_LENGTH;
+  const passwordOk =
+    typeof passwordInput === "string" && passwordInput.length > 0 && passwordInput.length <= MAX_RAW_PASSWORD_LENGTH;
+  if (!emailOk || !passwordOk) {
+    return {
+      error: INVALID_CREDENTIALS,
+      fieldErrors: {
+        ...(emailOk ? {} : { email: "Enter your email." }),
+        ...(passwordOk ? {} : { password: "Enter your password." }),
+      },
+    };
   }
 
   try {
     await signIn("password", { email: emailInput, password: passwordInput, redirect: false });
   } catch {
-    return { error: INVALID_CREDENTIALS };
+    // Which of the two is wrong is deliberately not revealed.
+    return { error: INVALID_CREDENTIALS, fieldErrors: { email: " ", password: INVALID_CREDENTIALS } };
   }
 
   redirect("/");

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import type { ReactNode } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
@@ -35,7 +36,17 @@ function groupMetrics(metrics: SubmissionMetricFieldDTO[]) {
   return groups;
 }
 
-function MetricField({ field, lang, naLabel }: { field: SubmissionMetricFieldDTO; lang: "en" | "ar"; naLabel: string }) {
+function MetricField({
+  field,
+  lang,
+  naLabel,
+  error,
+}: {
+  field: SubmissionMetricFieldDTO;
+  lang: "en" | "ar";
+  naLabel: string;
+  error: ReactNode;
+}) {
   const label = lang === "ar" ? field.labelAr : field.labelEn;
   const inputName = `value_${field.metricDefinitionId}`;
   const naName = `na_${field.metricDefinitionId}`;
@@ -70,6 +81,7 @@ function MetricField({ field, lang, naLabel }: { field: SubmissionMetricFieldDTO
         <input type="checkbox" name={naName} defaultChecked={field.isNa} />
         {naLabel}
       </label>
+      {error}
     </div>
   );
 }
@@ -84,7 +96,7 @@ interface MetricsEntryFormProps {
 export function MetricsEntryForm({ companyId, submissionId, slug, metrics }: MetricsEntryFormProps) {
   const { t, lang } = useLanguage();
   const boundAction = saveMetricValuesAction.bind(null, companyId, submissionId, slug);
-  const [state, formAction, isPending] = useActionState(boundAction, initialState);
+  const { state, isPending, errorFor, formProps } = useForm(boundAction, initialState, { resetOnSuccess: false });
   const groups = groupMetrics(metrics);
 
   if (metrics.length === 0) {
@@ -92,14 +104,20 @@ export function MetricsEntryForm({ companyId, submissionId, slug, metrics }: Met
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form {...formProps} className="space-y-6">
       {(["sectionFinancial", "sectionHealth", "sectionCustomer", "sectionQualitative"] as const).map((sectionKey) =>
         groups[sectionKey].length > 0 ? (
           <div key={sectionKey} className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground">{t.submitReport[sectionKey]}</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {groups[sectionKey].map((field) => (
-                <MetricField key={field.metricDefinitionId} field={field} lang={lang} naLabel={t.submitReport.naLabel} />
+                <MetricField
+                  key={field.metricDefinitionId}
+                  field={field}
+                  lang={lang}
+                  naLabel={t.submitReport.naLabel}
+                  error={errorFor(`value_${field.metricDefinitionId}`)}
+                />
               ))}
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,7 @@ import { confirmPasswordResetAction, type ConfirmResetState } from "./actions";
 const initialState: ConfirmResetState = { error: null, success: false };
 
 export function ConfirmResetForm({ token }: { token: string }) {
-  const [state, formAction, isPending] = useActionState(confirmPasswordResetAction, initialState);
+  const { state, isPending, formProps } = useForm(confirmPasswordResetAction, initialState);
 
   if (state.success) {
     return (
@@ -25,7 +25,7 @@ export function ConfirmResetForm({ token }: { token: string }) {
   }
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form {...formProps} className="space-y-4" noValidate>
       <input type="hidden" name="token" value={token} />
       <div className="space-y-1">
         <label htmlFor="confirm-reset-password" className="text-xs font-medium text-muted-foreground">

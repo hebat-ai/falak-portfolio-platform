@@ -44,6 +44,7 @@ export interface ActionState {
 
 export interface InviteActionState {
   error: string | null;
+  fieldErrors?: FieldErrors;
   inviteUrl?: string | null;
 }
 
@@ -97,6 +98,27 @@ async function investorInDepartment(departments: Department[] | null, investorId
   if (departments === null) return true;
   const investor = await db.investor.findUnique({ where: { id: investorId }, select: { department: true } });
   return inDepartment(departments, investor?.department);
+}
+
+// Per-field validation: every failing field gets its own message, so the
+// form can highlight exactly those fields (see useForm / fieldErrors).
+type FieldCheck = [field: string, ok: unknown, message: string];
+const FIELD = {
+  required: "Required.",
+  choose: "Choose an option.",
+  amount: "Enter a number, e.g. 1,000,000 or 2500.50.",
+  date: "Enter a valid date.",
+  email: "Enter a valid email address.",
+  tooLong: (max: number) => `Up to ${max} characters.`,
+};
+const isDateInput = (raw: string | null) => Boolean(raw) && !Number.isNaN(new Date(raw!).getTime());
+
+function checkFields(checks: FieldCheck[]): ActionState | null {
+  const fieldErrors: FieldErrors = {};
+  for (const [field, ok, message] of checks) {
+    if (!ok && !fieldErrors[field]) fieldErrors[field] = message;
+  }
+  return Object.keys(fieldErrors).length > 0 ? { error: FIX_HIGHLIGHTED, fieldErrors } : null;
 }
 
 function isValidName(value: string | null): value is string {
@@ -228,12 +250,17 @@ export async function setCompanyDepartmentAction(_prevState: ActionState, formDa
 
   const companyId = readString(formData, "companyId");
   const department = readString(formData, "department");
-  if (!companyId || !department || !DEPARTMENTS.includes(department as Department)) {
-    return { error: "Fill in every field with a valid value." };
-  }
+  const invalid = checkFields([
+    ["companyId", companyId, FIELD.choose],
+    ["department", department && DEPARTMENTS.includes(department as Department), FIELD.choose],
+  ]);
+  if (invalid || !companyId || !department) return invalid ?? { error: GENERIC_ERROR };
   // A scoped user can neither move a company out of their department nor pull one in.
-  if (!inDepartment(departments, department as Department) || !(await companyInDepartment(departments, companyId))) {
-    return { error: OUT_OF_DEPARTMENT };
+  if (!(await companyInDepartment(departments, companyId))) {
+    return { error: OUT_OF_DEPARTMENT, fieldErrors: { companyId: OUT_OF_DEPARTMENT } };
+  }
+  if (!inDepartment(departments, department as Department)) {
+    return { error: OUT_OF_DEPARTMENT, fieldErrors: { department: OUT_OF_DEPARTMENT } };
   }
 
   try {
@@ -345,17 +372,17 @@ export async function setVehicleVintageYearAction(_prevState: ActionState, formD
   const vehicleId = readString(formData, "vehicleId");
   const vintageYearRaw = readString(formData, "vintageYear");
   const vintageYear = vintageYearRaw ? Number(vintageYearRaw) : null;
-  if (
-    !vehicleId ||
-    !vintageYearRaw ||
-    !Number.isInteger(vintageYear) ||
-    vintageYear! < MIN_VINTAGE_YEAR ||
-    vintageYear! > MAX_VINTAGE_YEAR
-  ) {
-    return { error: "Fill in every field with a valid value." };
-  }
+  const invalid = checkFields([
+    ["vehicleId", vehicleId, FIELD.choose],
+    [
+      "vintageYear",
+      vintageYearRaw && Number.isInteger(vintageYear) && vintageYear! >= MIN_VINTAGE_YEAR && vintageYear! <= MAX_VINTAGE_YEAR,
+      `Enter a year between ${MIN_VINTAGE_YEAR} and ${MAX_VINTAGE_YEAR}.`,
+    ],
+  ]);
+  if (invalid || !vehicleId) return invalid ?? { error: GENERIC_ERROR };
   if (!(await vehicleInDepartment(departments, vehicleId))) {
-    return { error: OUT_OF_DEPARTMENT };
+    return { error: OUT_OF_DEPARTMENT, fieldErrors: { vehicleId: OUT_OF_DEPARTMENT } };
   }
 
   try {
@@ -509,24 +536,18 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
   const ownershipPct = readAmount(formData, "ownershipPct");
   const signedDateRaw = readString(formData, "signedDate");
 
-  if (
-    !companyId ||
-    !vehicleId ||
-    !investedAmount ||
-    !/^\d+(\.\d{1,4})?$/.test(investedAmount) ||
-    !currency ||
-    !CURRENCIES.includes(currency as Currency) ||
-    !ownershipPct ||
-    !/^\d+(\.\d{1,4})?$/.test(ownershipPct) ||
-    !signedDateRaw
-  ) {
-    return { error: "Fill in every field with a valid value." };
+  const invalid = checkFields([
+    ["companyId", companyId, FIELD.choose],
+    ["vehicleId", vehicleId, FIELD.choose],
+    ["investedAmount", investedAmount && AMOUNT_PATTERN.test(investedAmount), FIELD.amount],
+    ["currency", currency && CURRENCIES.includes(currency as Currency), FIELD.choose],
+    ["ownershipPct", ownershipPct && AMOUNT_PATTERN.test(ownershipPct), "Enter a percentage, e.g. 12.5."],
+    ["signedDate", isDateInput(signedDateRaw), FIELD.date],
+  ]);
+  if (invalid || !companyId || !vehicleId || !investedAmount || !currency || !ownershipPct || !signedDateRaw) {
+    return invalid ?? { error: GENERIC_ERROR };
   }
-
   const signedDate = new Date(signedDateRaw);
-  if (Number.isNaN(signedDate.getTime())) {
-    return { error: "Enter a valid date." };
-  }
 
   const [company, vehicle] = await Promise.all([
     db.company.findUnique({ where: { id: companyId } }),
@@ -610,22 +631,18 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
   const commitmentAmount = readAmount(formData, "commitmentAmount");
   const calledAmount = readAmount(formData, "calledAmount");
 
-  if (
-    !investorId ||
-    !vehicleId ||
-    !currency ||
-    !CURRENCIES.includes(currency as Currency) ||
-    !effectiveFromRaw ||
-    (commitmentAmount && !AMOUNT_PATTERN.test(commitmentAmount)) ||
-    (calledAmount && !AMOUNT_PATTERN.test(calledAmount))
-  ) {
-    return { error: "Fill in every required field with a valid value." };
+  const invalid = checkFields([
+    ["investorId", investorId, FIELD.choose],
+    ["vehicleId", vehicleId, FIELD.choose],
+    ["currency", currency && CURRENCIES.includes(currency as Currency), FIELD.choose],
+    ["effectiveFrom", isDateInput(effectiveFromRaw), FIELD.date],
+    ["commitmentAmount", !commitmentAmount || AMOUNT_PATTERN.test(commitmentAmount), FIELD.amount],
+    ["calledAmount", !calledAmount || AMOUNT_PATTERN.test(calledAmount), FIELD.amount],
+  ]);
+  if (invalid || !investorId || !vehicleId || !currency || !effectiveFromRaw) {
+    return invalid ?? { error: GENERIC_ERROR };
   }
-
   const effectiveFrom = new Date(effectiveFromRaw);
-  if (Number.isNaN(effectiveFrom.getTime())) {
-    return { error: "Enter a valid date." };
-  }
 
   const [investor, vehicle] = await Promise.all([
     db.investor.findUnique({ where: { id: investorId } }),
@@ -642,7 +659,8 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
     where: { investorId_vehicleId_effectiveFrom: { investorId, vehicleId, effectiveFrom } },
   });
   if (existing) {
-    return { error: "This investor is already assigned to this vehicle as of that date." };
+    const message = "This investor is already assigned to this vehicle as of that date.";
+    return { error: message, fieldErrors: { investorId: message, effectiveFrom: message } };
   }
 
   // Ownership % is never typed in by hand -- it's this investor's
@@ -823,22 +841,31 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
   const periodEndRaw = readString(formData, "periodEnd");
   const deadlineRaw = readString(formData, "deadline");
 
-  if (companyIds.length === 0 || !templateId || !isValidName(periodLabel) || !periodStartRaw || !periodEndRaw || !deadlineRaw) {
-    return { error: "Select at least one company and fill in every field with a valid value." };
+  const invalid = checkFields([
+    ["companyIds", companyIds.length > 0, "Select at least one startup."],
+    ["templateId", templateId, FIELD.choose],
+    ["periodLabel", isValidName(periodLabel), FIELD.required],
+    ["periodStart", isDateInput(periodStartRaw), FIELD.date],
+    ["periodEnd", isDateInput(periodEndRaw), FIELD.date],
+    [
+      "periodEnd",
+      !isDateInput(periodStartRaw) || !isDateInput(periodEndRaw) || new Date(periodEndRaw!) >= new Date(periodStartRaw!),
+      "The period must end on or after its start.",
+    ],
+    ["deadline", isDateInput(deadlineRaw), FIELD.date],
+  ]);
+  if (invalid || !templateId || !periodLabel || !periodStartRaw || !periodEndRaw || !deadlineRaw) {
+    return invalid ?? { error: GENERIC_ERROR };
   }
-
   const periodStart = new Date(periodStartRaw);
   const periodEnd = new Date(periodEndRaw);
   const deadline = new Date(deadlineRaw);
-  if ([periodStart, periodEnd, deadline].some((d) => Number.isNaN(d.getTime())) || periodEnd < periodStart) {
-    return { error: "Enter valid, consistent dates." };
-  }
   if (departments !== null) {
     const inScopeCount = await db.company.count({
       where: { id: { in: companyIds }, department: { in: departments } },
     });
     if (inScopeCount !== new Set(companyIds).size) {
-      return { error: OUT_OF_DEPARTMENT };
+      return { error: OUT_OF_DEPARTMENT, fieldErrors: { companyIds: OUT_OF_DEPARTMENT } };
     }
   }
 
@@ -885,7 +912,8 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
   }
 
   if (createdCount === 0) {
-    return { error: "Every selected company already has a cycle for this exact template and period." };
+    const message = "Every selected startup already has this template for this period.";
+    return { error: message, fieldErrors: { companyIds: message } };
   }
 
   return { error: null, success: true };
@@ -912,12 +940,8 @@ export async function createCompanyInviteAction(_prevState: InviteActionState, f
   const companyId = readString(formData, "companyId");
   const emailInput = formData.get("email");
 
-  if (!companyId || typeof emailInput !== "string") {
-    return { error: "Fill in every field with a valid value." };
-  }
-  if (emailInput.length > MAX_RAW_EMAIL_LENGTH || !emailInput.trim()) {
-    return { error: "Enter a valid email address." };
-  }
+  const invalid = checkFields([["companyId", companyId, FIELD.choose], ["email", typeof emailInput === "string" && emailInput.trim() !== "" && emailInput.length <= MAX_RAW_EMAIL_LENGTH && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()), FIELD.email]]);
+  if (invalid || !companyId || typeof emailInput !== "string") return invalid ?? { error: GENERIC_ERROR };
   const email = normalizeEmail(emailInput);
 
   const company = await db.company.findUnique({ where: { id: companyId } });
@@ -974,12 +998,8 @@ export async function createInvestorInviteAction(_prevState: InviteActionState, 
   const investorId = readString(formData, "investorId");
   const emailInput = formData.get("email");
 
-  if (!investorId || typeof emailInput !== "string") {
-    return { error: "Fill in every field with a valid value." };
-  }
-  if (emailInput.length > MAX_RAW_EMAIL_LENGTH || !emailInput.trim()) {
-    return { error: "Enter a valid email address." };
-  }
+  const invalid = checkFields([["investorId", investorId, FIELD.choose], ["email", typeof emailInput === "string" && emailInput.trim() !== "" && emailInput.length <= MAX_RAW_EMAIL_LENGTH && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()), FIELD.email]]);
+  if (invalid || !investorId || typeof emailInput !== "string") return invalid ?? { error: GENERIC_ERROR };
   const email = normalizeEmail(emailInput);
 
   const investor = await db.investor.findUnique({ where: { id: investorId } });
@@ -1002,7 +1022,8 @@ export async function createInvestorInviteAction(_prevState: InviteActionState, 
     }),
   ]);
   if (activeMembership || pendingInvite) {
-    return { error: "This investor already has a user. Revoke their access before inviting a replacement." };
+    const message = "This investor already has a user. Revoke their access before inviting a replacement.";
+    return { error: message, fieldErrors: { investorId: message } };
   }
 
   const rawToken = randomBytes(32).toString("hex");
@@ -1055,26 +1076,18 @@ export async function createCompanyValuationAction(_prevState: ActionState, form
   const valuationType = readString(formData, "valuationType");
   const sourceInput = readString(formData, "source");
 
-  if (
-    !companyId ||
-    !asOfDateRaw ||
-    !valuationAmount ||
-    !AMOUNT_PATTERN.test(valuationAmount) ||
-    !currency ||
-    !CURRENCIES.includes(currency as Currency) ||
-    !valuationType ||
-    !VALUATION_TYPES.includes(valuationType as CompanyValuationType)
-  ) {
-    return { error: "Fill in every field with a valid value." };
+  const invalid = checkFields([
+    ["companyId", companyId, FIELD.choose],
+    ["asOfDate", isDateInput(asOfDateRaw), FIELD.date],
+    ["valuationAmount", valuationAmount && AMOUNT_PATTERN.test(valuationAmount), FIELD.amount],
+    ["currency", currency && CURRENCIES.includes(currency as Currency), FIELD.choose],
+    ["valuationType", valuationType && VALUATION_TYPES.includes(valuationType as CompanyValuationType), FIELD.choose],
+    ["source", !sourceInput || sourceInput.length <= MAX_SOURCE_LENGTH, FIELD.tooLong(MAX_SOURCE_LENGTH)],
+  ]);
+  if (invalid || !companyId || !asOfDateRaw || !valuationAmount || !currency || !valuationType) {
+    return invalid ?? { error: GENERIC_ERROR };
   }
-  if (sourceInput && sourceInput.length > MAX_SOURCE_LENGTH) {
-    return { error: "Fill in every field with a valid value." };
-  }
-
   const asOfDate = new Date(asOfDateRaw);
-  if (Number.isNaN(asOfDate.getTime())) {
-    return { error: "Enter a valid date." };
-  }
   if (!(await companyInDepartment(departments, companyId))) {
     return { error: OUT_OF_DEPARTMENT };
   }
@@ -1127,24 +1140,17 @@ export async function createVehicleNavAction(_prevState: ActionState, formData: 
   const currency = readString(formData, "currency");
   const sourceInput = readString(formData, "source");
 
-  if (
-    !vehicleId ||
-    !asOfDateRaw ||
-    !navAmount ||
-    !AMOUNT_PATTERN.test(navAmount) ||
-    !currency ||
-    !CURRENCIES.includes(currency as Currency)
-  ) {
-    return { error: "Fill in every field with a valid value." };
+  const invalid = checkFields([
+    ["vehicleId", vehicleId, FIELD.choose],
+    ["asOfDate", isDateInput(asOfDateRaw), FIELD.date],
+    ["navAmount", navAmount && AMOUNT_PATTERN.test(navAmount), FIELD.amount],
+    ["currency", currency && CURRENCIES.includes(currency as Currency), FIELD.choose],
+    ["source", !sourceInput || sourceInput.length <= MAX_SOURCE_LENGTH, FIELD.tooLong(MAX_SOURCE_LENGTH)],
+  ]);
+  if (invalid || !vehicleId || !asOfDateRaw || !navAmount || !currency) {
+    return invalid ?? { error: GENERIC_ERROR };
   }
-  if (sourceInput && sourceInput.length > MAX_SOURCE_LENGTH) {
-    return { error: "Fill in every field with a valid value." };
-  }
-
   const asOfDate = new Date(asOfDateRaw);
-  if (Number.isNaN(asOfDate.getTime())) {
-    return { error: "Enter a valid date." };
-  }
   if (!(await vehicleInDepartment(departments, vehicleId))) {
     return { error: OUT_OF_DEPARTMENT };
   }
@@ -1209,26 +1215,18 @@ export async function recordInvestorCapitalTransactionAction(_prevState: ActionS
   const transactionDateRaw = readString(formData, "transactionDate");
   const descriptionInput = readString(formData, "description");
 
-  if (
-    !investorId ||
-    !type ||
-    !CAPITAL_TRANSACTION_TYPES.includes(type as InvestorCapitalTransactionType) ||
-    !amount ||
-    !AMOUNT_PATTERN.test(amount) ||
-    !currency ||
-    !CURRENCIES.includes(currency as Currency) ||
-    !transactionDateRaw
-  ) {
-    return { error: "Fill in every field with a valid value." };
+  const invalid = checkFields([
+    ["investorId", investorId, FIELD.choose],
+    ["type", type && CAPITAL_TRANSACTION_TYPES.includes(type as InvestorCapitalTransactionType), FIELD.choose],
+    ["amount", amount && AMOUNT_PATTERN.test(amount), FIELD.amount],
+    ["currency", currency && CURRENCIES.includes(currency as Currency), FIELD.choose],
+    ["transactionDate", isDateInput(transactionDateRaw), FIELD.date],
+    ["description", !descriptionInput || descriptionInput.length <= MAX_DESCRIPTION_LENGTH, FIELD.tooLong(MAX_DESCRIPTION_LENGTH)],
+  ]);
+  if (invalid || !investorId || !type || !amount || !currency || !transactionDateRaw) {
+    return invalid ?? { error: GENERIC_ERROR };
   }
-  if (descriptionInput && descriptionInput.length > MAX_DESCRIPTION_LENGTH) {
-    return { error: "Fill in every field with a valid value." };
-  }
-
   const transactionDate = new Date(transactionDateRaw);
-  if (Number.isNaN(transactionDate.getTime())) {
-    return { error: "Enter a valid date." };
-  }
   if (
     !(await investorInDepartment(departments, investorId)) ||
     (vehicleIdInput && !(await vehicleInDepartment(departments, vehicleIdInput)))
@@ -1300,17 +1298,12 @@ export async function inviteStaffUserAction(_prevState: ActionState, formData: F
   const role = readString(formData, "role");
   const department = readString(formData, "department");
 
-  if (
-    typeof emailInput !== "string" ||
-    !emailInput.trim() ||
-    emailInput.length > MAX_RAW_EMAIL_LENGTH ||
-    !role ||
-    !(INVITABLE_STAFF_ROLES as readonly string[]).includes(role) ||
-    !department ||
-    !DEPARTMENTS.includes(department as Department)
-  ) {
-    return { error: "Fill in every field with a valid value." };
-  }
+  const invalid = checkFields([
+    ["email", typeof emailInput === "string" && emailInput.trim() !== "" && emailInput.length <= MAX_RAW_EMAIL_LENGTH && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()), FIELD.email],
+    ["role", role && (INVITABLE_STAFF_ROLES as readonly string[]).includes(role), FIELD.choose],
+    ["department", department && DEPARTMENTS.includes(department as Department), FIELD.choose],
+  ]);
+  if (invalid || typeof emailInput !== "string" || !role || !department) return invalid ?? { error: GENERIC_ERROR };
   const email = normalizeEmail(emailInput);
 
   try {
@@ -1364,9 +1357,8 @@ export async function adminSetStaffDepartmentAction(_prevState: ActionState, for
 
   const userId = readString(formData, "userId");
   const department = readString(formData, "department");
-  if (!userId || !department || !DEPARTMENTS.includes(department as Department)) {
-    return { error: "Fill in every field with a valid value." };
-  }
+  const invalid = checkFields([["department", department && DEPARTMENTS.includes(department as Department), FIELD.choose]]);
+  if (invalid || !userId || !department) return invalid ?? { error: GENERIC_ERROR };
 
   try {
     await db.$transaction(async (tx) => {
@@ -1404,14 +1396,14 @@ export async function adminSetUserPasswordAction(_prevState: ActionState, formDa
 
   const userId = readString(formData, "userId");
   const newPassword = formData.get("newPassword");
-  if (
-    !userId ||
-    typeof newPassword !== "string" ||
-    newPassword.length < MIN_PASSWORD_LENGTH ||
-    newPassword.length > MAX_RAW_PASSWORD_LENGTH
-  ) {
-    return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
-  }
+  const invalid = checkFields([
+    [
+      "newPassword",
+      typeof newPassword === "string" && newPassword.length >= MIN_PASSWORD_LENGTH && newPassword.length <= MAX_RAW_PASSWORD_LENGTH,
+      `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+    ],
+  ]);
+  if (invalid || !userId || typeof newPassword !== "string") return invalid ?? { error: GENERIC_ERROR };
 
   const passwordHash = await hashPassword(newPassword);
 
@@ -1597,13 +1589,17 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
   const values: FormValues = {};
   for (const [k, v] of formData.entries()) if (typeof v === "string") values[k] = v;
   const fail = (error: string): ActionState => ({ error, values });
+  const fieldErrors: FieldErrors = {};
+  const flag = (field: string, ok: unknown, message: string) => {
+    if (!ok && !fieldErrors[field]) fieldErrors[field] = message;
+  };
 
   const templateId = readString(formData, "templateId");
   const nameEn = readString(formData, "nameEn");
   const nameAr = readString(formData, "nameAr");
-  if (!templateId || !isValidName(nameEn) || !isValidName(nameAr)) {
-    return fail("Fill in the template name in both languages.");
-  }
+  if (!templateId) return fail(GENERIC_ERROR);
+  flag("nameEn", isValidName(nameEn), FIELD.required);
+  flag("nameAr", isValidName(nameAr), FIELD.required);
 
   const existing = await db.metricDefinition.findMany({
     where: { templateId },
@@ -1622,18 +1618,12 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
     const sortOrder = Number(readString(formData, `sortOrder_${m.id}`));
     const key = locked ? m.key : toMetricKey(readString(formData, `key_${m.id}`) ?? "");
     const dataType = locked ? m.dataType : readString(formData, `dataType_${m.id}`);
-    if (
-      !isValidName(labelEn) ||
-      !isValidName(labelAr) ||
-      !Number.isInteger(sortOrder) ||
-      !key ||
-      !METRIC_KEY_PATTERN.test(key) ||
-      !dataType ||
-      !METRIC_DATA_TYPES.includes(dataType as MetricDataType)
-    ) {
-      return fail(`Check metric "${m.labelEn}": it needs both labels, a whole-number order, a key (lowercase letters, digits, _) and a data type.`);
-    }
-    if (keys.has(key)) return fail(`Metric key "${key}" is used twice.`);
+    flag(`labelEn_${m.id}`, isValidName(labelEn), FIELD.required);
+    flag(`labelAr_${m.id}`, isValidName(labelAr), FIELD.required);
+    flag(`sortOrder_${m.id}`, Number.isInteger(sortOrder), "Enter a whole number.");
+    flag(`key_${m.id}`, key && METRIC_KEY_PATTERN.test(key), "Enter a key, e.g. revenue_b2b.");
+    flag(`dataType_${m.id}`, dataType && METRIC_DATA_TYPES.includes(dataType as MetricDataType), FIELD.choose);
+    flag(`key_${m.id}`, !keys.has(key), `"${key}" is used by another metric.`);
     keys.add(key);
     updates.push({
       id: m.id,
@@ -1658,18 +1648,17 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
     if (!rawKey && !labelEn && !labelAr && !dataType) continue;
     // Same as creating a template: key optional, any spelling normalised.
     const key = toMetricKey(rawKey || labelEn || "");
-    if (
-      !METRIC_KEY_PATTERN.test(key) ||
-      !isValidName(labelEn) ||
-      !isValidName(labelAr) ||
-      !dataType ||
-      !METRIC_DATA_TYPES.includes(dataType as MetricDataType)
-    ) {
-      return fail("Every new metric needs a key (lowercase letters, digits, _), both labels and a data type.");
-    }
-    if (keys.has(key)) return fail(`Metric key "${key}" is used twice.`);
+    flag(`newKey_${i}`, METRIC_KEY_PATTERN.test(key), "Enter a key or an English label.");
+    flag(`newLabelEn_${i}`, isValidName(labelEn), FIELD.required);
+    flag(`newLabelAr_${i}`, isValidName(labelAr), FIELD.required);
+    flag(`newDataType_${i}`, dataType && METRIC_DATA_TYPES.includes(dataType as MetricDataType), FIELD.choose);
+    flag(`newKey_${i}`, !keys.has(key), `"${key}" is used by another metric.`);
     keys.add(key);
-    added.push({ key, labelEn, labelAr, dataType: dataType as MetricDataType, sortOrder: nextOrder++ });
+    added.push({ key, labelEn: labelEn ?? "", labelAr: labelAr ?? "", dataType: dataType as MetricDataType, sortOrder: nextOrder++ });
+  }
+
+  if (Object.keys(fieldErrors).length > 0 || !nameEn || !nameAr) {
+    return { error: FIX_HIGHLIGHTED, fieldErrors, values };
   }
 
   try {

@@ -1,13 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { submitCompanySubmission } from "@/lib/reporting/submissions";
+import { submitCompanySubmission, getMissingRequiredMetricIds } from "@/lib/reporting/submissions";
 import { saveMetricValues, type MetricValueInput } from "@/lib/reporting/metrics";
 import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-errors";
 import { InvalidTransitionError } from "@/lib/reporting/submission-errors";
 
 export interface SubmitReportState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   success: boolean;
 }
 
@@ -38,7 +39,16 @@ export async function submitReportAction(
       return { error: GENERIC_ACCESS_DENIED, success: false };
     }
     if (error instanceof InvalidTransitionError) {
-      // Never reveals the submission's actual current status.
+      // Usually unanswered required fields: name them so the form can
+      // highlight them. Otherwise never reveal the actual status.
+      const missing = await getMissingRequiredMetricIds(companyId, submissionId).catch(() => []);
+      if (missing.length > 0) {
+        return {
+          error: `${missing.length} required field(s) are empty. Fill in the highlighted fields (or tick N/A), save, then submit.`,
+          fieldErrors: Object.fromEntries(missing.map((id) => [`value_${id}`, "Required."])),
+          success: false,
+        };
+      }
       return { error: GENERIC_CANNOT_SUBMIT, success: false };
     }
     // Unexpected/infrastructure error -- never converted into a denial
@@ -52,6 +62,7 @@ export async function submitReportAction(
 
 export interface SaveMetricsState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   success: boolean;
 }
 
@@ -86,7 +97,7 @@ export async function saveMetricValuesAction(
   try {
     const result = await saveMetricValues(companyId, submissionId, values);
     if (!result.success) {
-      return { error: result.error, success: false };
+      return { error: result.error, fieldErrors: result.fieldErrors, success: false };
     }
   } catch (error) {
     if (error instanceof UnauthenticatedError || error instanceof ForbiddenError) {

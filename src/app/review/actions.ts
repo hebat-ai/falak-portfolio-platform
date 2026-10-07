@@ -23,10 +23,12 @@ import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
 
 export interface ReviewActionState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
 }
 
 export interface SaveMetricsActionState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   success: boolean;
 }
 
@@ -76,11 +78,13 @@ export async function requestChangesAction(_prevState: ReviewActionState, formDa
   // Reject oversized raw input before it's stored -- same discipline as
   // every other free-text field in this codebase.
   if (commentInput.length > MAX_COMMENT_LENGTH) {
-    return { error: "Comment is too long." };
+    const message = `Comment is too long (up to ${MAX_COMMENT_LENGTH} characters).`;
+    return { error: message, fieldErrors: { comment: message } };
   }
   const comment = commentInput.trim();
   if (!comment) {
-    return { error: "Explain what needs to change before sending this back." };
+    const message = "Explain what needs to change before sending this back.";
+    return { error: message, fieldErrors: { comment: message } };
   }
 
   try {
@@ -126,6 +130,7 @@ export async function publishSubmissionAction(_prevState: ReviewActionState, for
   }
 
   const narratives: NarrativeInputs = {};
+  const fieldErrors: Record<string, string> = {};
   for (const kind of NARRATIVE_KINDS) {
     const enInput = formData.get(`${kind}En`);
     const arInput = formData.get(`${kind}Ar`);
@@ -133,10 +138,14 @@ export async function publishSubmissionAction(_prevState: ReviewActionState, for
     const textAr = typeof arInput === "string" ? arInput : "";
     // Reject oversized raw input before it's stored -- same discipline as
     // every other free-text field in this codebase.
-    if (textEn.length > MAX_NARRATIVE_LENGTH || textAr.length > MAX_NARRATIVE_LENGTH) {
-      return { error: "One of the narrative fields is too long." };
-    }
+    const tooLong = `Too long (up to ${MAX_NARRATIVE_LENGTH} characters).`;
+    if (textEn.length > MAX_NARRATIVE_LENGTH) fieldErrors[`${kind}En`] = tooLong;
+    if (textAr.length > MAX_NARRATIVE_LENGTH) fieldErrors[`${kind}Ar`] = tooLong;
     narratives[kind] = { textEn, textAr };
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { error: "Fix the highlighted fields and try again.", fieldErrors };
   }
 
   let result;
@@ -207,7 +216,7 @@ export async function adminUpdateSubmissionMetricValuesAction(
   try {
     const result = await adminUpdateSubmissionMetricValues(submissionId, values);
     if (!result.success) {
-      return { error: result.error, success: false };
+      return { error: result.error, fieldErrors: result.fieldErrors, success: false };
     }
   } catch (error) {
     if (isAuthError(error)) {
@@ -242,12 +251,12 @@ export async function extendReportingCycleDeadlineAction(
 
   const cycleId = formData.get("cycleId");
   const newDeadlineRaw = formData.get("newDeadline");
-  if (typeof cycleId !== "string" || !cycleId || typeof newDeadlineRaw !== "string" || !newDeadlineRaw) {
+  if (typeof cycleId !== "string" || !cycleId) {
     return { error: GENERIC_ERROR };
   }
-  const newDeadline = new Date(newDeadlineRaw);
-  if (Number.isNaN(newDeadline.getTime())) {
-    return { error: GENERIC_ERROR };
+  const newDeadline = typeof newDeadlineRaw === "string" && newDeadlineRaw ? new Date(newDeadlineRaw) : null;
+  if (!newDeadline || Number.isNaN(newDeadline.getTime())) {
+    return { error: "Enter a valid date.", fieldErrors: { newDeadline: "Enter a valid date." } };
   }
 
   try {
@@ -346,15 +355,16 @@ export async function adminUploadAttachmentAction(
 ): Promise<SaveMetricsActionState> {
   const submissionId = readSubmissionId(formData);
   const file = formData.get("file");
-  if (!submissionId || !(file instanceof File) || file.size === 0) {
-    return { error: GENERIC_ERROR, success: false };
+  if (!submissionId) return { error: GENERIC_ERROR, success: false };
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose a file to upload.", fieldErrors: { file: "Choose a file to upload." }, success: false };
   }
   const isAuditedFinancials = formData.get("isAuditedFinancials") === "on";
 
   try {
     const result = await adminUploadSubmissionAttachment(submissionId, file, isAuditedFinancials);
     if (!result.success) {
-      return { error: result.error, success: false };
+      return { error: result.error, fieldErrors: result.error ? { file: result.error } : undefined, success: false };
     }
   } catch (error) {
     if (isAuthError(error)) {

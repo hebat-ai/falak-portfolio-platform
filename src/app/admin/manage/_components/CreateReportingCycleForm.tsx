@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useForm } from "@/components/forms/useForm";
+import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -21,7 +22,7 @@ export function CreateReportingCycleForm({
   groups: ReportingRequestGroup[];
 }) {
   const { t, lang } = useLanguage();
-  const [state, formAction, isPending] = useActionState(createReportingCycleAction, initialActionState);
+  const { state, isPending, errorFor, formProps } = useForm(createReportingCycleAction, initialActionState);
   // When set, the form adds startups to this already-sent request: its
   // template and period are fixed, and startups already on it are locked.
   const [addingKey, setAddingKey] = useState<string | null>(null);
@@ -36,7 +37,7 @@ export function CreateReportingCycleForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <form key={addingTo ? `${addingTo.key}:${addingTo.companyIds.length}` : "new"} action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <form key={addingTo ? `${addingTo.key}:${addingTo.companyIds.length}` : "new"} {...formProps} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <p className="text-sm text-muted-foreground sm:col-span-2">
           {addingTo ? t.admin.manage.addingToRequestHint : t.admin.manage.newRequestHint}
         </p>
@@ -57,6 +58,7 @@ export function CreateReportingCycleForm({
               );
             })}
           </div>
+          {errorFor("companyIds")}
         </fieldset>
 
         {addingTo ? (
@@ -94,18 +96,22 @@ export function CreateReportingCycleForm({
                   <option key={tpl.id} value={tpl.id}>{lang === "ar" ? tpl.nameAr : tpl.nameEn}</option>
                 ))}
               </Select>
+              {errorFor("templateId")}
             </div>
             <div className={fieldClass}>
               <label className={labelClass} htmlFor="cy-label">{t.admin.manage.periodLabelLabel}</label>
               <Input id="cy-label" name="periodLabel" required />
+              {errorFor("periodLabel")}
             </div>
             <div className={fieldClass}>
               <label className={labelClass} htmlFor="cy-start">{t.admin.manage.periodStartLabel}</label>
               <Input id="cy-start" name="periodStart" type="date" required />
+              {errorFor("periodStart")}
             </div>
             <div className={fieldClass}>
               <label className={labelClass} htmlFor="cy-end">{t.admin.manage.periodEndLabel}</label>
               <Input id="cy-end" name="periodEnd" type="date" required />
+              {errorFor("periodEnd")}
             </div>
           </>
         )}
@@ -113,6 +119,7 @@ export function CreateReportingCycleForm({
         <div className={fieldClass}>
           <label className={labelClass} htmlFor="cy-deadline">{t.admin.manage.deadlineLabel}</label>
           <Input id="cy-deadline" name="deadline" type="date" required defaultValue={addingTo?.deadline ?? ""} />
+          {errorFor("deadline")}
         </div>
         <div className="sm:col-span-2">
           <FormMessage state={state} />

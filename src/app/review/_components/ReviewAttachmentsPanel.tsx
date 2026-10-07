@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
@@ -26,7 +26,7 @@ function formatFileSize(bytes: number): string {
 // on the Reports Review and Approval page.
 export function ReviewAttachmentsPanel({ submissionId, attachments }: ReviewAttachmentsPanelProps) {
   const { t, lang } = useLanguage();
-  const [state, formAction, isPending] = useActionState(adminUploadAttachmentAction, initialState);
+  const { state, isPending, formProps } = useForm(adminUploadAttachmentAction, initialState);
 
   return (
     <div className="space-y-3">
@@ -58,7 +58,7 @@ export function ReviewAttachmentsPanel({ submissionId, attachments }: ReviewAtta
         </ul>
       )}
 
-      <form action={formAction} className="flex flex-wrap items-center gap-3">
+      <form {...formProps} className="flex flex-wrap items-center gap-3">
         <input type="hidden" name="submissionId" value={submissionId} />
         <input
           type="file"

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
@@ -15,13 +16,12 @@ export function SignUpForm() {
   const { t } = useLanguage();
   // Recorded after mount and attached on submit, so a bot that posts the
   // form without running the page's JavaScript never sends it (see the
-  // bot checks in ./actions). Not a form field, so it survives the form
-  // reset React does after each submit.
+  // bot checks in ./actions).
   const startedAt = useRef(0);
   useEffect(() => {
     startedAt.current = Date.now();
   }, []);
-  const [state, formAction, isPending] = useActionState((prev: SignUpState, formData: FormData) => {
+  const { state, isPending, errorFor, formProps } = useForm((prev: SignUpState, formData: FormData) => {
     formData.set("formStartedAt", String(startedAt.current));
     return submitAccessRequestAction(prev, formData);
   }, initialState);
@@ -44,7 +44,7 @@ export function SignUpForm() {
           : null;
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form {...formProps} className="space-y-4">
       <input type="hidden" name="requestedRole" value="INVESTOR" />
       {/* Hidden from people; form-filling bots fill it in. */}
       <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
@@ -64,6 +64,7 @@ export function SignUpForm() {
           {t.signUp.organizationLabel}
         </label>
         <Input id="sign-up-org" name="organizationName" type="text" autoComplete="organization" />
+        {errorFor("organizationName")}
         <p className="text-xs text-muted-foreground">{t.signUp.organizationHint}</p>
       </div>
 
@@ -72,6 +73,7 @@ export function SignUpForm() {
           {t.signUp.messageLabel}
         </label>
         <Textarea id="sign-up-message" name="message" rows={3} />
+        {errorFor("message")}
       </div>
 
       {errorMessage ? (

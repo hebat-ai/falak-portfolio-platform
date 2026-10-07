@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +11,7 @@ import { labelClass, initialActionState, FormMessage } from "./shared";
 /** Permanent delete, confirmed by typing the record's exact English name. */
 export function DeleteEntityForm({ kind, id, nameEn }: { kind: "company" | "vehicle"; id: string; nameEn: string }) {
   const { t } = useLanguage();
-  const [state, formAction, isPending] = useActionState(
+  const { state, isPending, errorFor, formProps } = useForm(
     kind === "company" ? deleteCompanyAction : deleteVehicleAction,
     initialActionState
   );
@@ -25,7 +26,7 @@ export function DeleteEntityForm({ kind, id, nameEn }: { kind: "company" | "vehi
       <p className="text-sm text-foreground">
         {kind === "company" ? t.admin.manage.deleteCompanyWarning : t.admin.manage.deleteVehicleWarning}
       </p>
-      <form action={formAction} className="flex flex-col gap-3">
+      <form {...formProps} className="flex flex-col gap-3">
         <input type="hidden" name={kind === "company" ? "companyId" : "vehicleId"} value={id} />
         <div className="flex flex-col gap-1">
           <label className={labelClass} htmlFor="delete-confirm">
@@ -39,6 +40,7 @@ export function DeleteEntityForm({ kind, id, nameEn }: { kind: "company" | "vehi
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
           />
+          {errorFor("confirmName")}
         </div>
         <FormMessage state={state} />
         <Button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
@@ -10,10 +10,10 @@ import type { AdminCompanyDTO } from "@/lib/admin/dto";
 
 export function SetCompanyDepartmentForm({ companies }: { companies: AdminCompanyDTO[] }) {
   const { t, lang } = useLanguage();
-  const [state, formAction, isPending] = useActionState(setCompanyDepartmentAction, initialActionState);
+  const { state, isPending, errorFor, formProps } = useForm(setCompanyDepartmentAction, initialActionState);
 
   return (
-    <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <form {...formProps} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="sd-company">{t.admin.manage.companyLabel}</label>
         <Select id="sd-company" name="companyId" required defaultValue="">
@@ -22,6 +22,7 @@ export function SetCompanyDepartmentForm({ companies }: { companies: AdminCompan
             <option key={c.id} value={c.id}>{lang === "ar" ? c.nameAr : c.nameEn}</option>
           ))}
         </Select>
+        {errorFor("companyId")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="sd-department">{t.admin.manage.departmentLabel}</label>
@@ -30,6 +31,7 @@ export function SetCompanyDepartmentForm({ companies }: { companies: AdminCompan
           <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
           <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
         </Select>
+        {errorFor("department")}
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />

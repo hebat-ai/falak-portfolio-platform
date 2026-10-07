@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useForm, type FormState } from "@/components/forms/useForm";
 import Link from "next/link";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -19,8 +20,8 @@ interface ReportsLogTableProps {
   // the review panel below. The vehicle page has no review panel, so it
   // omits this and the table drops the action column entirely.
   onSelectForReview?: (row: ReportingRequestRow) => void;
-  extendDeadlineAction: (prevState: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>;
-  resendAction: (prevState: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>;
+  extendDeadlineAction: (prevState: FormState, formData: FormData) => Promise<FormState>;
+  resendAction: (prevState: FormState, formData: FormData) => Promise<FormState>;
 }
 
 function ReportLogRow({
@@ -38,8 +39,8 @@ function ReportLogRow({
 }) {
   const { t } = useLanguage();
   const [isEditingDeadline, setIsEditingDeadline] = useState(false);
-  const [deadlineState, deadlineFormAction, deadlinePending] = useActionState(extendDeadlineAction, { error: null });
-  const [resendState, resendFormAction, resendPending] = useActionState(resendAction, { error: null });
+  const deadline = useForm(extendDeadlineAction, { error: null }, { resetOnSuccess: false });
+  const resend = useForm(resendAction, { error: null });
 
   return (
     <Tr>
@@ -65,10 +66,10 @@ function ReportLogRow({
       <Td>{formatDate(row.requestedAt, lang)}</Td>
       <Td>
         {isEditingDeadline ? (
-          <form action={deadlineFormAction} className="flex items-center gap-1.5">
+          <form {...deadline.formProps} className="flex items-center gap-1.5">
             <input type="hidden" name="cycleId" value={row.cycleId} />
             <Input type="date" name="newDeadline" defaultValue={row.currentDeadline} className="w-36" />
-            <Button type="submit" size="sm" disabled={deadlinePending}>{t.reviewWorkspace.saveDeadlineAction}</Button>
+            <Button type="submit" size="sm" disabled={deadline.isPending}>{t.reviewWorkspace.saveDeadlineAction}</Button>
             <Button type="button" variant="outline" size="sm" onClick={() => setIsEditingDeadline(false)}>
               {t.reviewWorkspace.cancelAction}
             </Button>
@@ -81,7 +82,7 @@ function ReportLogRow({
             </Button>
           </div>
         )}
-        {deadlineState.error ? <p role="alert" className="text-xs font-semibold text-danger">{deadlineState.error}</p> : null}
+        {deadline.state.error ? <p role="alert" className="text-xs font-semibold text-danger">{deadline.state.error}</p> : null}
       </Td>
       <Td>{row.submissionStatus ? <StatusBadge status={row.submissionStatus} /> : t.admin.table.noDataValue}</Td>
       <Td>
@@ -123,15 +124,15 @@ function ReportLogRow({
             </Button>
           ) : null}
           {row.isPublished && row.reportVersionId ? (
-            <form action={resendFormAction}>
+            <form {...resend.formProps}>
               <input type="hidden" name="reportVersionId" value={row.reportVersionId} />
-              <Button type="submit" variant="outline" size="sm" disabled={resendPending}>
-                {resendPending ? t.reviewWorkspace.resendPending : t.reviewWorkspace.resendToInvestorsAction}
+              <Button type="submit" variant="outline" size="sm" disabled={resend.isPending}>
+                {resend.isPending ? t.reviewWorkspace.resendPending : t.reviewWorkspace.resendToInvestorsAction}
               </Button>
             </form>
           ) : null}
         </div>
-        {resendState.error ? <p role="alert" className="text-xs font-semibold text-danger">{resendState.error}</p> : null}
+        {resend.state.error ? <p role="alert" className="text-xs font-semibold text-danger">{resend.state.error}</p> : null}
       </Td>
     </Tr>
   );

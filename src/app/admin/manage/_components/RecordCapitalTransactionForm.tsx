@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -23,10 +23,10 @@ interface RecordCapitalTransactionFormProps {
 // was never given.
 export function RecordCapitalTransactionForm({ investors, vehicles }: RecordCapitalTransactionFormProps) {
   const { t, lang } = useLanguage();
-  const [state, formAction, isPending] = useActionState(recordInvestorCapitalTransactionAction, initialActionState);
+  const { state, isPending, errorFor, formProps } = useForm(recordInvestorCapitalTransactionAction, initialActionState);
 
   return (
-    <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <form {...formProps} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="ct-investor">{t.admin.manage.investorLabel}</label>
         <Select id="ct-investor" name="investorId" required defaultValue="">
@@ -35,6 +35,7 @@ export function RecordCapitalTransactionForm({ investors, vehicles }: RecordCapi
             <option key={i.id} value={i.id}>{lang === "ar" ? i.nameAr : i.nameEn}</option>
           ))}
         </Select>
+        {errorFor("investorId")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="ct-vehicle">{t.admin.manage.vehicleLabel}</label>
@@ -44,6 +45,7 @@ export function RecordCapitalTransactionForm({ investors, vehicles }: RecordCapi
             <option key={v.id} value={v.id}>{lang === "ar" ? v.nameAr : v.nameEn}</option>
           ))}
         </Select>
+        {errorFor("vehicleId")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="ct-type">{t.admin.manage.typeLabel}</label>
@@ -53,14 +55,17 @@ export function RecordCapitalTransactionForm({ investors, vehicles }: RecordCapi
             <option key={tt} value={tt}>{t.capitalTransactionTypes[tt]}</option>
           ))}
         </Select>
+        {errorFor("type")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="ct-date">{t.admin.manage.transactionDateLabel}</label>
         <Input id="ct-date" name="transactionDate" type="date" required />
+        {errorFor("transactionDate")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="ct-amount">{t.admin.manage.amountLabel}</label>
         <Input id="ct-amount" name="amount" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required />
+        {errorFor("amount")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="ct-currency">{t.admin.manage.currencyLabel}</label>
@@ -69,10 +74,12 @@ export function RecordCapitalTransactionForm({ investors, vehicles }: RecordCapi
           <option value="SAR">{t.currencyNames.SAR}</option>
           <option value="USD">{t.currencyNames.USD}</option>
         </Select>
+        {errorFor("currency")}
       </div>
       <div className="sm:col-span-2">
         <label className={labelClass} htmlFor="ct-description">{t.admin.manage.descriptionLabel}</label>
         <Input id="ct-description" name="description" type="text" />
+        {errorFor("description")}
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -13,13 +13,14 @@ import { labelClass, fieldClass, initialActionState, FormMessage } from "./share
 // owner tier stays a manual, out-of-band action.
 export function InviteStaffUserForm() {
   const { t } = useLanguage();
-  const [state, formAction, isPending] = useActionState(inviteStaffUserAction, initialActionState);
+  const { state, isPending, errorFor, formProps } = useForm(inviteStaffUserAction, initialActionState);
 
   return (
-    <form action={formAction} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <form {...formProps} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="staff-email">{t.admin.manage.emailLabel}</label>
         <Input id="staff-email" name="email" type="email" required />
+        {errorFor("email")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="staff-role">{t.admin.manage.roleLabel}</label>
@@ -28,6 +29,7 @@ export function InviteStaffUserForm() {
           <option value="FALAK_MANAGEMENT">{t.staffRoleNames.FALAK_MANAGEMENT}</option>
           <option value="FALAK_OPERATIONS">{t.staffRoleNames.FALAK_OPERATIONS}</option>
         </Select>
+        {errorFor("role")}
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="staff-department">{t.admin.manage.departmentLabel}</label>
@@ -36,6 +38,7 @@ export function InviteStaffUserForm() {
           <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
           <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
         </Select>
+        {errorFor("department")}
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />

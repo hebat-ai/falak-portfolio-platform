@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
@@ -15,15 +15,15 @@ import { initialActionState, FormMessage } from "./shared";
 
 function StaffUserRowItem({ row }: { row: StaffUserRow }) {
   const { t } = useLanguage();
-  const [deptState, deptFormAction, deptPending] = useActionState(adminSetStaffDepartmentAction, initialActionState);
-  const [pwState, pwFormAction, pwPending] = useActionState(adminSetUserPasswordAction, initialActionState);
+  const dept = useForm(adminSetStaffDepartmentAction, initialActionState, { resetOnSuccess: false });
+  const pw = useForm(adminSetUserPasswordAction, initialActionState);
 
   return (
     <tr className="border-b border-border/60">
       <td className="py-2 pe-4 align-top text-sm">{row.email}</td>
       <td className="py-2 pe-4 align-top text-sm">{t.staffRoleNames[row.role]}</td>
       <td className="py-2 pe-4 align-top">
-        <form action={deptFormAction} className="flex flex-col gap-1">
+        <form {...dept.formProps} className="flex flex-col gap-1">
           <input type="hidden" name="userId" value={row.id} />
           <div className="flex items-center gap-2">
             <Select name="department" defaultValue={row.department ?? ""} className="w-40">
@@ -31,26 +31,28 @@ function StaffUserRowItem({ row }: { row: StaffUserRow }) {
               <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
               <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
             </Select>
-            <Button type="submit" size="xs" disabled={deptPending}>
+            <Button type="submit" size="xs" disabled={dept.isPending}>
               {t.admin.manage.submitLabel}
             </Button>
           </div>
-          <FormMessage state={deptState} />
+          {dept.errorFor("department")}
+          <FormMessage state={dept.state} />
         </form>
       </td>
       <td className="py-2 pe-4 align-top text-sm">
         {row.hasPassword ? t.admin.manage.yesLabel : t.admin.manage.noLabel}
       </td>
       <td className="py-2 pe-4 align-top">
-        <form action={pwFormAction} className="flex flex-col gap-1">
+        <form {...pw.formProps} className="flex flex-col gap-1">
           <input type="hidden" name="userId" value={row.id} />
           <div className="flex items-center gap-2">
             <Input type="password" name="newPassword" placeholder={t.admin.manage.newPasswordLabel} className="w-36" />
-            <Button type="submit" size="xs" disabled={pwPending}>
+            <Button type="submit" size="xs" disabled={pw.isPending}>
               {t.admin.manage.setPasswordAction}
             </Button>
           </div>
-          <FormMessage state={pwState} />
+          {pw.errorFor("newPassword")}
+          <FormMessage state={pw.state} />
         </form>
       </td>
       <td className="py-2 align-top">

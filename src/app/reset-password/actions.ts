@@ -5,6 +5,7 @@ import { MAX_RAW_EMAIL_LENGTH } from "@/lib/auth/utils";
 
 export interface RequestResetState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   sent: boolean;
 }
 
@@ -14,10 +15,10 @@ export async function requestPasswordResetAction(_prevState: RequestResetState, 
   const emailInput = formData.get("email");
 
   if (typeof emailInput !== "string" || !emailInput.trim()) {
-    return { error: "Enter your email.", sent: false };
+    return { error: "Enter your email.", fieldErrors: { email: "Enter your email." }, sent: false };
   }
   if (emailInput.length > MAX_RAW_EMAIL_LENGTH) {
-    return { error: "Enter your email.", sent: false };
+    return { error: "Enter your email.", fieldErrors: { email: "Enter your email." }, sent: false };
   }
 
   try {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,7 @@ import { requestPasswordResetAction, type RequestResetState } from "./actions";
 const initialState: RequestResetState = { error: null, sent: false };
 
 export function RequestResetForm() {
-  const [state, formAction, isPending] = useActionState(requestPasswordResetAction, initialState);
+  const { state, isPending, formProps } = useForm(requestPasswordResetAction, initialState);
 
   if (state.sent) {
     return (
@@ -20,7 +20,7 @@ export function RequestResetForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form {...formProps} className="space-y-4" noValidate>
       <div className="space-y-1">
         <label htmlFor="reset-email" className="text-xs font-medium text-muted-foreground">
           Email

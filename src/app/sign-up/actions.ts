@@ -6,6 +6,7 @@ import type { AccessRequestedRole } from "@/generated/prisma/client";
 
 export interface SignUpState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
   sent: boolean;
 }
 
@@ -45,16 +46,18 @@ export async function submitAccessRequestAction(_prevState: SignUpState, formDat
   const messageInput = formData.get("message");
 
   if (typeof emailInput !== "string" || emailInput.length > MAX_RAW_EMAIL_LENGTH || !emailInput.trim()) {
-    return { error: GENERIC_ENTER_EMAIL, sent: false };
+    return { error: GENERIC_ENTER_EMAIL, fieldErrors: { email: GENERIC_ENTER_EMAIL }, sent: false };
   }
   if (!isValidRole(roleInput)) {
     return { error: GENERIC_INFRA_ERROR, sent: false };
   }
   if (typeof orgInput === "string" && orgInput.length > MAX_RAW_ORG_LENGTH) {
-    return { error: GENERIC_INFRA_ERROR, sent: false };
+    const message = `Up to ${MAX_RAW_ORG_LENGTH} characters.`;
+    return { error: message, fieldErrors: { organizationName: message }, sent: false };
   }
   if (typeof messageInput === "string" && messageInput.length > MAX_RAW_MESSAGE_LENGTH) {
-    return { error: GENERIC_INFRA_ERROR, sent: false };
+    const message = `Up to ${MAX_RAW_MESSAGE_LENGTH} characters.`;
+    return { error: message, fieldErrors: { message }, sent: false };
   }
 
   try {

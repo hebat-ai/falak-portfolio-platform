@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "@/components/forms/useForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -19,7 +19,7 @@ interface ReportAttachmentsPanelProps {
 export function ReportAttachmentsPanel({ reportVersionId, companySlug, periodLabel, attachments, canManage }: ReportAttachmentsPanelProps) {
   const { t } = useLanguage();
   const boundAction = uploadReportAttachmentAction.bind(null, reportVersionId, companySlug, periodLabel);
-  const [state, formAction, isPending] = useActionState(boundAction, initialState);
+  const { state, isPending, formProps } = useForm(boundAction, initialState);
 
   if (attachments.length === 0 && !canManage) return null;
 
@@ -45,7 +45,7 @@ export function ReportAttachmentsPanel({ reportVersionId, companySlug, periodLab
       )}
 
       {canManage ? (
-        <form action={formAction} className="mt-3 flex flex-wrap items-center gap-3">
+        <form {...formProps} className="mt-3 flex flex-wrap items-center gap-3">
           <input type="file" name="file" required className="text-sm text-foreground" />
           <Button type="submit" variant="outline" size="sm" disabled={isPending}>
             {isPending ? t.submitReport.uploading : t.submitReport.uploadAction}
