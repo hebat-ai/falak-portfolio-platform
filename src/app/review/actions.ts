@@ -313,6 +313,28 @@ export async function resendReportToInvestorsAction(
  * ReviewActionPanel's own effect, same pattern as
  * getSubmissionMetricsForReviewAction above.
  */
+/**
+ * The written sections of this submission's currently published report,
+ * if any. The publish form starts from these, so republishing keeps the
+ * existing text unless it is edited. Admin-only, like publishing.
+ */
+export async function getPublishedNarrativesForReviewAction(
+  submissionId: string
+): Promise<{ kind: NarrativeKind; textEn: string; textAr: string }[]> {
+  await requireFalakRole("FALAK_ADMIN");
+  const submission = await db.companySubmission.findUnique({
+    where: { id: submissionId },
+    select: { cycle: { select: { companyId: true, periodStart: true, periodEnd: true } } },
+  });
+  if (!submission) return [];
+  const { companyId, periodStart, periodEnd } = submission.cycle;
+  const version = await db.reportVersion.findFirst({
+    where: { isSuperseded: false, report: { scope: "COMPANY", companyId, periodStart, periodEnd } },
+    select: { narratives: { select: { kind: true, textEn: true, textAr: true } } },
+  });
+  return version?.narratives ?? [];
+}
+
 export async function getSubmissionAttachmentsForReviewAction(submissionId: string): Promise<SubmissionAttachmentDTO[]> {
   await requireFalakRole("FALAK_OPERATIONS");
   return listSubmissionAttachments(submissionId);

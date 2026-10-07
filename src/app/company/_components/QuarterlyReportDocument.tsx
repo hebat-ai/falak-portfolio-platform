@@ -11,11 +11,13 @@ import { Num } from "@/components/ui/Num";
 import { Button } from "@/components/ui/Button";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { formatCurrency, formatDate, formatNumber, formatPercent } from "@/lib/format";
 import {
   computeGrossMargin,
   computeNetMargin,
   computeRevenueProjection,
+  deriveMonthlyBurn,
+  deriveRunwayMonths,
   percentChange,
 } from "@/lib/reporting/computed-metrics";
 import { findMetric, findNumericMetricValue, formatMetricValue } from "@/lib/reporting/metric-format";
@@ -34,6 +36,21 @@ function splitParagraphs(text: string): string[] {
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
 }
+
+// The metric keys each report section looks for, in order. Templates name
+// the same measure differently (the original 6-metric template uses
+// "expenses_total", the 30-metric one "fin_expenses"); the first key
+// present in the report is used.
+const METRIC_ALIASES = {
+  cogs: ["fin_cogs"],
+  expenses: ["fin_expenses", "expenses_total"],
+  cash: ["fin_cash_balance", "cash_balance_current"],
+  burn: ["fin_burn_rate"],
+  netCashFlow: ["fin_monthly_net_cash_flow"],
+  runway: ["fin_runway_months"],
+  activeCustomers: ["cust_active_customers", "customers_active"],
+  churn: ["cust_churn_rate", "churn_rate_pct"],
+};
 
 // Every metric the report's own template defines (plus any the prior
 // period's template had), in template order -- so the table follows
@@ -67,13 +84,38 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
   const investmentReviewNotes = narrativeByKind.get("investment_review_notes");
   const managementCommentary = narrativeByKind.get("management_commentary");
 
-  const cogs = findNumericMetricValue(metrics, "fin_cogs");
-  const expenses = findNumericMetricValue(metrics, "fin_expenses");
+  const prior = previousMetrics ?? [];
+  // A metric key from either period's template, for the given role.
+  const keyFor = (role: keyof typeof METRIC_ALIASES) =>
+    METRIC_ALIASES[role].find((k) => findMetric(metrics, k) || findMetric(prior, k)) ?? null;
+  const num = (list: SubmissionMetricFieldDTO[], role: keyof typeof METRIC_ALIASES) => {
+    const key = keyFor(role);
+    return key ? findNumericMetricValue(list, key) : null;
+  };
+
+  const cogs = num(metrics, "cogs");
+  const expenses = num(metrics, "expenses");
   const grossMargin = computeGrossMargin(revenue, cogs);
   const netMargin = computeNetMargin(revenue, expenses);
   const revenueGrowth = percentChange(revenue, previousRevenue);
   const projection = computeRevenueProjection(revenue);
-  const runwayField = findMetric(metrics, "fin_runway_months");
+  const runwayField = keyFor("runway") ? findMetric(metrics, keyFor("runway")!) : undefined;
+
+  // Burn and runway, worked out from expenses / cash flow / cash balance
+  // when a template doesn't ask for them directly.
+  const burnFor = (list: SubmissionMetricFieldDTO[], rev: number | null) =>
+    deriveMonthlyBurn({
+      reportedBurn: num(list, "burn"),
+      monthlyNetCashFlow: num(list, "netCashFlow"),
+      quarterRevenue: rev,
+      quarterExpenses: num(list, "expenses"),
+    });
+  const burn = burnFor(metrics, revenue);
+  const priorBurn = previousMetrics ? burnFor(prior, previousRevenue) : null;
+  const runway = deriveRunwayMonths(num(metrics, "runway"), num(metrics, "cash"), burn);
+  const priorRunway = previousMetrics ? deriveRunwayMonths(num(prior, "runway"), num(prior, "cash"), priorBurn) : null;
+  const showDerivedBurn = !keyFor("burn") && (burn !== null || priorBurn !== null);
+  const showDerivedRunway = !keyFor("runway") && (runway !== null || priorRunway !== null);
 
   const chartData = [
     data.previousPeriodLabel ? { label: data.previousPeriodLabel, revenue: previousRevenue } : null,
@@ -102,8 +144,36 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
     );
   }
 
-  const customerTileKeys = ["cust_b2b_clients", "cust_b2c_users", "cust_new_customers", "cust_active_customers", "cust_b2b_deals", "cust_b2c_deals"];
-  const growthIndicatorKeys = ["cust_active_customers", "cust_churn_rate", "cust_arpu", "cust_cac"];
+  function derivedRow(key: string, label: string, current: number | null, previous: number | null, format: (v: number) => string, lowerIsBetter: boolean) {
+    const growth = percentChange(current, previous);
+    const good = growth === null ? null : lowerIsBetter ? growth <= 0 : growth >= 0;
+    return (
+      <Tr key={key}>
+        <Td>{label}</Td>
+        <Td>{current === null ? t.companyReport.naValueDisplay : <Num>{format(current)}</Num>}</Td>
+        <Td>{previous === null ? t.companyReport.naValueDisplay : <Num>{format(previous)}</Num>}</Td>
+        <Td className={`font-medium ${good === null ? "" : good ? "text-nebula-aqua" : "text-danger"}`}>
+          {growth === null ? t.companyReport.naValueDisplay : <Num>{formatPercent(growth, lang)}</Num>}
+        </Td>
+      </Tr>
+    );
+  }
+  const months = (v: number) => `${formatNumber(v, lang)} ${t.quarterlyReport.monthsUnit}`;
+
+  const customerTileKeys = [
+    "cust_b2b_clients",
+    "cust_b2c_users",
+    "cust_new_customers",
+    keyFor("activeCustomers"),
+    keyFor("churn"),
+    "cust_arpu",
+    "cust_cac",
+    "cust_b2b_deals",
+    "cust_b2c_deals",
+  ].filter((k): k is string => k !== null && findMetric(metrics, k) !== undefined);
+  const growthIndicatorKeys = [keyFor("activeCustomers"), keyFor("churn"), "cust_arpu", "cust_cac"].filter(
+    (k): k is string => k !== null
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 print:px-0 print:py-0">
@@ -170,9 +240,12 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
             hint={t.quarterlyReport.projectionHint}
           />
           <KpiCard
-            label={runwayField ? (lang === "ar" ? runwayField.labelAr : runwayField.labelEn) : t.companyReport.naValueDisplay}
-            value={
-              runwayField ? (formatMetricValue(runwayField, company.currency, lang) ?? t.companyReport.naValueDisplay) : t.companyReport.naValueDisplay
+            label={runwayField ? (lang === "ar" ? runwayField.labelAr : runwayField.labelEn) : t.quarterlyReport.runwayLabel}
+            value={runway === null ? t.companyReport.naValueDisplay : <Num>{months(runway)}</Num>}
+            hint={
+              num(metrics, "cash") === null
+                ? undefined
+                : `${t.quarterlyReport.cashBalanceHint} ${formatCurrency(num(metrics, "cash")!, company.currency, lang)}`
             }
           />
         </div>
@@ -238,6 +311,12 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
                   </Td>
                 </Tr>
                 {comparisonFields(metrics, previousMetrics ?? []).map(comparisonRow)}
+                {showDerivedBurn
+                  ? derivedRow("derived-burn", t.quarterlyReport.burnRateLabel, burn, priorBurn, (v) => formatCurrency(v, company.currency, lang), true)
+                  : null}
+                {showDerivedRunway
+                  ? derivedRow("derived-runway", t.quarterlyReport.runwayLabel, runway, priorRunway, months, false)
+                  : null}
               </TBody>
             </Table>
           </div>
@@ -284,6 +363,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
           </Card>
         ) : null}
 
+        {customerTileKeys.length > 0 ? (
         <Card className="min-w-0">
           <h2 className="font-heading text-sm font-semibold text-foreground">{t.quarterlyReport.customerMetricsTitle}</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -302,6 +382,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
             })}
           </div>
         </Card>
+        ) : null}
 
         {investmentReviewNotes ? (
           <Card className="min-w-0">

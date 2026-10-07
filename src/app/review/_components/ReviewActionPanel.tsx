@@ -16,6 +16,7 @@ import {
   publishSubmissionAction,
   getSubmissionMetricsForReviewAction,
   getSubmissionAttachmentsForReviewAction,
+  getPublishedNarrativesForReviewAction,
   type ReviewActionState,
 } from "../actions";
 import { ReviewMetricsEditForm } from "./ReviewMetricsEditForm";
@@ -101,6 +102,33 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
   }, [submissionId]);
 
   const attachments = attachmentsResult?.submissionId === submissionId ? attachmentsResult.attachments : [];
+
+  // The report's current written sections, to pre-fill the publish form.
+  const isApproved = effectiveData?.status === "approved";
+  const [narrativesResult, setNarrativesResult] = useState<{
+    submissionId: string;
+    narratives: { kind: NarrativeKind; textEn: string; textAr: string }[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!submissionId || !isApproved) return;
+    let cancelled = false;
+    getPublishedNarrativesForReviewAction(submissionId)
+      .then((result) => {
+        if (!cancelled) setNarrativesResult({ submissionId, narratives: result });
+      })
+      .catch(() => {
+        // Non-admins can't publish and get nothing to pre-fill.
+        if (!cancelled) setNarrativesResult({ submissionId, narratives: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [submissionId, isApproved]);
+
+  const narrativesLoaded = narrativesResult?.submissionId === submissionId;
+  const existingNarrative = (kind: NarrativeKind) =>
+    narrativesLoaded ? narrativesResult.narratives.find((n) => n.kind === kind) : undefined;
 
   return (
     <Card>
@@ -198,7 +226,11 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
             ) : null}
 
             {effectiveData.status === "approved" ? (
-              <form action={publishFormAction} className="flex w-full flex-col gap-3">
+              <form
+                key={`${submissionId}:${narrativesLoaded ? "loaded" : "loading"}`}
+                action={publishFormAction}
+                className="flex w-full flex-col gap-3"
+              >
                 <input type="hidden" name="submissionId" value={submissionId} />
                 {NARRATIVE_KINDS.map((kind) => (
                   <div key={kind} className="chamfer-br-sm flex flex-col gap-1.5 p-3 shadow-[var(--inner-line)]">
@@ -208,13 +240,19 @@ export function ReviewActionPanel({ company, period, effectiveData, headingRef }
                         <label htmlFor={`${kind}En`} className="text-xs text-muted-foreground">
                           {t.reviewWorkspace.narrativeEnLabel}
                         </label>
-                        <Textarea id={`${kind}En`} name={`${kind}En`} rows={2} />
+                        <Textarea id={`${kind}En`} name={`${kind}En`} rows={3} defaultValue={existingNarrative(kind)?.textEn ?? ""} />
                       </div>
                       <div className="flex flex-col gap-1">
                         <label htmlFor={`${kind}Ar`} className="text-xs text-muted-foreground">
                           {t.reviewWorkspace.narrativeArLabel}
                         </label>
-                        <Textarea id={`${kind}Ar`} name={`${kind}Ar`} dir="rtl" rows={2} />
+                        <Textarea
+                          id={`${kind}Ar`}
+                          name={`${kind}Ar`}
+                          dir="rtl"
+                          rows={3}
+                          defaultValue={existingNarrative(kind)?.textAr ?? ""}
+                        />
                       </div>
                     </div>
                   </div>

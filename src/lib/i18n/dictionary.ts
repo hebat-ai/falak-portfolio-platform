@@ -340,6 +340,10 @@ export interface Dictionary {
     disclaimerText: string;
     viewFormattedReportLabel: string;
     viewLatestReportLabel: string;
+    burnRateLabel: string;
+    runwayLabel: string;
+    monthsUnit: string;
+    cashBalanceHint: string;
     notPublishedMessage: string;
   };
   vehicleReport: {
@@ -923,6 +927,10 @@ export const en = {
       "Figures are self-reported by the company and compiled by Falak Ventures for informational purposes only. This document does not constitute investment advice.",
     viewFormattedReportLabel: "View Formatted Report",
     viewLatestReportLabel: "View Latest Report",
+    burnRateLabel: "Burn Rate (monthly)",
+    runwayLabel: "Runway",
+    monthsUnit: "months",
+    cashBalanceHint: "Cash balance:",
     notPublishedMessage: "A formatted report is not yet available for this period.",
   },
   vehicleReport: {
@@ -1511,6 +1519,10 @@ export const ar = {
       "الأرقام مُقدَّمة ذاتيًا من الشركة ومُجمَّعة من قِبل فلك فينتشرز لأغراض إعلامية فقط. لا يُشكّل هذا المستند نصيحة استثمارية.",
     viewFormattedReportLabel: "عرض التقرير المنسّق",
     viewLatestReportLabel: "عرض أحدث تقرير",
+    burnRateLabel: "معدل الحرق النقدي (شهرياً)",
+    runwayLabel: "المدة المتبقية للسيولة",
+    monthsUnit: "أشهر",
+    cashBalanceHint: "الرصيد النقدي:",
     notPublishedMessage: "التقرير المنسّق غير متاح بعد لهذه الفترة.",
   },
   vehicleReport: {
