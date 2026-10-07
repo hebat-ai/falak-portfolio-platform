@@ -19,6 +19,7 @@ import {
   percentChange,
 } from "@/lib/reporting/computed-metrics";
 import { findMetric, findNumericMetricValue, formatMetricValue } from "@/lib/reporting/metric-format";
+import { REVENUE_METRIC_KEYS } from "@/lib/reporting/revenue-metrics";
 import type { QuarterlyReportData } from "@/lib/company/quarterly-report";
 import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
 
@@ -34,20 +35,28 @@ function splitParagraphs(text: string): string[] {
     .filter((p) => p.length > 0);
 }
 
-const FINANCIAL_COMPARISON_KEYS = [
-  "fin_cogs",
-  "fin_burn_rate",
-  "fin_expenses",
-  "fin_cash_balance",
-  "fin_monthly_net_cash_flow",
-  "fin_runway_months",
-];
+// Every metric the report's own template defines (plus any the prior
+// period's template had), in template order -- so the table follows
+// whatever Falak configures per template. Revenue lines are already the
+// summed Revenue row; free-text answers don't fit a numeric comparison.
+function comparisonFields(
+  metrics: SubmissionMetricFieldDTO[],
+  previousMetrics: SubmissionMetricFieldDTO[]
+): SubmissionMetricFieldDTO[] {
+  const byKey = new Map<string, SubmissionMetricFieldDTO>();
+  for (const field of [...metrics, ...previousMetrics]) {
+    if (byKey.has(field.key) || field.dataType === "Text" || REVENUE_METRIC_KEYS.includes(field.key)) continue;
+    byKey.set(field.key, field);
+  }
+  return [...byKey.values()];
+}
 
 interface QuarterlyReportDocumentProps {
   data: QuarterlyReportData;
+  fromInvestorDashboard: boolean;
 }
 
-export function QuarterlyReportDocument({ data }: QuarterlyReportDocumentProps) {
+export function QuarterlyReportDocument({ data, fromInvestorDashboard }: QuarterlyReportDocumentProps) {
   const { t, lang } = useLanguage();
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
   const { company, metrics, previousMetrics, revenue, previousRevenue, narratives } = data;
@@ -72,20 +81,21 @@ export function QuarterlyReportDocument({ data }: QuarterlyReportDocumentProps) 
     { label: t.quarterlyReport.projectionLabel, revenue: projection },
   ].filter((d): d is { label: string; revenue: number | null } => d !== null);
 
-  function comparisonRow(key: string, field: SubmissionMetricFieldDTO | undefined, prevField: SubmissionMetricFieldDTO | undefined) {
-    const label = field ? (lang === "ar" ? field.labelAr : field.labelEn) : prevField ? (lang === "ar" ? prevField.labelAr : prevField.labelEn) : key;
+  function comparisonRow(labelSource: SubmissionMetricFieldDTO) {
+    const { key } = labelSource;
+    const field = findMetric(metrics, key);
+    const prevField = findMetric(previousMetrics ?? [], key);
+    const label = lang === "ar" ? labelSource.labelAr : labelSource.labelEn;
     const currentDisplay = field ? formatMetricValue(field, company.currency, lang) : null;
     const priorDisplay = prevField ? formatMetricValue(prevField, company.currency, lang) : null;
-    const currentNum = field ? findNumericMetricValue(metrics, key) : null;
-    const prevNum = prevField ? findNumericMetricValue(previousMetrics ?? [], key) : null;
-    const growth = percentChange(currentNum, prevNum);
+    const growth = percentChange(findNumericMetricValue(metrics, key), findNumericMetricValue(previousMetrics ?? [], key));
 
     return (
       <Tr key={key}>
         <Td>{label}</Td>
-        <Td className="text-end">{currentDisplay === null ? t.companyReport.naValueDisplay : <Num>{currentDisplay}</Num>}</Td>
-        <Td className="text-end">{priorDisplay === null ? t.companyReport.naValueDisplay : <Num>{priorDisplay}</Num>}</Td>
-        <Td className={`text-end font-medium ${growth === null ? "" : growth >= 0 ? "text-nebula-aqua" : "text-red-600"}`}>
+        <Td>{currentDisplay === null ? t.companyReport.naValueDisplay : <Num>{currentDisplay}</Num>}</Td>
+        <Td>{priorDisplay === null ? t.companyReport.naValueDisplay : <Num>{priorDisplay}</Num>}</Td>
+        <Td className={`font-medium ${growth === null ? "" : growth >= 0 ? "text-nebula-aqua" : "text-danger"}`}>
           {growth === null ? t.companyReport.naValueDisplay : <Num>{formatPercent(growth, lang)}</Num>}
         </Td>
       </Tr>
@@ -106,11 +116,11 @@ export function QuarterlyReportDocument({ data }: QuarterlyReportDocumentProps) 
 
       <div className="no-print mb-6 flex items-center justify-between gap-3">
         <Link
-          href={`/company/${company.slug}?period=${data.periodLabel}`}
+          href={fromInvestorDashboard ? "/investor" : `/company/${company.slug}?period=${data.periodLabel}`}
           className="chamfer-br-sm inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
         >
           <BackIcon aria-hidden="true" className="h-4 w-4" />
-          {t.quarterlyReport.backToReport}
+          {fromInvestorDashboard ? t.nav.investorDashboard : t.quarterlyReport.backToReport}
         </Link>
         <Button variant="outline" size="sm" onClick={() => window.print()}>
           <Printer aria-hidden="true" className="h-4 w-4" />
@@ -211,25 +221,23 @@ export function QuarterlyReportDocument({ data }: QuarterlyReportDocumentProps) 
               <THead>
                 <Tr>
                   <Th>{t.quarterlyReport.metricColumnLabel}</Th>
-                  <Th className="text-end">{t.quarterlyReport.currentColumnLabel}</Th>
-                  <Th className="text-end">{t.quarterlyReport.priorColumnLabel}</Th>
-                  <Th className="text-end">{t.quarterlyReport.qoqGrowthColumnLabel}</Th>
+                  <Th>{t.quarterlyReport.currentColumnLabel}</Th>
+                  <Th>{t.quarterlyReport.priorColumnLabel}</Th>
+                  <Th>{t.quarterlyReport.qoqGrowthColumnLabel}</Th>
                 </Tr>
               </THead>
               <TBody>
                 <Tr>
                   <Td>{t.companyReport.revenueLabel}</Td>
-                  <Td className="text-end">{revenue === null ? t.companyReport.naValueDisplay : <Num>{formatCurrency(revenue, company.currency, lang)}</Num>}</Td>
-                  <Td className="text-end">
+                  <Td>{revenue === null ? t.companyReport.naValueDisplay : <Num>{formatCurrency(revenue, company.currency, lang)}</Num>}</Td>
+                  <Td>
                     {previousRevenue === null ? t.companyReport.naValueDisplay : <Num>{formatCurrency(previousRevenue, company.currency, lang)}</Num>}
                   </Td>
-                  <Td className={`text-end font-medium ${revenueGrowth === null ? "" : revenueGrowth >= 0 ? "text-nebula-aqua" : "text-red-600"}`}>
+                  <Td className={`font-medium ${revenueGrowth === null ? "" : revenueGrowth >= 0 ? "text-nebula-aqua" : "text-danger"}`}>
                     {revenueGrowth === null ? t.companyReport.naValueDisplay : <Num>{formatPercent(revenueGrowth, lang)}</Num>}
                   </Td>
                 </Tr>
-                {FINANCIAL_COMPARISON_KEYS.map((key) =>
-                  comparisonRow(key, findMetric(metrics, key), findMetric(previousMetrics ?? [], key))
-                )}
+                {comparisonFields(metrics, previousMetrics ?? []).map(comparisonRow)}
               </TBody>
             </Table>
           </div>
@@ -318,7 +326,7 @@ export function QuarterlyReportDocument({ data }: QuarterlyReportDocumentProps) 
           companySlug={company.slug}
           periodLabel={data.periodLabel}
           attachments={data.attachments}
-          canManage={data.canManageAttachments}
+          canManage={data.canManageAttachments && !fromInvestorDashboard}
         />
 
         <p className="text-center text-xs text-muted-foreground">{t.quarterlyReport.disclaimerText}</p>

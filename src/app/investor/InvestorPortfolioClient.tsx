@@ -202,7 +202,7 @@ export function InvestorPortfolioClient({
                       <li key={company.id} className="text-sm">
                         {company.hasVisibleReport ? (
                           <Link
-                            href={`/company/${company.slug}/report?period=${encodeURIComponent(periodKey)}`}
+                            href={`/company/${company.slug}/report?period=${encodeURIComponent(periodKey)}&from=investor`}
                             className="text-link-foreground underline-offset-2 hover:underline"
                           >
                             {lang === "ar" ? company.nameAr : company.nameEn}

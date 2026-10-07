@@ -78,7 +78,7 @@ export function InvestorCompanyTable({ companies, latestPeriodByCompanyId, capti
               <Td>
                 <div className="flex flex-col items-start gap-1">
                   <Link
-                    href={`/company/${company.slug}/report?period=${encodeURIComponent(latestPeriod)}`}
+                    href={`/company/${company.slug}/report?period=${encodeURIComponent(latestPeriod)}&from=investor`}
                     className="chamfer-br-sm inline-flex items-center whitespace-nowrap px-2.5 py-1 text-xs font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
                   >
                     {t.quarterlyReport.viewLatestReportLabel}

@@ -9,11 +9,12 @@ export default async function QuarterlyReportPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ period?: string | string[] }>;
+  searchParams: Promise<{ period?: string | string[]; from?: string | string[] }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
   const period = Array.isArray(sp.period) ? sp.period[0] : sp.period;
+  const fromInvestorDashboard = (Array.isArray(sp.from) ? sp.from[0] : sp.from) === "investor";
 
   const currentUser = await getCurrentUser();
   if (!currentUser) {
@@ -45,5 +46,5 @@ export default async function QuarterlyReportPage({
     notFound();
   }
 
-  return <QuarterlyReportDocument data={data} />;
+  return <QuarterlyReportDocument data={data} fromInvestorDashboard={fromInvestorDashboard} />;
 }
