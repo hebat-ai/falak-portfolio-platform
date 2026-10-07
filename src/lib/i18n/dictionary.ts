@@ -351,6 +351,9 @@ export interface Dictionary {
     projectionLabel: string;
     projectionHint: string;
     chartTitle: string;
+    cashRunwayTitle: string;
+    cashRunwayEmpty: string;
+    cashBalanceSeriesLabel: string;
     comparisonTitle: string;
     comparisonCaption: string;
     metricColumnLabel: string;
@@ -996,6 +999,9 @@ export const en = {
     projectionLabel: "Annualized Revenue Projection",
     projectionHint: "Current quarter revenue × 4",
     chartTitle: "Revenue Trend & Projection",
+    cashRunwayTitle: "Cash & Runway",
+    cashRunwayEmpty: "No cash or runway figures reported yet.",
+    cashBalanceSeriesLabel: "Cash balance",
     comparisonTitle: "Financial Comparison",
     comparisonCaption: "Current period compared with the prior reporting period",
     metricColumnLabel: "Metric",
@@ -1647,6 +1653,9 @@ export const ar = {
     projectionLabel: "توقع الإيرادات السنوي",
     projectionHint: "إيرادات الربع الحالي × 4",
     chartTitle: "اتجاه الإيرادات والتوقعات",
+    cashRunwayTitle: "النقد ومدة السيولة",
+    cashRunwayEmpty: "لم يتم الإبلاغ عن أرقام النقد أو مدة السيولة بعد.",
+    cashBalanceSeriesLabel: "الرصيد النقدي",
     comparisonTitle: "المقارنة المالية",
     comparisonCaption: "مقارنة الفترة الحالية بالفترة السابقة لإعداد التقارير",
     metricColumnLabel: "المؤشر",

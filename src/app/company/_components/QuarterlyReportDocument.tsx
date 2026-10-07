@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/Button";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatDate, formatNumber, formatPercent, formatCompactCurrency } from "@/lib/format";
-import { axisProps, gridProps, tooltipProps } from "@/components/charts/chart-kit";
+import { ChartCard, axisProps, gridProps, tooltipProps } from "@/components/charts/chart-kit";
+import { CashRunwayChart } from "@/components/charts/CashRunwayChart";
+import { BURN_KEYS, CASH_KEYS, EXPENSES_KEYS, NET_CASH_FLOW_KEYS, RUNWAY_KEYS } from "@/lib/reporting/cash-runway";
 import {
   computeGrossMargin,
   computeNetMargin,
@@ -46,11 +48,11 @@ function splitParagraphs(text: string): string[] {
 // present in the report is used.
 const METRIC_ALIASES = {
   cogs: ["fin_cogs"],
-  expenses: ["fin_expenses", "expenses_total"],
-  cash: ["fin_cash_balance", "cash_balance_current"],
-  burn: ["fin_burn_rate"],
-  netCashFlow: ["fin_monthly_net_cash_flow"],
-  runway: ["fin_runway_months"],
+  expenses: EXPENSES_KEYS,
+  cash: CASH_KEYS,
+  burn: BURN_KEYS,
+  netCashFlow: NET_CASH_FLOW_KEYS,
+  runway: RUNWAY_KEYS,
   activeCustomers: ["cust_active_customers", "customers_active"],
   churn: ["cust_churn_rate", "churn_rate_pct"],
 };
@@ -71,8 +73,9 @@ function comparisonFields(
   return [...byKey.values()];
 }
 
-// A4 content width (210mm - 2 x 12mm margins) minus the card's padding, in CSS px.
-const PRINT_CHART_WIDTH = 640;
+// On paper the two charts sit side by side within the A4 content width
+// (210mm - 2 x 12mm margins); each gets this fixed width in CSS px.
+const PRINT_CHART_WIDTH = 300;
 
 /** True while the browser is printing / saving as PDF. */
 // Cost-type metrics, where an increase is unfavourable (shown in red).
@@ -298,12 +301,11 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
           />
         </div>
 
-        {chartData.length > 1 ? (
-          <Card className="report-card min-w-0">
-            <h2 className="font-heading text-xs font-semibold text-foreground">{t.quarterlyReport.chartTitle}</h2>
-            <div className="mt-2 h-52 w-full">
-              {/* On paper the chart gets a fixed width that fits an A4 page --
-                  the on-screen width would run off the printed page. */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
+          {chartData.length > 1 ? (
+            <ChartCard title={t.quarterlyReport.chartTitle} className="report-card">
+              {/* On paper the chart gets a fixed width that fits half an A4
+                  page -- the on-screen width would run off the printed page. */}
               <ResponsiveContainer width={isPrinting ? PRINT_CHART_WIDTH : "100%"} height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 0, left: 0 }}>
                   <CartesianGrid {...gridProps} />
@@ -328,9 +330,21 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          </Card>
-        ) : null}
+            </ChartCard>
+          ) : null}
+          <CashRunwayChart
+            className="report-card"
+            currency={company.currency}
+            width={isPrinting ? PRINT_CHART_WIDTH : undefined}
+            animate={!isPrinting}
+            points={[
+              ...(data.previousPeriodLabel && previousMetrics
+                ? [{ label: data.previousPeriodLabel, cash: num(prior, "cash"), runway: priorRunway }]
+                : []),
+              { label: data.periodLabel, cash: num(metrics, "cash"), runway },
+            ]}
+          />
+        </div>
 
         {operationalUpdate ? (
           <Card className="report-card min-w-0">

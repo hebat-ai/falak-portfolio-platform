@@ -10,6 +10,8 @@ import { Select } from "@/components/ui/Select";
 import { CompanyKpis } from "./CompanyKpis";
 import { MetricsBreakdown } from "./MetricsBreakdown";
 import { CompanyMetricsTrendChart } from "./CompanyMetricsTrendChart";
+import { CashRunwayChart } from "@/components/charts/CashRunwayChart";
+import { cashAndRunway } from "@/lib/reporting/cash-runway";
 import { countryName } from "@/lib/countries";
 import { QuarterlyRevenueChart } from "./QuarterlyRevenueChart";
 import { computeAnnualRevenue, quarterOf } from "@/lib/reporting/annual-revenue";
@@ -143,6 +145,13 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, fro
                   periods.map((p) => ({ label: p.label, periodStart: p.periodStart, revenue: company.periods[p.key]?.revenue ?? null })),
                   quarterOf(periods[selectedIndex].label, periods[selectedIndex].periodStart).year
                 )}
+              />
+              <CashRunwayChart
+                currency={company.currency}
+                points={periods.map((p) => {
+                  const pd = company.periods[p.key];
+                  return { label: p.label, ...(pd ? cashAndRunway(pd.metrics, pd.revenue) : { cash: null, runway: null }) };
+                })}
               />
               {periods.length > 1 ? (
                 <CompanyMetricsTrendChart

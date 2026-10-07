@@ -54,13 +54,14 @@ interface ChartCardProps {
   emptyMessage?: string;
   /** Small print under the chart, e.g. how a projection is made. */
   footnote?: ReactNode;
+  className?: string;
   children: ReactNode;
 }
 
 /** Fixed-height chart card so charts placed side by side always line up. */
-export function ChartCard({ title, headline, actions, isEmpty = false, emptyMessage, footnote, children }: ChartCardProps) {
+export function ChartCard({ title, headline, actions, isEmpty = false, emptyMessage, footnote, className = "", children }: ChartCardProps) {
   return (
-    <Card padding="sm" className="flex h-full min-w-0 flex-col">
+    <Card padding="sm" className={`flex h-full min-w-0 flex-col ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="font-heading text-xs font-semibold text-foreground">{title}</h2>
