@@ -11,7 +11,7 @@ import { VintageVsInvestmentChart } from "./_components/overview/VintageVsInvest
 import { ReportingStatusChart } from "./_components/overview/ReportingStatusChart";
 import { FundListTable } from "./_components/overview/FundListTable";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { formatCurrency, formatNumber } from "@/lib/format";
+import { formatCompactCurrency, formatCompactNumber, formatCurrency, formatNumber } from "@/lib/format";
 import type { DisplayCurrency } from "@/lib/currency/convert";
 import {
   getStartupCountSeries,
@@ -35,6 +35,8 @@ export function PortfolioOverviewClient({ raw }: PortfolioOverviewClientProps) {
 
   const moneyFormatter = useMemo(() => (value: number) => formatCurrency(value, displayCurrency, lang), [displayCurrency, lang]);
   const countFormatter = useMemo(() => (value: number) => formatNumber(value, lang), [lang]);
+  const moneyAxisFormatter = useMemo(() => (value: number) => formatCompactCurrency(value, displayCurrency, lang), [displayCurrency, lang]);
+  const countAxisFormatter = useMemo(() => (value: number) => formatCompactNumber(value, lang), [lang]);
 
   const startupCountSeries = useMemo(() => getStartupCountSeries(raw), [raw]);
   const investedCapitalSeries = useMemo(() => getInvestedCapitalSeries(raw, displayCurrency), [raw, displayCurrency]);
@@ -64,79 +66,87 @@ export function PortfolioOverviewClient({ raw }: PortfolioOverviewClientProps) {
           <ExportButton href="/api/export/portfolio" label={t.admin.exportPortfolioLabel} />
         </div>
 
-        <TimeSeriesBreakdownChart
-          title={t.admin.charts.startupCountChartTitle}
-          data={startupCountSeries}
-          vehicles={raw.vehicles}
-          valueFormatter={countFormatter}
-          emptyMessage={t.admin.charts.noDataMessage}
-          totalLabel={t.admin.charts.totalLabel}
-          byVehicleLabel={t.admin.charts.byVehicleLabel}
-          byDepartmentLabel={t.admin.charts.byDepartmentLabel}
-        />
+        {/* Two charts per row; the seventh sits on the left. */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <TimeSeriesBreakdownChart
+            title={t.admin.charts.startupCountChartTitle}
+            data={startupCountSeries}
+            vehicles={raw.vehicles}
+            valueFormatter={countFormatter}
+            axisFormatter={countAxisFormatter}
+            emptyMessage={t.admin.charts.noDataMessage}
+            totalLabel={t.admin.charts.totalLabel}
+            byVehicleLabel={t.admin.charts.byVehicleLabel}
+            byDepartmentLabel={t.admin.charts.byDepartmentLabel}
+          />
 
-        <TimeSeriesBreakdownChart
-          title={t.admin.charts.investedCapitalChartTitle}
-          data={investedCapitalSeries}
-          vehicles={raw.vehicles}
-          valueFormatter={moneyFormatter}
-          emptyMessage={t.admin.charts.noDataMessage}
-          totalLabel={t.admin.charts.totalLabel}
-          byVehicleLabel={t.admin.charts.byVehicleLabel}
-          byDepartmentLabel={t.admin.charts.byDepartmentLabel}
-        />
+          <TimeSeriesBreakdownChart
+            title={t.admin.charts.investedCapitalChartTitle}
+            data={investedCapitalSeries}
+            vehicles={raw.vehicles}
+            valueFormatter={moneyFormatter}
+            axisFormatter={moneyAxisFormatter}
+            emptyMessage={t.admin.charts.noDataMessage}
+            totalLabel={t.admin.charts.totalLabel}
+            byVehicleLabel={t.admin.charts.byVehicleLabel}
+            byDepartmentLabel={t.admin.charts.byDepartmentLabel}
+          />
 
-        <TimeSeriesBreakdownChart
-          title={t.admin.charts.navChartTitle}
-          data={navSeries}
-          vehicles={raw.vehicles}
-          valueFormatter={moneyFormatter}
-          emptyMessage={t.admin.charts.noDataMessage}
-          totalLabel={t.admin.charts.totalLabel}
-          byVehicleLabel={t.admin.charts.byVehicleLabel}
-          byDepartmentLabel={t.admin.charts.byDepartmentLabel}
-        />
+          <TimeSeriesBreakdownChart
+            title={t.admin.charts.navChartTitle}
+            data={navSeries}
+            vehicles={raw.vehicles}
+            valueFormatter={moneyFormatter}
+            axisFormatter={moneyAxisFormatter}
+            emptyMessage={t.admin.charts.noDataMessage}
+            totalLabel={t.admin.charts.totalLabel}
+            byVehicleLabel={t.admin.charts.byVehicleLabel}
+            byDepartmentLabel={t.admin.charts.byDepartmentLabel}
+          />
 
-        <MarketCapBreakdownChart
-          title={t.admin.charts.marketCapChartTitle}
-          data={marketCapCurrent}
-          vehicles={raw.vehicles}
-          valueFormatter={moneyFormatter}
-          byVehicleLabel={t.admin.charts.byVehicleLabel}
-          byDepartmentLabel={t.admin.charts.byDepartmentLabel}
-          emptyMessage={t.admin.charts.noDataMessage}
-        />
+          <MarketCapBreakdownChart
+            title={t.admin.charts.marketCapChartTitle}
+            data={marketCapCurrent}
+            vehicles={raw.vehicles}
+            valueFormatter={moneyFormatter}
+            axisFormatter={moneyAxisFormatter}
+            byVehicleLabel={t.admin.charts.byVehicleLabel}
+            byDepartmentLabel={t.admin.charts.byDepartmentLabel}
+            emptyMessage={t.admin.charts.noDataMessage}
+          />
 
-        <MarketCapByStartupChart
-          title={t.admin.charts.marketCapByStartupChartTitle}
-          series={marketCapByStartup}
-          vehicles={raw.vehicles}
-          valueFormatter={moneyFormatter}
-          allOption={t.admin.charts.allOption}
-          byVehicleLabel={t.admin.charts.byVehicleLabel}
-          byDepartmentLabel={t.admin.charts.byDepartmentLabel}
-          emptyMessage={t.admin.charts.noDataMessage}
-        />
+          <MarketCapByStartupChart
+            title={t.admin.charts.marketCapByStartupChartTitle}
+            series={marketCapByStartup}
+            vehicles={raw.vehicles}
+            valueFormatter={moneyFormatter}
+            axisFormatter={moneyAxisFormatter}
+            allOption={t.admin.charts.allOption}
+            byVehicleLabel={t.admin.charts.byVehicleLabel}
+            byDepartmentLabel={t.admin.charts.byDepartmentLabel}
+            emptyMessage={t.admin.charts.noDataMessage}
+          />
 
-        <VintageVsInvestmentChart
-          title={t.admin.charts.vintageVsInvestmentChartTitle}
-          data={vintageVsInvestment}
-          fundsFormedLabel={t.admin.charts.fundsFormedLabel}
-          startupsInvestedLabel={t.admin.charts.startupsInvestedLabel}
-          emptyMessage={t.admin.charts.noDataMessage}
-        />
+          <VintageVsInvestmentChart
+            title={t.admin.charts.vintageVsInvestmentChartTitle}
+            data={vintageVsInvestment}
+            fundsFormedLabel={t.admin.charts.fundsFormedLabel}
+            startupsInvestedLabel={t.admin.charts.startupsInvestedLabel}
+            emptyMessage={t.admin.charts.noDataMessage}
+          />
 
-        <ReportingStatusChart
-          title={t.admin.charts.reportingStatusChartTitle}
-          data={reportingSeries}
-          submissionViewLabel={t.admin.charts.submissionViewLabel}
-          auditedViewLabel={t.admin.charts.auditedViewLabel}
-          submittedLabel={t.admin.charts.submittedLabel}
-          notSubmittedLabel={t.admin.charts.notSubmittedLabel}
-          auditedLabel={t.admin.charts.auditedLabel}
-          notAuditedLabel={t.admin.charts.notAuditedLabel}
-          emptyMessage={t.admin.charts.noDataMessage}
-        />
+          <ReportingStatusChart
+            title={t.admin.charts.reportingStatusChartTitle}
+            data={reportingSeries}
+            submissionViewLabel={t.admin.charts.submissionViewLabel}
+            auditedViewLabel={t.admin.charts.auditedViewLabel}
+            submittedLabel={t.admin.charts.submittedLabel}
+            notSubmittedLabel={t.admin.charts.notSubmittedLabel}
+            auditedLabel={t.admin.charts.auditedLabel}
+            notAuditedLabel={t.admin.charts.notAuditedLabel}
+            emptyMessage={t.admin.charts.noDataMessage}
+          />
+        </div>
 
         <FundListTable
           title={t.admin.charts.fundListTitle}

@@ -1,4 +1,5 @@
 import { convertToDisplay, type DisplayCurrency } from "@/lib/currency/convert";
+import { normalizeSector } from "@/lib/admin/company-list-compute";
 import type { InvestorVehicleExposureDTO } from "./dto";
 
 // Client-safe (no db import) -- recomputed instantly on org/currency change.
@@ -18,14 +19,16 @@ export function computeSectorDistribution(exposures: InvestorVehicleExposureDTO[
     for (const company of vehicle.linkedCompanies) {
       if (seen.has(company.id)) continue;
       seen.add(company.id);
-      const slice = bySector.get(company.sectorEn) ?? {
-        key: company.sectorEn,
-        labelEn: company.sectorEn,
-        labelAr: company.sectorAr,
+      // Spellings that differ only in case or spacing are one sector.
+      const id = normalizeSector(company.sectorEn);
+      const slice = bySector.get(id) ?? {
+        key: company.sectorEn.trim(),
+        labelEn: company.sectorEn.trim(),
+        labelAr: company.sectorAr.trim(),
         count: 0,
       };
       slice.count += 1;
-      bySector.set(company.sectorEn, slice);
+      bySector.set(id, slice);
     }
   }
   return [...bySector.values()].sort((a, b) => b.count - a.count);

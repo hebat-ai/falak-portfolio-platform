@@ -38,6 +38,16 @@ test("sector distribution counts each startup once, even if held by two vehicles
   );
 });
 
+test("sector distribution merges spellings that differ only in case or spacing", () => {
+  const slices = computeSectorDistribution([
+    vehicle({ id: "v1", linkedCompanies: [co("a", "HealthTech"), co("b", "Healthtech"), co("c", " health tech ")] }),
+  ]);
+  assert.deepEqual(
+    slices.map((s) => [s.key, s.count]),
+    [["HealthTech", 3]]
+  );
+});
+
 test("invested capital sums contributions in the display currency", () => {
   const exposures = [
     vehicle({ contributions: [{ amount: 375_000, currency: "SAR" }] }),

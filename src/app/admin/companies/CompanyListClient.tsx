@@ -94,7 +94,7 @@ export function CompanyListClient({ companies }: CompanyListClientProps) {
           onDisplayCurrencyChange={setDisplayCurrency}
         />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DistributionPieChart
             title={t.admin.charts.sectorDistributionChartTitle}
             data={sectorDistribution}
@@ -113,13 +113,12 @@ export function CompanyListClient({ companies }: CompanyListClientProps) {
             labelFor={(key) => t.stages[key as keyof Dictionary["stages"]]}
             emptyMessage={t.admin.charts.noDataMessage}
           />
+          <InvestmentYearChart
+            title={t.admin.charts.investmentYearChartTitle}
+            data={investmentYearSeries}
+            emptyMessage={t.admin.charts.noDataMessage}
+          />
         </div>
-
-        <InvestmentYearChart
-          title={t.admin.charts.investmentYearChartTitle}
-          data={investmentYearSeries}
-          emptyMessage={t.admin.charts.noDataMessage}
-        />
 
         <CompanyListTable companies={filteredCompanies} displayCurrency={displayCurrency} />
       </div>

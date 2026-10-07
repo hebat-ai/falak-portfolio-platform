@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card } from "@/components/ui/Card";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { ChartCard, CompactTooltip, axisProps, chartMargin, gridProps, legendProps, Y_AXIS_WIDTH } from "@/components/charts/chart-kit";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getSeriesColor } from "@/lib/admin/chart-palette";
 import type { Department } from "@/generated/prisma/client";
@@ -27,7 +27,10 @@ interface TimeSeriesBreakdownChartProps {
   title: string;
   data: BreakdownPoint[];
   vehicles: NameableEntity[];
+  /** Full value, shown in the tooltip. */
   valueFormatter: (value: number) => string;
+  /** Short value for axis ticks; defaults to valueFormatter. */
+  axisFormatter?: (value: number) => string;
   emptyMessage: string;
   totalLabel: string;
   byVehicleLabel: string;
@@ -46,6 +49,7 @@ export function TimeSeriesBreakdownChart({
   data,
   vehicles,
   valueFormatter,
+  axisFormatter = valueFormatter,
   emptyMessage,
   totalLabel,
   byVehicleLabel,
@@ -65,20 +69,14 @@ export function TimeSeriesBreakdownChart({
     [data, vehicles]
   );
 
-  if (data.length === 0) {
-    return (
-      <Card className="min-w-0">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
+    <ChartCard
+      title={title}
+      isEmpty={data.length === 0}
+      emptyMessage={emptyMessage}
+      actions={
         <SegmentedToggle
+          size="xs"
           value={breakdown}
           onChange={setBreakdown}
           ariaLabel={title}
@@ -88,47 +86,43 @@ export function TimeSeriesBreakdownChart({
             { value: "department", label: byDepartmentLabel },
           ]}
         />
-      </div>
-      <div className="mt-3 h-80 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-            <XAxis dataKey="year" stroke="var(--muted-foreground)" fontSize={12} />
-            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={valueFormatter} width={80} />
-            <Tooltip
-              contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }}
-              formatter={(value) => valueFormatter(Number(value))}
-            />
-            {breakdown === "total" ? (
-              <Line type="monotone" dataKey="total" name={totalLabel} stroke={getSeriesColor(0)} strokeWidth={2} dot={false} />
-            ) : null}
-            {breakdown === "vehicle" ? (
-              <>
-                <Legend />
-                {vehicles.map((v, i) => (
-                  <Line
-                    key={v.id}
-                    type="monotone"
-                    dataKey={v.id}
-                    name={lang === "ar" ? v.nameAr : v.nameEn}
-                    stroke={getSeriesColor(i)}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                ))}
-              </>
-            ) : null}
-            {breakdown === "department" ? (
-              <>
-                <Legend />
-                {DEPARTMENTS.map((d, i) => (
-                  <Line key={d} type="monotone" dataKey={d} name={t.departments[d]} stroke={getSeriesColor(i)} strokeWidth={2} dot={false} />
-                ))}
-              </>
-            ) : null}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </Card>
+      }
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={chartMargin}>
+          <CartesianGrid {...gridProps} />
+          <XAxis dataKey="year" {...axisProps} />
+          <YAxis {...axisProps} tickFormatter={axisFormatter} width={Y_AXIS_WIDTH} />
+          <Tooltip content={(p) => <CompactTooltip active={p.active} payload={p.payload} label={p.label} format={valueFormatter} />} />
+          {breakdown === "total" ? (
+            <Line type="monotone" dataKey="total" name={totalLabel} stroke={getSeriesColor(0)} strokeWidth={1.5} dot={false} />
+          ) : null}
+          {breakdown === "vehicle" ? (
+            <>
+              <Legend {...legendProps} />
+              {vehicles.map((v, i) => (
+                <Line
+                  key={v.id}
+                  type="monotone"
+                  dataKey={v.id}
+                  name={lang === "ar" ? v.nameAr : v.nameEn}
+                  stroke={getSeriesColor(i)}
+                  strokeWidth={1.5}
+                  dot={false}
+                />
+              ))}
+            </>
+          ) : null}
+          {breakdown === "department" ? (
+            <>
+              <Legend {...legendProps} />
+              {DEPARTMENTS.map((d, i) => (
+                <Line key={d} type="monotone" dataKey={d} name={t.departments[d]} stroke={getSeriesColor(i)} strokeWidth={1.5} dot={false} />
+              ))}
+            </>
+          ) : null}
+        </LineChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }

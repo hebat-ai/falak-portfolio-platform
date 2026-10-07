@@ -128,6 +128,8 @@ export interface Dictionary {
     };
     emptyState: string;
     charts: {
+      moreSeriesLabel: string;
+      otherSliceLabel: string;
       valuationAxisLabel: string;
       burnLabel: string;
       percentileLabel: string;
@@ -771,6 +773,8 @@ export const en = {
     },
     emptyState: "No companies match the selected filters.",
     charts: {
+      moreSeriesLabel: "+{count} more",
+      otherSliceLabel: "Other",
       valuationAxisLabel: "Valuation",
       burnLabel: "Burn",
       percentileLabel: "percentile",
@@ -1420,6 +1424,8 @@ export const ar = {
     },
     emptyState: "لا توجد شركات مطابقة لعوامل التصفية المحددة.",
     charts: {
+      moreSeriesLabel: "+{count} أخرى",
+      otherSliceLabel: "أخرى",
       valuationAxisLabel: "التقييم",
       burnLabel: "الحرق النقدي",
       percentileLabel: "الشريحة المئينية",

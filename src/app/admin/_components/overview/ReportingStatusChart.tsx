@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card } from "@/components/ui/Card";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { ChartCard, axisProps, chartMargin, gridProps, legendProps, tooltipProps, Y_AXIS_WIDTH } from "@/components/charts/chart-kit";
 import { getSeriesColor } from "@/lib/admin/chart-palette";
 import type { ReportingPeriodPoint } from "@/lib/admin/portfolio-overview-compute";
 
@@ -48,20 +48,14 @@ export function ReportingStatusChart({
     [data, view]
   );
 
-  if (data.length === 0) {
-    return (
-      <Card className="min-w-0">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
+    <ChartCard
+      title={title}
+      isEmpty={data.length === 0}
+      emptyMessage={emptyMessage}
+      actions={
         <SegmentedToggle
+          size="xs"
           value={view}
           onChange={setView}
           ariaLabel={title}
@@ -70,30 +64,31 @@ export function ReportingStatusChart({
             { value: "audited", label: auditedViewLabel },
           ]}
         />
-      </div>
-      <div className="mt-3 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-            <XAxis dataKey="periodLabel" stroke="var(--muted-foreground)" fontSize={12} />
-            <YAxis stroke="var(--muted-foreground)" fontSize={12} allowDecimals={false} />
-            <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }} />
-            <Legend />
-            <Bar
-              dataKey="positive"
-              name={view === "submission" ? submittedLabel : auditedLabel}
-              stackId="reporting"
-              fill={getSeriesColor(0)}
-            />
-            <Bar
-              dataKey="negative"
-              name={view === "submission" ? notSubmittedLabel : notAuditedLabel}
-              stackId="reporting"
-              fill={getSeriesColor(3)}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </Card>
+      }
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={chartMargin}>
+          <CartesianGrid {...gridProps} />
+          <XAxis dataKey="periodLabel" {...axisProps} />
+          <YAxis {...axisProps} allowDecimals={false} width={Y_AXIS_WIDTH} />
+          <Tooltip {...tooltipProps} cursor={{ fill: "var(--surface-muted)" }} />
+          <Legend {...legendProps} />
+          <Bar
+            dataKey="positive"
+            name={view === "submission" ? submittedLabel : auditedLabel}
+            stackId="reporting"
+            fill={getSeriesColor(0)}
+            maxBarSize={28}
+          />
+          <Bar
+            dataKey="negative"
+            name={view === "submission" ? notSubmittedLabel : notAuditedLabel}
+            stackId="reporting"
+            fill={getSeriesColor(3)}
+            maxBarSize={28}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }

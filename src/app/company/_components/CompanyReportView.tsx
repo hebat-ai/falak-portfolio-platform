@@ -136,13 +136,23 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, fro
               latestValuation={latestValuation}
             />
 
-            <QuarterlyRevenueChart
-              currency={company.currency}
-              summary={computeAnnualRevenue(
-                periods.map((p) => ({ label: p.label, periodStart: p.periodStart, revenue: company.periods[p.key]?.revenue ?? null })),
-                quarterOf(periods[selectedIndex].label, periods[selectedIndex].periodStart).year
-              )}
-            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <QuarterlyRevenueChart
+                currency={company.currency}
+                summary={computeAnnualRevenue(
+                  periods.map((p) => ({ label: p.label, periodStart: p.periodStart, revenue: company.periods[p.key]?.revenue ?? null })),
+                  quarterOf(periods[selectedIndex].label, periods[selectedIndex].periodStart).year
+                )}
+              />
+              {periods.length > 1 ? (
+                <CompanyMetricsTrendChart
+                  title={t.companyReport.trendTitle}
+                  periods={periods}
+                  periodsData={company.periods}
+                  currency={company.currency}
+                />
+              ) : null}
+            </div>
 
             <MetricsBreakdown
               metrics={periodData.metrics}
@@ -151,15 +161,6 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, fro
               previousRevenue={previousRevenue}
               benchmarks={periodData.benchmarks}
             />
-
-            {periods.length > 1 ? (
-              <Card className="min-w-0">
-                <h2 className="font-heading text-sm font-semibold text-foreground">{t.companyReport.trendTitle}</h2>
-                <div className="mt-3">
-                  <CompanyMetricsTrendChart periods={periods} periodsData={company.periods} currency={company.currency} />
-                </div>
-              </Card>
-            ) : null}
           </>
         ) : (
           <p className="text-sm text-muted-foreground">{t.companyReport.noReportingHistory}</p>
@@ -252,12 +253,9 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, fro
         </div>
 
         {isFalakStaff && data.valuations.length > 0 ? (
-          <Card className="min-w-0">
-            <h2 className="font-heading text-sm font-semibold text-foreground">{t.companyReport.valuationHistoryTitle}</h2>
-            <div className="mt-3">
-              <ValuationHistoryChart valuations={data.valuations} currency={company.currency} />
-            </div>
-          </Card>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <ValuationHistoryChart title={t.companyReport.valuationHistoryTitle} valuations={data.valuations} currency={company.currency} />
+          </div>
         ) : null}
 
         {periodData && isFalakStaff && periodData.narratives.length > 0 ? (

@@ -2,14 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { ChartCard, axisProps, chartMargin, gridProps, tooltipProps, Y_AXIS_WIDTH } from "@/components/charts/chart-kit";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 import type { Currency } from "@/generated/prisma/client";
 import type { CompanyValuationPointDTO } from "@/lib/company/dto";
 
 type Granularity = "quarterly" | "annually";
 
 interface ValuationHistoryChartProps {
+  title: string;
   valuations: CompanyValuationPointDTO[];
   currency: Currency;
 }
@@ -32,7 +35,7 @@ function toAnnual(valuations: CompanyValuationPointDTO[]): CompanyValuationPoint
   return [...latestByYear.values()].sort((a, b) => a.asOfDate.localeCompare(b.asOfDate));
 }
 
-export function ValuationHistoryChart({ valuations, currency }: ValuationHistoryChartProps) {
+export function ValuationHistoryChart({ title, valuations, currency }: ValuationHistoryChartProps) {
   const { t, lang } = useLanguage();
   const [granularity, setGranularity] = useState<Granularity>("quarterly");
 
@@ -42,59 +45,34 @@ export function ValuationHistoryChart({ valuations, currency }: ValuationHistory
   }, [valuations, granularity]);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex gap-2" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={granularity === "quarterly"}
-          onClick={() => setGranularity("quarterly")}
-          className={`chamfer-br-sm px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground ${
-            granularity === "quarterly"
-              ? "bg-nebula-aqua text-dark-green"
-              : "text-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
-          }`}
-        >
-          {t.companyReport.quarterlyToggleLabel}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={granularity === "annually"}
-          onClick={() => setGranularity("annually")}
-          className={`chamfer-br-sm px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground ${
-            granularity === "annually"
-              ? "bg-nebula-aqua text-dark-green"
-              : "text-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
-          }`}
-        >
-          {t.companyReport.annuallyToggleLabel}
-        </button>
-      </div>
-      <div className="h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-            <XAxis
-              dataKey="date"
-              stroke="var(--muted-foreground)"
-              fontSize={12}
-              tickFormatter={(value: string) => formatDate(value, lang)}
-            />
-            <YAxis
-              stroke="var(--muted-foreground)"
-              fontSize={12}
-              tickFormatter={(value: number) => formatCurrency(value, currency, lang)}
-            />
-            <Tooltip
-              contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }}
-              labelFormatter={(value) => formatDate(String(value), lang)}
-              formatter={(value) => [formatCurrency(Number(value), currency, lang), t.admin.charts.valuationAxisLabel]}
-            />
-            <Line type="monotone" dataKey="amount" stroke="var(--chart-submitted)" strokeWidth={2} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <ChartCard
+      title={title}
+      actions={
+        <SegmentedToggle
+          size="xs"
+          value={granularity}
+          onChange={setGranularity}
+          ariaLabel={title}
+          options={[
+            { value: "quarterly", label: t.companyReport.quarterlyToggleLabel },
+            { value: "annually", label: t.companyReport.annuallyToggleLabel },
+          ]}
+        />
+      }
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={chartMargin}>
+          <CartesianGrid {...gridProps} />
+          <XAxis dataKey="date" {...axisProps} tickFormatter={(value: string) => formatDate(value, lang)} />
+          <YAxis {...axisProps} width={Y_AXIS_WIDTH} tickFormatter={(value: number) => formatCompactCurrency(value, currency, lang)} />
+          <Tooltip
+            {...tooltipProps}
+            labelFormatter={(value) => formatDate(String(value), lang)}
+            formatter={(value) => [formatCurrency(Number(value), currency, lang), t.admin.charts.valuationAxisLabel]}
+          />
+          <Line type="monotone" dataKey="amount" stroke="var(--chart-submitted)" strokeWidth={1.5} dot={{ r: 2 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }

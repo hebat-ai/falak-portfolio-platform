@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
+import { ChartCard, CompactTooltip, axisProps, chartMargin, gridProps, Y_AXIS_WIDTH } from "@/components/charts/chart-kit";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getSeriesColor } from "@/lib/admin/chart-palette";
 import type { MarketCapSeries } from "@/lib/admin/portfolio-overview-compute";
@@ -20,6 +20,7 @@ interface MarketCapByStartupChartProps {
   series: MarketCapSeries;
   vehicles: NameableEntity[];
   valueFormatter: (value: number) => string;
+  axisFormatter?: (value: number) => string;
   allOption: string;
   byVehicleLabel: string;
   byDepartmentLabel: string;
@@ -29,14 +30,16 @@ interface MarketCapByStartupChartProps {
 const DEPARTMENTS: Department[] = ["VentureBuilder", "InvestmentDepartment"];
 
 // Chart 5 -- color-coded stacked bar, one segment per startup, one bar
-// per year, exactly as asked. A dropdown narrows the stack to a single
-// vehicle or department's startups; "All" (the default) stacks every
-// startup in the portfolio.
+// per year. A dropdown narrows the stack to a single vehicle or
+// department's startups; "All" (the default) stacks every startup in the
+// portfolio. The tooltip lists the largest startups only, so it stays
+// readable with a large portfolio.
 export function MarketCapByStartupChart({
   title,
   series,
   vehicles,
   valueFormatter,
+  axisFormatter = valueFormatter,
   allOption,
   byVehicleLabel,
   byDepartmentLabel,
@@ -64,51 +67,45 @@ export function MarketCapByStartupChart({
     [series, filteredCompanies]
   );
 
-  if (series.years.length === 0) {
-    return (
-      <Card className="min-w-0">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-        <div className="flex w-full flex-col gap-1 sm:w-auto">
-          <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="sm:w-auto">
-            <option value="all">{allOption}</option>
-            <optgroup label={byVehicleLabel}>
-              {vehicles.map((v) => (
-                <option key={v.id} value={`vehicle:${v.id}`}>{lang === "ar" ? v.nameAr : v.nameEn}</option>
-              ))}
-            </optgroup>
-            <optgroup label={byDepartmentLabel}>
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={`department:${d}`}>{t.departments[d]}</option>
-              ))}
-            </optgroup>
-          </Select>
-        </div>
-      </div>
-      <div className="mt-3 h-80 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-            <XAxis dataKey="year" stroke="var(--muted-foreground)" fontSize={12} />
-            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={valueFormatter} width={80} />
-            <Tooltip
-              contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }}
-              formatter={(value, name) => [valueFormatter(Number(value)), name]}
-            />
-            {filteredCompanies.map((c, i) => (
-              <Bar key={c.id} dataKey={c.id} name={lang === "ar" ? c.nameAr : c.nameEn} stackId="marketcap" fill={getSeriesColor(i)} />
+    <ChartCard
+      title={title}
+      isEmpty={series.years.length === 0}
+      emptyMessage={emptyMessage}
+      actions={
+        <Select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label={title} className="h-7 w-auto py-0 text-[11px]">
+          <option value="all">{allOption}</option>
+          <optgroup label={byVehicleLabel}>
+            {vehicles.map((v) => (
+              <option key={v.id} value={`vehicle:${v.id}`}>
+                {lang === "ar" ? v.nameAr : v.nameEn}
+              </option>
             ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </Card>
+          </optgroup>
+          <optgroup label={byDepartmentLabel}>
+            {DEPARTMENTS.map((d) => (
+              <option key={d} value={`department:${d}`}>
+                {t.departments[d]}
+              </option>
+            ))}
+          </optgroup>
+        </Select>
+      }
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={chartMargin}>
+          <CartesianGrid {...gridProps} />
+          <XAxis dataKey="year" {...axisProps} />
+          <YAxis {...axisProps} tickFormatter={axisFormatter} width={Y_AXIS_WIDTH} />
+          <Tooltip
+            cursor={{ fill: "var(--surface-muted)" }}
+            content={(p) => <CompactTooltip active={p.active} payload={p.payload} label={p.label} format={valueFormatter} />}
+          />
+          {filteredCompanies.map((c, i) => (
+            <Bar key={c.id} dataKey={c.id} name={lang === "ar" ? c.nameAr : c.nameEn} stackId="marketcap" fill={getSeriesColor(i)} maxBarSize={36} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }

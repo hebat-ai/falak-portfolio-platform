@@ -19,6 +19,21 @@ export function formatCurrency(amount: number, currency: Currency, locale: AppLo
   }).format(amount);
 }
 
+/** Short form for chart axes and tight spaces, e.g. "$1.2M", "SAR 950K". */
+export function formatCompactCurrency(amount: number, currency: Currency, locale: AppLocale): string {
+  return new Intl.NumberFormat(intlLocale(locale), {
+    style: "currency",
+    currency,
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
+/** Short form for chart axes, e.g. "1.2K". */
+export function formatCompactNumber(value: number, locale: AppLocale): string {
+  return new Intl.NumberFormat(intlLocale(locale), { notation: "compact", maximumFractionDigits: 1 }).format(value);
+}
+
 export function formatPercent(value: number, locale: AppLocale, maximumFractionDigits = 0): string {
   return new Intl.NumberFormat(intlLocale(locale), {
     style: "percent",

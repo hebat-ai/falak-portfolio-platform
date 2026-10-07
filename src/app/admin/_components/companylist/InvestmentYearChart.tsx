@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card } from "@/components/ui/Card";
+import { ChartCard, axisProps, chartMargin, gridProps, tooltipProps, Y_AXIS_WIDTH } from "@/components/charts/chart-kit";
 import { getSeriesColor } from "@/lib/admin/chart-palette";
 import type { InvestmentYearPoint } from "@/lib/admin/company-list-compute";
 
@@ -16,29 +16,17 @@ interface InvestmentYearChartProps {
 // discrete per-year figure, so a bar chart reads more naturally than a
 // line here.
 export function InvestmentYearChart({ title, data, emptyMessage }: InvestmentYearChartProps) {
-  if (data.length === 0) {
-    return (
-      <Card className="min-w-0">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="min-w-0">
-      <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-      <div className="mt-3 h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-            <XAxis dataKey="year" stroke="var(--muted-foreground)" fontSize={12} />
-            <YAxis stroke="var(--muted-foreground)" fontSize={12} allowDecimals={false} />
-            <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }} />
-            <Bar dataKey="count" fill={getSeriesColor(0)} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </Card>
+    <ChartCard title={title} isEmpty={data.length === 0} emptyMessage={emptyMessage}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={chartMargin}>
+          <CartesianGrid {...gridProps} />
+          <XAxis dataKey="year" {...axisProps} />
+          <YAxis {...axisProps} allowDecimals={false} width={Y_AXIS_WIDTH} />
+          <Tooltip {...tooltipProps} cursor={{ fill: "var(--surface-muted)" }} />
+          <Bar dataKey="count" fill={getSeriesColor(0)} maxBarSize={28} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }

@@ -28,6 +28,7 @@ function row(overrides: Partial<CompanyListRow>): CompanyListRow {
     lastReportedCashBurn: null,
     lastReportedRunwayMonths: null,
     lastUpdated: null,
+    updatedAt: "2026-01-01T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -39,6 +40,11 @@ test("sector distribution counts companies per sector", () => {
     { key: "SaaS", count: 2 },
     { key: "FinTech", count: 1 },
   ]);
+});
+
+test("sector distribution merges spellings that differ only in case or spacing", () => {
+  const rows = [row({ id: "1", sectorEn: "HealthTech" }), row({ id: "2", sectorEn: "Healthtech" }), row({ id: "3", sectorEn: "Health Tech " })];
+  assert.deepEqual(getSectorDistribution(rows), [{ key: "HealthTech", count: 3 }]);
 });
 
 test("stage distribution counts companies per current stage", () => {

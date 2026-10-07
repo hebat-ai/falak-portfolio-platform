@@ -10,13 +10,24 @@ export interface DistributionSlice {
   count: number;
 }
 
-/** One slice per distinct sector (English label as the key). */
+/** Matching key for a free-text sector: case, spacing and punctuation ignored. */
+export function normalizeSector(sector: string): string {
+  return sector.trim().toLowerCase().replace(/[\s\-_]+/g, "");
+}
+
+/**
+ * One slice per distinct sector. Spellings that differ only in case or
+ * spacing count as one sector, labelled with the first spelling seen.
+ */
 export function getSectorDistribution(rows: CompanyListRow[]): DistributionSlice[] {
-  const counts = new Map<string, number>();
+  const slices = new Map<string, DistributionSlice>();
   for (const row of rows) {
-    counts.set(row.sectorEn, (counts.get(row.sectorEn) ?? 0) + 1);
+    const id = normalizeSector(row.sectorEn);
+    const slice = slices.get(id) ?? { key: row.sectorEn.trim(), count: 0 };
+    slice.count += 1;
+    slices.set(id, slice);
   }
-  return [...counts.entries()].map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
+  return [...slices.values()].sort((a, b) => b.count - a.count);
 }
 
 /** One slice per distinct current stage. A company with no vehicle contributes to no slice (never a fabricated "none" bucket for the other two distributions, but stage/sector are always set, so this only matters for vehicle distribution below). */

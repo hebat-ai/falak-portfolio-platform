@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card } from "@/components/ui/Card";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { ChartCard, axisProps, chartMargin, gridProps, tooltipProps } from "@/components/charts/chart-kit";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getSeriesColor } from "@/lib/admin/chart-palette";
 import type { MarketCapBreakdown } from "@/lib/admin/portfolio-overview-compute";
@@ -22,6 +22,7 @@ interface MarketCapBreakdownChartProps {
   data: MarketCapBreakdown;
   vehicles: NameableEntity[];
   valueFormatter: (value: number) => string;
+  axisFormatter?: (value: number) => string;
   byVehicleLabel: string;
   byDepartmentLabel: string;
   emptyMessage: string;
@@ -30,14 +31,16 @@ interface MarketCapBreakdownChartProps {
 const DEPARTMENTS: Department[] = ["VentureBuilder", "InvestmentDepartment"];
 
 // Chart 4 -- a single point-in-time snapshot (unlike charts 1-3, which
-// are annual time series), so a grouped bar chart fits better than a
-// line: one bar per vehicle or per department, toggled, with the
-// portfolio total called out separately above the chart.
+// are annual time series), so a bar chart fits better than a line: one
+// bar per vehicle or per department, toggled, with the portfolio total
+// called out above the chart. Horizontal bars so long vehicle names
+// stay readable however many vehicles there are.
 export function MarketCapBreakdownChart({
   title,
   data,
   vehicles,
   valueFormatter,
+  axisFormatter = valueFormatter,
   byVehicleLabel,
   byDepartmentLabel,
   emptyMessage,
@@ -46,29 +49,22 @@ export function MarketCapBreakdownChart({
   const [grouping, setGrouping] = useState<Grouping>("vehicle");
 
   const chartData = useMemo(() => {
-    if (grouping === "vehicle") {
-      return vehicles.map((v) => ({ key: v.id, name: lang === "ar" ? v.nameAr : v.nameEn, value: data.byVehicle[v.id] ?? 0 }));
-    }
-    return DEPARTMENTS.map((d) => ({ key: d, name: t.departments[d], value: data.byDepartment[d] ?? 0 }));
+    const rows =
+      grouping === "vehicle"
+        ? vehicles.map((v) => ({ key: v.id, name: lang === "ar" ? v.nameAr : v.nameEn, value: data.byVehicle[v.id] ?? 0 }))
+        : DEPARTMENTS.map((d) => ({ key: d, name: t.departments[d], value: data.byDepartment[d] ?? 0 }));
+    return rows.sort((a, b) => b.value - a.value);
   }, [grouping, vehicles, data, lang, t]);
 
-  if (data.total === 0) {
-    return (
-      <Card className="min-w-0">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-heading text-sm font-semibold text-foreground">{title}</h2>
-          <p className="text-lg font-semibold text-foreground">{valueFormatter(data.total)}</p>
-        </div>
+    <ChartCard
+      title={title}
+      headline={data.total === 0 ? undefined : valueFormatter(data.total)}
+      isEmpty={data.total === 0}
+      emptyMessage={emptyMessage}
+      actions={
         <SegmentedToggle
+          size="xs"
           value={grouping}
           onChange={setGrouping}
           ariaLabel={title}
@@ -77,25 +73,21 @@ export function MarketCapBreakdownChart({
             { value: "department", label: byDepartmentLabel },
           ]}
         />
-      </div>
-      <div className="mt-3 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-            <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} />
-            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={valueFormatter} width={80} />
-            <Tooltip
-              contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }}
-              formatter={(value) => valueFormatter(Number(value))}
-            />
-            <Bar dataKey="value">
-              {chartData.map((entry, i) => (
-                <Cell key={entry.key} fill={getSeriesColor(i)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </Card>
+      }
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} layout="vertical" margin={chartMargin}>
+          <CartesianGrid {...gridProps} vertical horizontal={false} />
+          <XAxis type="number" {...axisProps} tickFormatter={axisFormatter} />
+          <YAxis type="category" dataKey="name" {...axisProps} width={96} interval={0} />
+          <Tooltip {...tooltipProps} cursor={{ fill: "var(--surface-muted)" }} formatter={(value) => valueFormatter(Number(value))} />
+          <Bar dataKey="value" maxBarSize={18}>
+            {chartData.map((entry, i) => (
+              <Cell key={entry.key} fill={getSeriesColor(i)} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }

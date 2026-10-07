@@ -13,7 +13,8 @@ import { Num } from "@/components/ui/Num";
 import { Button } from "@/components/ui/Button";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { formatCurrency, formatDate, formatNumber, formatPercent } from "@/lib/format";
+import { formatCurrency, formatDate, formatNumber, formatPercent, formatCompactCurrency } from "@/lib/format";
+import { axisProps, gridProps, tooltipProps } from "@/components/charts/chart-kit";
 import {
   computeGrossMargin,
   computeNetMargin,
@@ -299,30 +300,29 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
 
         {chartData.length > 1 ? (
           <Card className="report-card min-w-0">
-            <h2 className="font-heading text-sm font-semibold text-foreground">{t.quarterlyReport.chartTitle}</h2>
-            <div className="mt-3 h-64 w-full">
+            <h2 className="font-heading text-xs font-semibold text-foreground">{t.quarterlyReport.chartTitle}</h2>
+            <div className="mt-2 h-52 w-full">
               {/* On paper the chart gets a fixed width that fits an A4 page --
                   the on-screen width would run off the printed page. */}
               <ResponsiveContainer width={isPrinting ? PRINT_CHART_WIDTH : "100%"} height="100%">
-                <LineChart data={chartData} margin={{ top: 16, right: 32, bottom: 4, left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-                  <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={12} padding={{ left: 24, right: 24 }} />
+                <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 0, left: 0 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis dataKey="label" {...axisProps} padding={{ left: 24, right: 24 }} />
                   <YAxis
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                    width={88}
-                    tickFormatter={(value: number) => formatCurrency(value, company.currency, lang)}
+                    {...axisProps}
+                    width={56}
+                    tickFormatter={(value: number) => formatCompactCurrency(value, company.currency, lang)}
                   />
                   <Tooltip
-                    contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }}
+                    {...tooltipProps}
                     formatter={(value) => [formatCurrency(Number(value), company.currency, lang), t.companyReport.revenueLabel]}
                   />
                   <Line
                     type="monotone"
                     dataKey="revenue"
                     stroke="var(--chart-submitted)"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
+                    strokeWidth={1.5}
+                    dot={{ r: 3 }}
                     connectNulls
                     isAnimationActive={!isPrinting}
                   />
