@@ -6,6 +6,7 @@ import { StaffUsersTable } from "@/app/admin/manage/_components/StaffUsersTable"
 import type { StaffUserRow } from "@/lib/admin/staff";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
+import { useListView, byText, byValue } from "@/components/lists/useListView";
 import { RevokeButton } from "./RevokeButton";
 import { ApproveRequestForm } from "./ApproveRequestForm";
 import {
@@ -18,14 +19,24 @@ import {
 import type { AccessData, AccessOrgDTO, AccessRequestDTO } from "@/lib/access/dto";
 
 interface OrgListProps {
+  listId: string;
   orgs: AccessOrgDTO[];
   canRevoke: boolean;
   revokeMember: (formData: FormData) => Promise<void>;
   revokeInvite: (formData: FormData) => Promise<void>;
 }
 
-function OrgList({ orgs, canRevoke, revokeMember, revokeInvite }: OrgListProps) {
+function OrgList({ listId, orgs, canRevoke, revokeMember, revokeInvite }: OrgListProps) {
   const { t, lang } = useLanguage();
+  const name = (o: AccessOrgDTO) => (lang === "ar" ? o.nameAr : o.nameEn);
+  const { visible, controls, empty } = useListView(orgs, {
+    id: listId,
+    searchText: (o) => [o.nameEn, o.nameAr, ...o.members.map((m) => m.email), ...o.invites.map((i) => i.email)].join(" "),
+    sorts: [
+      byText("nameAsc", t.lists.nameAsc, name),
+      byText("nameDesc", t.lists.nameDesc, name, true),
+    ],
+  });
 
   if (orgs.length === 0) {
     return <p className="text-sm text-muted-foreground">{t.access.noOrgs}</p>;
@@ -33,7 +44,9 @@ function OrgList({ orgs, canRevoke, revokeMember, revokeInvite }: OrgListProps) 
 
   return (
     <div className="flex flex-col gap-2">
-      {orgs.map((org) => (
+      {controls}
+      {empty}
+      {visible.map((org) => (
         <details key={org.id} className="chamfer-br-md bg-surface shadow-[var(--inner-line)]">
           <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link-foreground">
             <span className="font-medium text-foreground">{lang === "ar" ? org.nameAr : org.nameEn}</span>
@@ -113,6 +126,15 @@ function OrgList({ orgs, canRevoke, revokeMember, revokeInvite }: OrgListProps) 
 
 function PendingRequestsList({ requests, canRevoke }: { requests: AccessRequestDTO[]; canRevoke: boolean }) {
   const { t, lang } = useLanguage();
+  const { visible, controls, empty } = useListView(requests, {
+    id: "access-requests",
+    searchText: (r) => `${r.email} ${r.organizationName ?? ""} ${t.signUp.roleOptions[r.requestedRole]} ${r.message ?? ""}`,
+    sorts: [
+      byValue("newest", t.lists.newestFirst, (r) => r.createdAt, true),
+      byValue("oldest", t.lists.oldestFirst, (r) => r.createdAt),
+      byText("emailAsc", t.lists.emailAsc, (r) => r.email),
+    ],
+  });
 
   if (requests.length === 0) {
     return <p className="text-sm text-muted-foreground">{t.access.noPendingRequests}</p>;
@@ -120,7 +142,9 @@ function PendingRequestsList({ requests, canRevoke }: { requests: AccessRequestD
 
   return (
     <div className="flex flex-col gap-2">
-      {requests.map((req) => (
+      {controls}
+      {empty}
+      {visible.map((req) => (
         <div key={req.id} className="chamfer-br-md flex flex-col gap-3 bg-surface p-4 shadow-[var(--inner-line)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="min-w-0 break-all text-sm font-medium text-foreground">{req.email}</span>
@@ -201,6 +225,7 @@ export function AccessClient({
             {t.access.companiesTitle}
           </h2>
           <OrgList
+            listId="access-companies"
             orgs={companies}
             canRevoke={canRevoke}
             revokeMember={revokeCompanyMembershipAction}
@@ -213,6 +238,7 @@ export function AccessClient({
             {t.access.investorsTitle}
           </h2>
           <OrgList
+            listId="access-investors"
             orgs={investors}
             canRevoke={canRevoke}
             revokeMember={revokeInvestorMembershipAction}

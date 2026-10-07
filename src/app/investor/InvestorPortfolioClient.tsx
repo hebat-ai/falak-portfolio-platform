@@ -12,6 +12,7 @@ import { DistributionPieChart } from "@/app/admin/_components/companylist/Distri
 import { Num } from "@/components/ui/Num";
 import { Select } from "@/components/ui/Select";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useListView, byText, byValue } from "@/components/lists/useListView";
 import {
   computeInvestedCapital,
   computeInvestorNavSeries,
@@ -82,6 +83,18 @@ export function InvestorPortfolioClient({
       navSeries: computeInvestorNavSeries(orgVehicles, displayCurrency),
     };
   }, [companies, periods, vehicleExposures, orgId, periodKey, displayCurrency]);
+
+  type VehicleCard = (typeof scope.vehicleCards)[number];
+  const vehicleName = (c: VehicleCard) => (lang === "ar" ? c.vehicle.nameAr : c.vehicle.nameEn);
+  const vehicleList = useListView(scope.vehicleCards, {
+    id: "investor-vehicles",
+    searchText: (c) =>
+      [c.vehicle.nameEn, c.vehicle.nameAr, t.vehicleTypes[c.vehicle.type], ...c.companies.flatMap((co) => [co.nameEn, co.nameAr])].join(" "),
+    sorts: [
+      byText("nameAsc", t.lists.nameAsc, vehicleName),
+      byValue("mostStartups", t.lists.mostStartups, (c) => c.companies.length, true),
+    ],
+  });
 
   if (orgs.length === 0) {
     return (
@@ -178,8 +191,10 @@ export function InvestorPortfolioClient({
               <h2 id="investor-vehicle-exposure-heading" className="font-heading text-sm font-semibold text-foreground">
                 {t.investorDashboard.vehicleExposureTitle}
               </h2>
+              {scope.vehicleCards.length > 0 ? vehicleList.controls : null}
+              {vehicleList.empty}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {scope.vehicleCards.map(({ vehicle, companies, visibleCount }) => (
+                {vehicleList.visible.map(({ vehicle, companies, visibleCount }) => (
                   <div key={vehicle.id} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
                     {/* Deliberately plain text, not a Link to /vehicle/[slug]
                         -- that page is Falak-staff-only (getVehicleDashboardData

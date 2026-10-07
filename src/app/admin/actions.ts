@@ -5,9 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
 import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
-import { deleteCompanyCascade, deleteVehicleCascade } from "@/lib/admin/entity-delete";
 import { validateNewTemplate, toMetricKey } from "@/lib/admin/template-validation";
-import { deleteAttachment } from "@/lib/storage/blob";
+import { notifyReportRequest, describeNotifyResult } from "@/lib/reporting/report-request-notify";
 import {
   validateCompany,
   validateVehicle,
@@ -36,6 +35,8 @@ import type {
 export interface ActionState {
   error: string | null;
   success?: boolean;
+  // Extra information shown after a successful save (e.g. who was emailed).
+  notice?: string;
   // Per-field messages, keyed by input name -- the form highlights exactly these.
   fieldErrors?: FieldErrors;
   // What was submitted, so a rejected form keeps everything the user typed.
@@ -876,7 +877,7 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
   // than failing the whole batch, since "request this quarter from
   // everyone except the two who already have it" is the normal case,
   // not an error.
-  let createdCount = 0;
+  const createdCompanyIds: string[] = [];
   try {
     await db.$transaction(async (tx) => {
       for (const companyId of companyIds) {
@@ -904,19 +905,62 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
           targetType: "ReportingCycle",
           targetId: cycle.id,
         });
-        createdCount += 1;
+        createdCompanyIds.push(companyId);
       }
     });
   } catch {
     return { error: GENERIC_ERROR };
   }
 
-  if (createdCount === 0) {
+  if (createdCompanyIds.length === 0) {
     const message = "Every selected startup already has this template for this period.";
     return { error: message, fieldErrors: { companyIds: message } };
   }
 
-  return { error: null, success: true };
+  // Outside the transaction: the requests exist regardless of email delivery.
+  const notified = await notifyReportRequest(createdCompanyIds, { periodLabel, deadline }, user.id);
+  return { error: null, success: true, notice: describeNotifyResult(notified) };
+}
+
+/**
+ * Emails an existing reporting request again to every startup in it that
+ * hasn't submitted yet (e.g. after adding a founder email or user).
+ */
+export async function resendReportRequestAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  let departments: Department[] | null = null;
+  try {
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
+  } catch (error) {
+    if (isAuthError(error)) return { error: GENERIC_ACCESS_DENIED };
+    throw error;
+  }
+
+  const templateId = readString(formData, "templateId");
+  const periodStartRaw = readString(formData, "periodStart");
+  const periodEndRaw = readString(formData, "periodEnd");
+  if (!templateId || !isDateInput(periodStartRaw) || !isDateInput(periodEndRaw)) return { error: GENERIC_ERROR };
+
+  const cycles = await db.reportingCycle.findMany({
+    where: {
+      templateId,
+      periodStart: new Date(periodStartRaw!),
+      periodEnd: new Date(periodEndRaw!),
+      company: { archivedAt: null, ...(departments ? { department: { in: departments } } : {}) },
+      submission: { status: { in: ["draft", "changes_requested"] } },
+    },
+    select: { companyId: true, periodLabel: true, currentDeadline: true },
+  });
+  if (cycles.length === 0) {
+    return { error: null, success: true, notice: "Every startup in this request has already submitted; nobody was emailed." };
+  }
+
+  const notified = await notifyReportRequest(
+    cycles.map((c) => c.companyId),
+    { periodLabel: cycles[0].periodLabel, deadline: cycles[0].currentDeadline },
+    user.id
+  );
+  return { error: null, success: true, notice: describeNotifyResult(notified) };
 }
 
 // ============================================================
@@ -1457,22 +1501,20 @@ export async function revokeStaffRoleAction(formData: FormData): Promise<void> {
 }
 
 // ============================================================
-// Permanent deletion
+// Delete (hide everywhere; nothing is removed from the database)
 // ============================================================
 
 const CONFIRM_NAME_MISMATCH = "Type the exact English name to confirm deletion.";
 
-async function removeStoredFiles(storageKeys: string[]) {
-  // After the database commit, best effort: a file left behind in storage
-  // is harmless, while failing here must not undo a completed deletion.
-  await Promise.allSettled(storageKeys.map((key) => deleteAttachment(key)));
-}
+// The app's database account cannot delete rows by design, so Delete marks
+// the record deleted (and archived), frees its slug for reuse, and ends
+// any access to it. Every list, page, dashboard, report and export already
+// excludes archived/deleted records; the history stays for audit.
+const deletedSlug = (slug: string) => `${slug}-deleted-${Date.now().toString(36)}`.slice(0, 120);
 
 /**
- * Permanently deletes a startup and everything linked to it (reporting
- * cycles, submissions, published reports, investments, valuations,
- * logins and invites). Investment Professionals and Management may delete
- * startups in their own department; Admin any.
+ * Deletes a startup from the platform. Investment Professionals and
+ * Management may delete startups in their own department; Admin any.
  */
 export async function deleteCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
@@ -1488,38 +1530,44 @@ export async function deleteCompanyAction(_prevState: ActionState, formData: For
 
   const companyId = readString(formData, "companyId");
   if (!companyId) return { error: GENERIC_ERROR };
-  const company = await db.company.findUnique({ where: { id: companyId }, select: { nameEn: true, slug: true, department: true } });
-  if (!company || !inDepartment(departments, company.department)) {
+  const company = await db.company.findUnique({
+    where: { id: companyId },
+    select: { nameEn: true, slug: true, department: true, archivedAt: true, deletedAt: true },
+  });
+  if (!company || company.deletedAt) return { error: GENERIC_ERROR };
+  if (!inDepartment(departments, company.department)) {
     return { error: OUT_OF_DEPARTMENT };
   }
   if (readString(formData, "confirmName") !== company.nameEn.trim()) {
     return { error: CONFIRM_NAME_MISMATCH, fieldErrors: { confirmName: CONFIRM_NAME_MISMATCH } };
   }
 
-  let storageKeys: string[];
+  const now = new Date();
   try {
-    storageKeys = await db.$transaction(
-      async (tx) => {
-        const keys = await deleteCompanyCascade(tx, companyId);
-        await writeAuditEvent(tx, {
-          actorId: user.id,
-          action: "company.deleted",
-          targetType: "Company",
-          targetId: companyId,
-          meta: { nameEn: company.nameEn, slug: company.slug },
-        });
-        return keys;
-      },
-      { timeout: 30000 }
-    );
-  } catch {
+    await db.$transaction(async (tx) => {
+      await tx.company.update({
+        where: { id: companyId },
+        data: { deletedAt: now, archivedAt: company.archivedAt ?? now, slug: deletedSlug(company.slug) },
+      });
+      // Nobody keeps access to a deleted startup.
+      await tx.companyMembership.updateMany({ where: { companyId, revokedAt: null }, data: { revokedAt: now } });
+      await tx.companyInvite.updateMany({ where: { companyId, acceptedAt: null, revokedAt: null }, data: { revokedAt: now } });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "company.deleted",
+        targetType: "Company",
+        targetId: companyId,
+        meta: { nameEn: company.nameEn, slug: company.slug },
+      });
+    });
+  } catch (error) {
+    console.error("deleteCompanyAction failed", error);
     return { error: GENERIC_ERROR };
   }
-  await removeStoredFiles(storageKeys);
   redirect("/admin/manage/new-company");
 }
 
-/** Permanently deletes a vehicle and everything linked to it. Admin only. */
+/** Deletes a vehicle from the platform. Admin only. */
 export async function deleteVehicleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
   try {
@@ -1533,32 +1581,34 @@ export async function deleteVehicleAction(_prevState: ActionState, formData: For
 
   const vehicleId = readString(formData, "vehicleId");
   if (!vehicleId) return { error: GENERIC_ERROR };
-  const vehicle = await db.vehicle.findUnique({ where: { id: vehicleId }, select: { nameEn: true, slug: true } });
-  if (!vehicle) return { error: GENERIC_ERROR };
+  const vehicle = await db.vehicle.findUnique({
+    where: { id: vehicleId },
+    select: { nameEn: true, slug: true, archivedAt: true, deletedAt: true },
+  });
+  if (!vehicle || vehicle.deletedAt) return { error: GENERIC_ERROR };
   if (readString(formData, "confirmName") !== vehicle.nameEn.trim()) {
     return { error: CONFIRM_NAME_MISMATCH, fieldErrors: { confirmName: CONFIRM_NAME_MISMATCH } };
   }
 
-  let storageKeys: string[];
+  const now = new Date();
   try {
-    storageKeys = await db.$transaction(
-      async (tx) => {
-        const keys = await deleteVehicleCascade(tx, vehicleId);
-        await writeAuditEvent(tx, {
-          actorId: user.id,
-          action: "vehicle.deleted",
-          targetType: "Vehicle",
-          targetId: vehicleId,
-          meta: { nameEn: vehicle.nameEn, slug: vehicle.slug },
-        });
-        return keys;
-      },
-      { timeout: 30000 }
-    );
-  } catch {
+    await db.$transaction(async (tx) => {
+      await tx.vehicle.update({
+        where: { id: vehicleId },
+        data: { deletedAt: now, archivedAt: vehicle.archivedAt ?? now, slug: deletedSlug(vehicle.slug) },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "vehicle.deleted",
+        targetType: "Vehicle",
+        targetId: vehicleId,
+        meta: { nameEn: vehicle.nameEn, slug: vehicle.slug },
+      });
+    });
+  } catch (error) {
+    console.error("deleteVehicleAction failed", error);
     return { error: GENERIC_ERROR };
   }
-  await removeStoredFiles(storageKeys);
   redirect("/admin/manage/new-vehicle");
 }
 

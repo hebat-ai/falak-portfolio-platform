@@ -8,6 +8,8 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/format";
 import { createReportingCycleAction } from "../../actions";
+import { ResendRequestButton } from "./ResendRequestButton";
+import { useListView, byText, byValue } from "@/components/lists/useListView";
 import { labelClass, fieldClass, initialActionState, FormMessage } from "./shared";
 import type { AdminCompanyDTO, AdminReportingTemplateDTO } from "@/lib/admin/dto";
 import type { ReportingRequestGroup } from "@/lib/admin/reporting-request-groups";
@@ -34,6 +36,21 @@ export function CreateReportingCycleForm({
     const c = companies.find((x) => x.id === id);
     return c ? (lang === "ar" ? c.nameAr : c.nameEn) : null;
   };
+  const templateName = (g: ReportingRequestGroup) => (lang === "ar" ? g.templateNameAr : g.templateNameEn);
+  const requestList = useListView(groups, {
+    id: "sent-requests",
+    searchText: (g) =>
+      [g.periodLabel, g.templateNameEn, g.templateNameAr, ...g.companyIds.map((id) => {
+        const c = companies.find((x) => x.id === id);
+        return c ? `${c.nameEn} ${c.nameAr}` : "";
+      })].join(" "),
+    sorts: [
+      byValue("periodDesc", t.lists.periodDesc, (g) => g.periodStart, true),
+      byValue("periodAsc", t.lists.periodAsc, (g) => g.periodStart),
+      byValue("deadline", t.lists.deadlineAsc, (g) => g.deadline),
+      byText("template", t.lists.nameAsc, templateName),
+    ],
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -140,8 +157,10 @@ export function CreateReportingCycleForm({
         <section className="flex flex-col gap-2">
           <h4 className="text-xs font-semibold text-muted-foreground">{t.admin.manage.sentRequestsTitle}</h4>
           <p className="text-xs text-muted-foreground">{t.admin.manage.sentRequestsHint}</p>
+          {requestList.controls}
+          {requestList.empty}
           <ul className="chamfer-br-md divide-y divide-border-subtle shadow-[var(--inner-line)]">
-            {groups.map((g) => (
+            {requestList.visible.map((g) => (
               <li key={g.key} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">
@@ -151,17 +170,20 @@ export function CreateReportingCycleForm({
                     {g.companyIds.map(companyName).filter(Boolean).join(", ")}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  onClick={() => {
-                    setAddingKey(g.key);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                >
-                  {t.admin.manage.addCompaniesAction}
-                </Button>
+                <div className="flex flex-wrap items-start gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={() => {
+                      setAddingKey(g.key);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  >
+                    {t.admin.manage.addCompaniesAction}
+                  </Button>
+                  <ResendRequestButton templateId={g.templateId} periodStart={g.periodStart} periodEnd={g.periodEnd} />
+                </div>
               </li>
             ))}
           </ul>

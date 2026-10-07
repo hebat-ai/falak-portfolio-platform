@@ -11,6 +11,7 @@ import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
 import type { ReportingRequestRow } from "@/lib/admin/reporting-requests";
+import { useListView, byText, byValue } from "@/components/lists/useListView";
 
 const COLUMN_COUNT = 9;
 
@@ -140,44 +141,61 @@ function ReportLogRow({
 
 export function ReportsLogTable({ rows, onSelectForReview, extendDeadlineAction, resendAction }: ReportsLogTableProps) {
   const { t, lang } = useLanguage();
+  const { visible, controls, empty } = useListView(rows, {
+    id: "reports-log",
+    searchText: (r) =>
+      [r.companyNameEn, r.companyNameAr, r.periodLabel, r.templateNameEn, r.templateNameAr, ...r.vehicles.flatMap((v) => [v.nameEn, v.nameAr])].join(" "),
+    sorts: [
+      byValue("newest", t.lists.newestFirst, (r) => r.requestedAt, true),
+      byValue("oldest", t.lists.oldestFirst, (r) => r.requestedAt),
+      byValue("deadlineAsc", t.lists.deadlineAsc, (r) => r.currentDeadline),
+      byValue("periodDesc", t.lists.periodDesc, (r) => r.periodStart, true),
+      byText("nameAsc", t.lists.nameAsc, (r) => (lang === "ar" ? r.companyNameAr : r.companyNameEn)),
+      byText("statusAsc", t.lists.statusAsc, (r) => r.submissionStatus),
+    ],
+  });
 
   return (
-    <Table caption={t.reviewWorkspace.reportsLogCaption}>
-      <THead>
-        <Tr>
-          <Th>{t.admin.table.companyColumn}</Th>
-          <Th>{t.admin.table.vehicleColumn}</Th>
-          <Th>{t.companyRegister.periodColumnLabel}</Th>
-          <Th>{t.reviewWorkspace.requestedColumn}</Th>
-          <Th>{t.admin.reportingStatusPanel.deadlineColumn}</Th>
-          <Th>{t.admin.table.statusColumn}</Th>
-          <Th>{t.reviewWorkspace.publishedColumn}</Th>
-          <Th>{t.reviewWorkspace.distributionColumn}</Th>
-          <Th>
-            <span className="sr-only">{t.reviewWorkspace.reviewAction}</span>
-          </Th>
-        </Tr>
-      </THead>
-      <TBody>
-        {rows.length === 0 ? (
+    <div className="flex flex-col gap-2">
+      {rows.length > 0 ? controls : null}
+      {empty}
+      <Table caption={t.reviewWorkspace.reportsLogCaption}>
+        <THead>
           <Tr>
-            <Td colSpan={COLUMN_COUNT} className="py-8 text-center text-muted-foreground">
-              {t.admin.emptyState}
-            </Td>
+            <Th>{t.admin.table.companyColumn}</Th>
+            <Th>{t.admin.table.vehicleColumn}</Th>
+            <Th>{t.companyRegister.periodColumnLabel}</Th>
+            <Th>{t.reviewWorkspace.requestedColumn}</Th>
+            <Th>{t.admin.reportingStatusPanel.deadlineColumn}</Th>
+            <Th>{t.admin.table.statusColumn}</Th>
+            <Th>{t.reviewWorkspace.publishedColumn}</Th>
+            <Th>{t.reviewWorkspace.distributionColumn}</Th>
+            <Th>
+              <span className="sr-only">{t.reviewWorkspace.reviewAction}</span>
+            </Th>
           </Tr>
-        ) : (
-          rows.map((row) => (
-            <ReportLogRow
-              key={row.cycleId}
-              row={row}
-              lang={lang}
-              onSelectForReview={onSelectForReview}
-              extendDeadlineAction={extendDeadlineAction}
-              resendAction={resendAction}
-            />
-          ))
-        )}
-      </TBody>
-    </Table>
+        </THead>
+        <TBody>
+          {rows.length === 0 ? (
+            <Tr>
+              <Td colSpan={COLUMN_COUNT} className="py-8 text-center text-muted-foreground">
+                {t.admin.emptyState}
+              </Td>
+            </Tr>
+          ) : (
+            visible.map((row) => (
+              <ReportLogRow
+                key={row.cycleId}
+                row={row}
+                lang={lang}
+                onSelectForReview={onSelectForReview}
+                extendDeadlineAction={extendDeadlineAction}
+                resendAction={resendAction}
+              />
+            ))
+          )}
+        </TBody>
+      </Table>
+    </div>
   );
 }

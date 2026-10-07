@@ -32,17 +32,19 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
   // row leaks in through a relation.
   const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
   const deptWhere = scope.departments ? { department: { in: scope.departments } } : {};
+  // Archived records still show here (marked as such); deleted ones never do.
+  const liveWhere = { ...deptWhere, deletedAt: null };
 
   const [companies, vehicles, investors, ownershipPositions, cycles, templates] = await Promise.all([
-    db.company.findMany({ where: deptWhere, orderBy: { nameEn: "asc" } }),
-    db.vehicle.findMany({ where: deptWhere, orderBy: { nameEn: "asc" } }),
+    db.company.findMany({ where: liveWhere, orderBy: { nameEn: "asc" } }),
+    db.vehicle.findMany({ where: liveWhere, orderBy: { nameEn: "asc" } }),
     db.investor.findMany({ where: deptWhere, orderBy: { nameEn: "asc" } }),
     db.ownershipPosition.findMany({
-      where: { holderType: "VEHICLE", company: deptWhere, vehicle: deptWhere },
+      where: { holderType: "VEHICLE", company: liveWhere, vehicle: liveWhere },
       select: { companyId: true, vehicleId: true },
     }),
     db.reportingCycle.findMany({
-      where: { company: deptWhere },
+      where: { company: liveWhere },
       select: {
         id: true,
         companyId: true,
@@ -108,6 +110,7 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
 
     return {
       id: company.id,
+      updatedAt: company.updatedAt.toISOString(),
       slug: company.slug,
       nameEn: company.nameEn,
       nameAr: company.nameAr,
@@ -127,6 +130,7 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
     companies: companyDTOs,
     vehicles: vehicles.map((v) => ({
       id: v.id,
+      updatedAt: v.updatedAt.toISOString(),
       slug: v.slug,
       nameEn: v.nameEn,
       nameAr: v.nameAr,
@@ -136,6 +140,7 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
     })),
     investors: investors.map((i) => ({
       id: i.id,
+      updatedAt: i.updatedAt.toISOString(),
       nameEn: i.nameEn,
       nameAr: i.nameAr,
       type: i.type,
@@ -145,6 +150,12 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
       .filter((p): p is typeof p & { vehicleId: string } => p.vehicleId !== null)
       .map((p) => ({ vehicleId: p.vehicleId, companyId: p.companyId })),
     periods,
-    templates: templates.map((t) => ({ id: t.id, nameEn: t.nameEn, nameAr: t.nameAr, isActive: t.isActive })),
+    templates: templates.map((t) => ({
+      id: t.id,
+      updatedAt: t.updatedAt.toISOString(),
+      nameEn: t.nameEn,
+      nameAr: t.nameAr,
+      isActive: t.isActive,
+    })),
   };
 }

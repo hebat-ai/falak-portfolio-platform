@@ -35,6 +35,8 @@ export interface CompanyListRow {
   lastReportedCashBurn: number | null;
   lastReportedRunwayMonths: number | null;
   lastUpdated: string | null;
+  /** Profile last created/edited -- drives the default "recently added or edited" sort. */
+  updatedAt: string;
 }
 
 function toDateOnly(date: Date): string {
@@ -75,6 +77,7 @@ export async function getCompanyListData(): Promise<CompanyListRow[]> {
       currentStage: true,
       department: true,
       currency: true,
+      updatedAt: true,
       ownershipPositions: {
         where: { vehicle: { archivedAt: null } },
         select: {
@@ -151,6 +154,7 @@ export async function getCompanyListData(): Promise<CompanyListRow[]> {
         lastReportedCashBurn,
         lastReportedRunwayMonths,
         lastUpdated,
+        updatedAt: company.updatedAt.toISOString(),
       };
     })
   );

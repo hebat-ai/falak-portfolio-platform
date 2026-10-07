@@ -8,6 +8,7 @@ import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
 import type { AuditEventPage } from "@/lib/admin/audit";
+import { useListView, byText, byValue } from "@/components/lists/useListView";
 
 interface AuditLogClientProps {
   data: AuditEventPage;
@@ -24,6 +25,15 @@ function toDateTimeLabel(iso: string, lang: "en" | "ar"): string {
 export function AuditLogClient({ data, page, selectedAction }: AuditLogClientProps) {
   const { t, lang } = useLanguage();
   const router = useRouter();
+  const list = useListView(data.events, {
+    id: "audit-log",
+    searchText: (e) => `${e.actorEmail ?? ""} ${e.action} ${e.targetType} ${e.targetId}`,
+    sorts: [
+      byValue("newest", t.lists.newestFirst, (e) => e.createdAt, true),
+      byValue("oldest", t.lists.oldestFirst, (e) => e.createdAt),
+      byText("emailAsc", t.lists.emailAsc, (e) => e.actorEmail),
+    ],
+  });
 
   function navigate(nextPage: number, nextAction: string) {
     const params = new URLSearchParams();
@@ -55,7 +65,9 @@ export function AuditLogClient({ data, page, selectedAction }: AuditLogClientPro
             </Select>
           </div>
         </div>
+        {data.events.length > 0 ? <div className="mt-3">{list.controls}</div> : null}
       </Card>
+      {list.empty}
 
       {data.events.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t.admin.manage.auditNoEventsMessage}</p>
@@ -70,7 +82,7 @@ export function AuditLogClient({ data, page, selectedAction }: AuditLogClientPro
             </Tr>
           </THead>
           <TBody>
-            {data.events.map((e) => (
+            {list.visible.map((e) => (
               <Tr key={e.id}>
                 <Td>
                   <time dateTime={e.createdAt}>{toDateTimeLabel(e.createdAt, lang)}</time>

@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { useListView, byText } from "@/components/lists/useListView";
 import type { StaffUserRow } from "@/lib/admin/staff";
 import {
   adminSetStaffDepartmentAction,
@@ -70,27 +71,39 @@ function StaffUserRowItem({ row }: { row: StaffUserRow }) {
 
 export function StaffUsersTable({ rows }: { rows: StaffUserRow[] }) {
   const { t } = useLanguage();
+  const { visible, controls, empty } = useListView(rows, {
+    id: "staff-users",
+    searchText: (r) => `${r.email} ${t.staffRoleNames[r.role]} ${r.department ? t.departments[r.department] : ""}`,
+    sorts: [
+      byText("emailAsc", t.lists.emailAsc, (r) => r.email),
+      byText("roleAsc", t.lists.roleAsc, (r) => t.staffRoleNames[r.role]),
+    ],
+  });
 
   return (
-    <table className="w-full text-start">
-      <caption className="mb-2 text-start text-xs text-muted-foreground">
-        {t.admin.manage.staffListCaption}
-      </caption>
-      <thead>
-        <tr className="border-b border-border text-xs font-medium text-muted-foreground">
-          <th className="py-2 pe-4 text-start">{t.admin.manage.emailLabel}</th>
-          <th className="py-2 pe-4 text-start">{t.admin.manage.roleLabel}</th>
-          <th className="py-2 pe-4 text-start">{t.admin.manage.departmentLabel}</th>
-          <th className="py-2 pe-4 text-start">{t.admin.manage.hasPasswordLabel}</th>
-          <th className="py-2 pe-4 text-start">{t.admin.manage.newPasswordLabel}</th>
-          <th className="py-2 text-start" />
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <StaffUserRowItem key={row.id} row={row} />
-        ))}
-      </tbody>
-    </table>
+    <div className="flex flex-col gap-2">
+      {controls}
+      {empty}
+      <table className="w-full text-start">
+        <caption className="mb-2 text-start text-xs text-muted-foreground">
+          {t.admin.manage.staffListCaption}
+        </caption>
+        <thead>
+          <tr className="border-b border-border text-xs font-medium text-muted-foreground">
+            <th className="py-2 pe-4 text-start">{t.admin.manage.emailLabel}</th>
+            <th className="py-2 pe-4 text-start">{t.admin.manage.roleLabel}</th>
+            <th className="py-2 pe-4 text-start">{t.admin.manage.departmentLabel}</th>
+            <th className="py-2 pe-4 text-start">{t.admin.manage.hasPasswordLabel}</th>
+            <th className="py-2 pe-4 text-start">{t.admin.manage.newPasswordLabel}</th>
+            <th className="py-2 text-start" />
+          </tr>
+        </thead>
+        <tbody>
+          {visible.map((row) => (
+            <StaffUserRowItem key={`${row.id}-${row.role}`} row={row} />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

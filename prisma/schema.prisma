@@ -256,6 +256,9 @@ model Company {
   hqCity        String?
   hqCountry     String?
   archivedAt    DateTime?
+  // Set by Delete: the startup is hidden everywhere (even where archived
+  // ones still show) while its history stays in the database.
+  deletedAt     DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -339,6 +342,8 @@ model Vehicle {
   // investors) in that same department.
   department  Department  @default(InvestmentDepartment)
   archivedAt  DateTime?
+  // Set by Delete; see Company.deletedAt.
+  deletedAt   DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 

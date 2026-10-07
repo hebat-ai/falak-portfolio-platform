@@ -66,8 +66,8 @@ async function requireCompanyReportViewer(
 export async function getCompanyReportData(slug: string): Promise<CompanyReportData | null> {
   await requireCurrentUser();
 
-  const company = await db.company.findUnique({
-    where: { slug },
+  const company = await db.company.findFirst({
+    where: { slug, deletedAt: null },
     select: {
       id: true,
       slug: true,

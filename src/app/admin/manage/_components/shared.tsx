@@ -19,7 +19,12 @@ export function FormMessage({ state }: { state: ActionState }) {
     );
   }
   if (state.success) {
-    return <p className="text-xs font-medium text-nebula-aqua">{t.admin.manage.successMessage}</p>;
+    return (
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-nebula-aqua">{t.admin.manage.successMessage}</p>
+        {state.notice ? <p className="text-xs text-foreground">{state.notice}</p> : null}
+      </div>
+    );
   }
   return null;
 }

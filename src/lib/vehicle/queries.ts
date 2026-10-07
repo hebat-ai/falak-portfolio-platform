@@ -70,8 +70,8 @@ export async function getVehicleDirectoryData(): Promise<VehicleDirectoryEntryDT
 export async function getVehicleDashboardData(slug: string): Promise<VehicleDashboardData | null> {
   const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
 
-  const vehicle = await db.vehicle.findUnique({
-    where: { slug },
+  const vehicle = await db.vehicle.findFirst({
+    where: { slug, deletedAt: null },
     select: {
       id: true,
       slug: true,

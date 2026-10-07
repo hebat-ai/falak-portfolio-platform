@@ -40,6 +40,8 @@ export interface AdminCompanyPeriodData {
 
 export interface AdminCompanyDTO {
   id: string;
+  // When the record was last created or edited (ISO), for "recently added or edited" sorting.
+  updatedAt: string;
   slug: string;
   nameEn: string;
   nameAr: string;
@@ -56,6 +58,7 @@ export interface AdminCompanyDTO {
 
 export interface AdminVehicleDTO {
   id: string;
+  updatedAt: string;
   slug: string;
   nameEn: string;
   nameAr: string;
@@ -66,6 +69,7 @@ export interface AdminVehicleDTO {
 
 export interface AdminInvestorDTO {
   id: string;
+  updatedAt: string;
   nameEn: string;
   nameAr: string;
   type: InvestorType;
@@ -79,6 +83,7 @@ export interface AdminOwnershipLinkDTO {
 
 export interface AdminReportingTemplateDTO {
   id: string;
+  updatedAt: string;
   nameEn: string;
   nameAr: string;
   isActive: boolean;

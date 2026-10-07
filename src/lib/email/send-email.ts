@@ -109,6 +109,35 @@ export async function sendDeadlineReminderEmail(
   }
 }
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/**
+ * Sent when Falak requests a report from a startup. `isInvite` means the
+ * recipient has no login yet: the link is an invitation that creates
+ * their access and leads to the reporting form.
+ */
+export async function sendReportRequestEmail(
+  to: string,
+  details: { companyName: string; periodLabel: string; deadline: string; url: string; isInvite: boolean }
+): Promise<void> {
+  const { companyName, periodLabel, deadline, url, isInvite } = details;
+  const action = isInvite
+    ? "Accept the invitation below to set up your access, then fill in the report."
+    : "Open the reporting form below to fill it in.";
+  const resend = getClient();
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `Falak report request: ${periodLabel} -- ${companyName}`,
+    html: `<p>Falak Ventures has requested the ${escapeHtml(periodLabel)} report for ${escapeHtml(companyName)}, due on ${escapeHtml(deadline)}.</p><p>${action}</p><p><a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>`,
+    text: `Falak Ventures has requested the ${periodLabel} report for ${companyName}, due on ${deadline}.\n\n${action}\n\n${url}`,
+  });
+  if (error) {
+    throw new Error(`Failed to send report-request email: ${error.message}`);
+  }
+}
+
 /**
  * Sent once a reporting deadline has already passed without a submission.
  * Distinct subject/tone from the upcoming reminder so an inbox can tell

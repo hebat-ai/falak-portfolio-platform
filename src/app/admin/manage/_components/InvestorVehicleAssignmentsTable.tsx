@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Num } from "@/components/ui/Num";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { useListView, byText, byValue } from "@/components/lists/useListView";
 import { unassignInvestorFromVehicleAction } from "../../actions";
 import type { InvestorVehicleAssignmentRow } from "@/lib/admin/investor-vehicle-assignments";
 
@@ -12,48 +13,66 @@ const COLUMN_COUNT = 6;
 
 export function InvestorVehicleAssignmentsTable({ rows }: { rows: InvestorVehicleAssignmentRow[] }) {
   const { t, lang } = useLanguage();
+  const investorName = (r: InvestorVehicleAssignmentRow) => (lang === "ar" ? r.investorNameAr : r.investorNameEn);
+  const vehicleName = (r: InvestorVehicleAssignmentRow) => (lang === "ar" ? r.vehicleNameAr : r.vehicleNameEn);
+  const { visible, controls, empty } = useListView(rows, {
+    id: "investor-vehicle-assignments",
+    searchText: (r) => `${r.investorNameEn} ${r.investorNameAr} ${r.vehicleNameEn} ${r.vehicleNameAr}`,
+    sorts: [
+      byValue("newest", t.lists.newestFirst, (r) => r.effectiveFrom, true),
+      byValue("oldest", t.lists.oldestFirst, (r) => r.effectiveFrom),
+      byText("nameAsc", t.lists.nameAsc, investorName),
+      byText("vehicle", t.admin.manage.vehicleLabel, vehicleName),
+      byValue("amountDesc", t.lists.amountDesc, (r) => r.commitmentAmount, true),
+      byValue("ownershipDesc", t.lists.ownershipDesc, (r) => r.ownershipPct, true),
+    ],
+  });
 
   return (
-    <Table caption={t.admin.manage.investorVehicleAssignmentsCaption}>
-      <THead>
-        <Tr>
-          <Th>{t.admin.manage.investorLabel}</Th>
-          <Th>{t.admin.manage.vehicleLabel}</Th>
-          <Th>{t.admin.manage.commitmentAmountLabel}</Th>
-          <Th>{t.admin.manage.ownershipPctLabel}</Th>
-          <Th>{t.admin.manage.effectiveFromLabel}</Th>
-          <Th>
-            <span className="sr-only">{t.admin.manage.archiveAction}</span>
-          </Th>
-        </Tr>
-      </THead>
-      <TBody>
-        {rows.length === 0 ? (
+    <div className="flex flex-col gap-2">
+      {rows.length > 0 ? controls : null}
+      {empty}
+      <Table caption={t.admin.manage.investorVehicleAssignmentsCaption}>
+        <THead>
           <Tr>
-            <Td colSpan={COLUMN_COUNT} className="py-8 text-center text-muted-foreground">
-              {t.admin.emptyState}
-            </Td>
+            <Th>{t.admin.manage.investorLabel}</Th>
+            <Th>{t.admin.manage.vehicleLabel}</Th>
+            <Th>{t.admin.manage.commitmentAmountLabel}</Th>
+            <Th>{t.admin.manage.ownershipPctLabel}</Th>
+            <Th>{t.admin.manage.effectiveFromLabel}</Th>
+            <Th>
+              <span className="sr-only">{t.admin.manage.archiveAction}</span>
+            </Th>
           </Tr>
-        ) : (
-          rows.map((row) => (
-            <Tr key={row.id}>
-              <Td>{lang === "ar" ? row.investorNameAr : row.investorNameEn}</Td>
-              <Td>{lang === "ar" ? row.vehicleNameAr : row.vehicleNameEn}</Td>
-              <Td>{row.commitmentAmount === null ? t.admin.table.noDataValue : <Num>{formatCurrency(row.commitmentAmount, row.currency, lang)}</Num>}</Td>
-              <Td>{row.ownershipPct === null ? t.admin.table.noDataValue : <Num>{formatPercent(row.ownershipPct, lang)}</Num>}</Td>
-              <Td>{formatDate(row.effectiveFrom, lang)}</Td>
-              <Td>
-                <form action={unassignInvestorFromVehicleAction}>
-                  <input type="hidden" name="positionId" value={row.id} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {t.admin.manage.unassignAction}
-                  </Button>
-                </form>
+        </THead>
+        <TBody>
+          {rows.length === 0 ? (
+            <Tr>
+              <Td colSpan={COLUMN_COUNT} className="py-8 text-center text-muted-foreground">
+                {t.admin.emptyState}
               </Td>
             </Tr>
-          ))
-        )}
-      </TBody>
-    </Table>
+          ) : (
+            visible.map((row) => (
+              <Tr key={row.id}>
+                <Td>{investorName(row)}</Td>
+                <Td>{vehicleName(row)}</Td>
+                <Td>{row.commitmentAmount === null ? t.admin.table.noDataValue : <Num>{formatCurrency(row.commitmentAmount, row.currency, lang)}</Num>}</Td>
+                <Td>{row.ownershipPct === null ? t.admin.table.noDataValue : <Num>{formatPercent(row.ownershipPct, lang)}</Num>}</Td>
+                <Td>{formatDate(row.effectiveFrom, lang)}</Td>
+                <Td>
+                  <form action={unassignInvestorFromVehicleAction}>
+                    <input type="hidden" name="positionId" value={row.id} />
+                    <Button type="submit" variant="outline" size="sm">
+                      {t.admin.manage.unassignAction}
+                    </Button>
+                  </form>
+                </Td>
+              </Tr>
+            ))
+          )}
+        </TBody>
+      </Table>
+    </div>
   );
 }

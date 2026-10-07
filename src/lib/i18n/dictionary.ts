@@ -274,6 +274,7 @@ export interface Dictionary {
       editInvestorTitle: string;
       editAction: string;
       saveChangesLabel: string;
+      emailAgainAction: string;
       editTemplateTitle: string;
       templatesListTitle: string;
       templateActiveLabel: string;
@@ -527,6 +528,41 @@ export interface Dictionary {
   pendingApproval: {
     title: string;
     description: string;
+  };
+  lists: {
+    searchPlaceholder: string;
+    clearSearch: string;
+    sortLabel: string;
+    noMatches: string;
+    showingCount: string;
+    recentlyUpdated: string;
+    oldestFirst: string;
+    newestFirst: string;
+    nameAsc: string;
+    nameDesc: string;
+    amountDesc: string;
+    amountAsc: string;
+    periodDesc: string;
+    periodAsc: string;
+    deadlineAsc: string;
+    emailAsc: string;
+    roleAsc: string;
+    ownershipDesc: string;
+    revenueDesc: string;
+    growthDesc: string;
+    runwayAsc: string;
+    statusAsc: string;
+    sectorAsc: string;
+    stageAsc: string;
+    lastUpdatedDesc: string;
+    mostStartups: string;
+    mostInvestors: string;
+    navDesc: string;
+    moicDesc: string;
+    vintageDesc: string;
+    burnDesc: string;
+    investmentYearDesc: string;
+    overdueDesc: string;
   };
   access: {
     subtitle: string;
@@ -881,6 +917,7 @@ export const en = {
       editInvestorTitle: "Edit Investor",
       editAction: "Edit",
       saveChangesLabel: "Save Changes",
+      emailAgainAction: "Email again",
       editTemplateTitle: "Edit Reporting Template",
       templatesListTitle: "Templates",
       templateActiveLabel: "Active (offered for new reporting cycles)",
@@ -890,11 +927,11 @@ export const en = {
       metricRequiredLabel: "Required",
       metricActiveLabel: "Shown on the form",
       metricLockedNote: "Key and data type are locked because startups have entered values for this metric.",
-      deleteSectionTitle: "Delete permanently",
-      deleteCompanyWarning: "Permanently deletes this startup and everything linked to it: reporting cycles, submissions, published reports (including those investors can see), investments, valuations, logins and invites. This cannot be undone. To only hide it, use Archive instead.",
-      deleteVehicleWarning: "Permanently deletes this vehicle and everything linked to it: its holdings in startups (the startups themselves stay), investors' positions, capital transactions, NAV records and vehicle reports. This cannot be undone. To only hide it, use Archive instead.",
+      deleteSectionTitle: "Delete",
+      deleteCompanyWarning: "Removes this startup from every list, dashboard and portal, ends its users' access and cancels its pending invites. Its name can be reused for a new startup. Its history is kept in the database for the audit trail, but it cannot be restored from the platform.",
+      deleteVehicleWarning: "Removes this vehicle from every list, dashboard and portal (the startups it holds stay). Its name can be reused. Its history is kept in the database for the audit trail, but it cannot be restored from the platform.",
       deleteConfirmLabel: "To confirm, type the English name:",
-      deleteAction: "Delete permanently",
+      deleteAction: "Delete",
       successMessage: "Saved.",
       inviteCreatedMessage: "Invite created. Copy this link and send it to the company yourself — email delivery isn't wired up yet.",
       auditLogTitle: "Audit Log",
@@ -1140,6 +1177,41 @@ export const en = {
   pendingApproval: {
     title: "Pending approval",
     description: "Your access request is still under review. Falak will email you once it's approved.",
+  },
+  lists: {
+    searchPlaceholder: "Search…",
+    clearSearch: "Clear search",
+    sortLabel: "Sort",
+    noMatches: "Nothing matches your search.",
+    showingCount: "Showing {shown} of {total}",
+    recentlyUpdated: "Recently added or edited",
+    oldestFirst: "Oldest first",
+    newestFirst: "Newest first",
+    nameAsc: "Name (A–Z)",
+    nameDesc: "Name (Z–A)",
+    amountDesc: "Highest amount",
+    amountAsc: "Lowest amount",
+    periodDesc: "Latest period",
+    periodAsc: "Earliest period",
+    deadlineAsc: "Deadline (soonest)",
+    emailAsc: "Email (A–Z)",
+    roleAsc: "Role",
+    ownershipDesc: "Highest ownership",
+    revenueDesc: "Highest revenue",
+    growthDesc: "Highest growth",
+    runwayAsc: "Shortest runway",
+    statusAsc: "Status",
+    sectorAsc: "Industry (A–Z)",
+    stageAsc: "Stage",
+    lastUpdatedDesc: "Last report update",
+    mostStartups: "Most startups",
+    mostInvestors: "Most investors",
+    navDesc: "Highest NAV",
+    moicDesc: "Highest MOIC",
+    vintageDesc: "Newest vintage",
+    burnDesc: "Highest burn",
+    investmentYearDesc: "Latest investment year",
+    overdueDesc: "Most overdue",
   },
   access: {
     subtitle: "Who can access each company and investor organization, plus invites that haven't been used yet.",
@@ -1494,6 +1566,7 @@ export const ar = {
       editInvestorTitle: "تعديل المستثمر",
       editAction: "تعديل",
       saveChangesLabel: "حفظ التغييرات",
+      emailAgainAction: "إرسال البريد مجدداً",
       editTemplateTitle: "تعديل قالب التقارير",
       templatesListTitle: "القوالب",
       templateActiveLabel: "نشط (متاح لدورات التقارير الجديدة)",
@@ -1503,11 +1576,11 @@ export const ar = {
       metricRequiredLabel: "إلزامي",
       metricActiveLabel: "يظهر في النموذج",
       metricLockedNote: "المفتاح ونوع البيانات مقفلان لأن الشركات الناشئة أدخلت قيماً لهذا المؤشر.",
-      deleteSectionTitle: "حذف نهائي",
-      deleteCompanyWarning: "يحذف هذه الشركة الناشئة نهائياً مع كل ما يرتبط بها: دورات التقارير والتقارير المقدمة والتقارير المنشورة (بما فيها ما يراه المستثمرون) والاستثمارات والتقييمات وحسابات الدخول والدعوات. لا يمكن التراجع عن ذلك. لإخفائها فقط استخدم الأرشفة.",
-      deleteVehicleWarning: "يحذف هذه الأداة الاستثمارية نهائياً مع كل ما يرتبط بها: حصصها في الشركات الناشئة (تبقى الشركات نفسها) ومراكز المستثمرين والمعاملات الرأسمالية وسجلات صافي قيمة الأصول وتقارير الأداة. لا يمكن التراجع عن ذلك. لإخفائها فقط استخدم الأرشفة.",
+      deleteSectionTitle: "حذف",
+      deleteCompanyWarning: "يزيل هذه الشركة الناشئة من جميع القوائم ولوحات المعلومات والبوابات، وينهي وصول مستخدميها ويلغي دعواتها المعلقة. يمكن استخدام اسمها لشركة جديدة. يُحتفظ بسجلها في قاعدة البيانات لأغراض التدقيق، ولا يمكن استعادتها من المنصة.",
+      deleteVehicleWarning: "يزيل هذه الأداة الاستثمارية من جميع القوائم ولوحات المعلومات والبوابات (تبقى الشركات التي تملكها). يمكن استخدام اسمها مجدداً. يُحتفظ بسجلها في قاعدة البيانات لأغراض التدقيق، ولا يمكن استعادتها من المنصة.",
       deleteConfirmLabel: "للتأكيد، اكتب الاسم بالإنجليزية:",
-      deleteAction: "حذف نهائي",
+      deleteAction: "حذف",
       successMessage: "تم الحفظ.",
       inviteCreatedMessage: "تم إنشاء الدعوة. انسخ هذا الرابط وأرسله إلى الشركة بنفسك — إرسال البريد الإلكتروني التلقائي غير مُفعّل بعد.",
       auditLogTitle: "سجل التدقيق",
@@ -1753,6 +1826,41 @@ export const ar = {
   pendingApproval: {
     title: "بانتظار الموافقة",
     description: "لا يزال طلب الوصول الخاص بك قيد المراجعة. ستُرسل لك فلك بريدًا إلكترونيًا عند الموافقة عليه.",
+  },
+  lists: {
+    searchPlaceholder: "بحث…",
+    clearSearch: "مسح البحث",
+    sortLabel: "ترتيب",
+    noMatches: "لا توجد نتائج مطابقة لبحثك.",
+    showingCount: "عرض {shown} من {total}",
+    recentlyUpdated: "المضاف أو المعدّل مؤخراً",
+    oldestFirst: "الأقدم أولاً",
+    newestFirst: "الأحدث أولاً",
+    nameAsc: "الاسم (أ–ي)",
+    nameDesc: "الاسم (ي–أ)",
+    amountDesc: "الأعلى مبلغاً",
+    amountAsc: "الأقل مبلغاً",
+    periodDesc: "أحدث فترة",
+    periodAsc: "أقدم فترة",
+    deadlineAsc: "الموعد النهائي (الأقرب)",
+    emailAsc: "البريد الإلكتروني (أ–ي)",
+    roleAsc: "الدور",
+    ownershipDesc: "الأعلى ملكية",
+    revenueDesc: "الأعلى إيرادات",
+    growthDesc: "الأعلى نمواً",
+    runwayAsc: "أقصر مدة سيولة",
+    statusAsc: "الحالة",
+    sectorAsc: "القطاع (أ–ي)",
+    stageAsc: "المرحلة",
+    lastUpdatedDesc: "آخر تحديث للتقرير",
+    mostStartups: "الأكثر شركات ناشئة",
+    mostInvestors: "الأكثر مستثمرين",
+    navDesc: "الأعلى صافي قيمة أصول",
+    moicDesc: "الأعلى مضاعف رأس المال",
+    vintageDesc: "أحدث سنة تأسيس",
+    burnDesc: "الأعلى حرقاً للنقد",
+    investmentYearDesc: "أحدث سنة استثمار",
+    overdueDesc: "الأكثر تأخراً",
   },
   access: {
     subtitle: "من يمكنه الوصول إلى كل شركة ومؤسسة استثمارية، إضافة إلى الدعوات التي لم تُستخدم بعد.",

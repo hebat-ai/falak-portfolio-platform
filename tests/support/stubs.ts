@@ -28,6 +28,16 @@ export function setDbStub(stub: unknown): void {
   if (s && typeof s === "object" && !("user" in s)) {
     s.user = { findUnique: async () => ({ department: DEFAULT_STUB_DEPARTMENT }) };
   }
+  // Lookups by slug use findFirst (to also exclude deleted records); domain
+  // stubs that only model findUnique serve both.
+  if (s && typeof s === "object") {
+    for (const model of Object.values(s)) {
+      if (model && typeof model === "object") {
+        const m = model as Record<string, unknown>;
+        if (typeof m.findUnique === "function" && !("findFirst" in m)) m.findFirst = m.findUnique;
+      }
+    }
+  }
   (globalThis as Record<string, unknown>).__TEST_DB_STUB__ = stub;
 }
 
