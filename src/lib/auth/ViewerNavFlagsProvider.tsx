@@ -3,7 +3,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { ViewerNavFlags } from "./viewer-roles";
 
-const DEFAULT_FLAGS: ViewerNavFlags = { isFalakStaff: false, isCompanyMember: false, isInvestorMember: false };
+const DEFAULT_FLAGS: ViewerNavFlags = { isFalakStaff: false, isManagementOrAdmin: false, isCompanyMember: false, isInvestorMember: false };
 
 const ViewerNavFlagsContext = createContext<ViewerNavFlags>(DEFAULT_FLAGS);
 

@@ -51,12 +51,17 @@ for (const { name, invoke } of STATE_ACTIONS) {
     assert.equal(result.error, GENERIC_ACCESS_DENIED);
   });
 
-  test(`${name} resolves with the generic access-denied message for a FALAK_OPERATIONS-only caller (ADMIN-only gate)`, async () => {
-    setCurrentUser(REAL_USER);
-    setDbStub(OPERATIONS_ONLY_STUB);
-    const result = await invoke();
-    assert.equal(result.error, GENERIC_ACCESS_DENIED);
-  });
+  // Reporting templates are shared across departments, so they stay
+  // Admin-only; every other action here is open to department-scoped
+  // staff (see the department tests below).
+  if (name === "createReportingTemplateAction") {
+    test(`${name} resolves with the generic access-denied message for a FALAK_OPERATIONS-only caller (ADMIN-only gate)`, async () => {
+      setCurrentUser(REAL_USER);
+      setDbStub(OPERATIONS_ONLY_STUB);
+      const result = await invoke();
+      assert.equal(result.error, GENERIC_ACCESS_DENIED);
+    });
+  }
 }
 
 // The three archive actions have no {error} state channel (plain <form
@@ -443,4 +448,134 @@ test("createVehicleNavAction: a unique-constraint collision (same vehicle/date) 
 
   const result = await actions.createVehicleNavAction({ error: null }, navFormData());
   assert.match(result.error ?? "", /already exists/);
+});
+
+// ============================================================
+// Department scoping for Investment Professionals / Management
+// (the stub user's department defaults to InvestmentDepartment)
+// ============================================================
+
+const OPS = [{ role: "FALAK_OPERATIONS" }];
+
+function companyForm(department: string) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries({
+    slug: "acme",
+    nameEn: "Acme",
+    nameAr: "أكمي",
+    sectorEn: "Fintech",
+    sectorAr: "تقنية مالية",
+    customerModel: "B2B",
+    currency: "SAR",
+    entryStage: "Seed",
+    currentStage: "Seed",
+    department,
+  })) {
+    fd.set(k, v);
+  }
+  return fd;
+}
+
+function companyCreateStub(created: Record<string, unknown>[]) {
+  return makeAdminActionDbStub({
+    falakRoles: OPS,
+    models: {
+      company: {
+        findUnique: async () => null,
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          created.push(data);
+          return { id: "co_new", ...data };
+        },
+      },
+    },
+  });
+}
+
+test("department scope: an Investment Professional can create a company in their own department", async () => {
+  setCurrentUser(REAL_USER);
+  const created: Record<string, unknown>[] = [];
+  setDbStub(companyCreateStub(created));
+  const result = await actions.createCompanyAction({ error: null }, companyForm("InvestmentDepartment"));
+  assert.equal(result.error, null);
+  assert.equal(created[0].department, "InvestmentDepartment");
+});
+
+test("department scope: ...but not in another department", async () => {
+  setCurrentUser(REAL_USER);
+  const created: Record<string, unknown>[] = [];
+  setDbStub(companyCreateStub(created));
+  const result = await actions.createCompanyAction({ error: null }, companyForm("VentureBuilder"));
+  assert.match(result.error ?? "", /own department/);
+  assert.equal(created.length, 0);
+});
+
+test("department scope: archiving another department's company does nothing", async () => {
+  setCurrentUser(REAL_USER);
+  const updates: unknown[] = [];
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: OPS,
+      models: {
+        company: {
+          findUnique: async () => ({ department: "VentureBuilder" }),
+          update: async (args: unknown) => {
+            updates.push(args);
+            return {};
+          },
+        },
+      },
+    })
+  );
+  const fd = new FormData();
+  fd.set("companyId", "co_vb");
+  await actions.archiveCompanyAction(fd);
+  assert.equal(updates.length, 0);
+});
+
+test("department scope: a new vehicle from an Investment Professional is placed in their department", async () => {
+  setCurrentUser(REAL_USER);
+  const created: Record<string, unknown>[] = [];
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: OPS,
+      models: {
+        vehicle: {
+          findUnique: async () => null,
+          create: async ({ data }: { data: Record<string, unknown> }) => {
+            created.push(data);
+            return { id: "veh_new", ...data };
+          },
+        },
+      },
+    })
+  );
+  const fd = new FormData();
+  for (const [k, v] of Object.entries({ slug: "fund-x", nameEn: "Fund X", nameAr: "صندوق", type: "Fund", currency: "SAR" })) fd.set(k, v);
+  const result = await actions.createVehicleAction({ error: null }, fd);
+  assert.equal(result.error, null);
+  assert.equal(created[0].department, "InvestmentDepartment");
+});
+
+test("department scope: a staff user with no department assigned cannot create anything", async () => {
+  setCurrentUser(REAL_USER);
+  const created: Record<string, unknown>[] = [];
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: OPS,
+      models: {
+        user: { findUnique: async () => ({ department: null }) },
+        investor: {
+          create: async ({ data }: { data: Record<string, unknown> }) => {
+            created.push(data);
+            return { id: "inv_new", ...data };
+          },
+        },
+      },
+    })
+  );
+  const fd = new FormData();
+  for (const [k, v] of Object.entries({ nameEn: "LP", nameAr: "LP", type: "Institutional" })) fd.set(k, v);
+  const result = await actions.createInvestorAction({ error: null }, fd);
+  assert.match(result.error ?? "", /own department/);
+  assert.equal(created.length, 0);
 });

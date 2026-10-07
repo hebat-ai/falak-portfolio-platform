@@ -1,20 +1,30 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { submitAccessRequestAction, type SignUpState } from "./actions";
-import type { AccessRequestedRole } from "@/generated/prisma/client";
 
 const initialState: SignUpState = { error: null, sent: false };
 
+// Public sign-up is for investors only -- Falak staff join through an
+// Admin's invite on the Manage Staff page.
 export function SignUpForm() {
   const { t } = useLanguage();
-  const [state, formAction, isPending] = useActionState(submitAccessRequestAction, initialState);
-  const [role, setRole] = useState<AccessRequestedRole>("MANAGEMENT");
+  // Recorded after mount and attached on submit, so a bot that posts the
+  // form without running the page's JavaScript never sends it (see the
+  // bot checks in ./actions). Not a form field, so it survives the form
+  // reset React does after each submit.
+  const startedAt = useRef(0);
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, []);
+  const [state, formAction, isPending] = useActionState((prev: SignUpState, formData: FormData) => {
+    formData.set("formStartedAt", String(startedAt.current));
+    return submitAccessRequestAction(prev, formData);
+  }, initialState);
 
   if (state.sent) {
     return (
@@ -35,6 +45,13 @@ export function SignUpForm() {
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
+      <input type="hidden" name="requestedRole" value="INVESTOR" />
+      {/* Hidden from people; form-filling bots fill it in. */}
+      <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+        <label htmlFor="sign-up-website">Website</label>
+        <input id="sign-up-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
+
       <div className="space-y-1">
         <label htmlFor="sign-up-email" className="text-xs font-medium text-muted-foreground">
           {t.signUp.emailLabel}
@@ -43,30 +60,12 @@ export function SignUpForm() {
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="sign-up-role" className="text-xs font-medium text-muted-foreground">
-          {t.signUp.roleLabel}
+        <label htmlFor="sign-up-org" className="text-xs font-medium text-muted-foreground">
+          {t.signUp.organizationLabel}
         </label>
-        <Select
-          id="sign-up-role"
-          name="requestedRole"
-          value={role}
-          onChange={(e) => setRole(e.target.value as AccessRequestedRole)}
-        >
-          <option value="MANAGEMENT">{t.signUp.roleOptions.MANAGEMENT}</option>
-          <option value="INVESTMENT_PROFESSIONAL">{t.signUp.roleOptions.INVESTMENT_PROFESSIONAL}</option>
-          <option value="INVESTOR">{t.signUp.roleOptions.INVESTOR}</option>
-        </Select>
+        <Input id="sign-up-org" name="organizationName" type="text" autoComplete="organization" />
+        <p className="text-xs text-muted-foreground">{t.signUp.organizationHint}</p>
       </div>
-
-      {role === "INVESTOR" ? (
-        <div className="space-y-1">
-          <label htmlFor="sign-up-org" className="text-xs font-medium text-muted-foreground">
-            {t.signUp.organizationLabel}
-          </label>
-          <Input id="sign-up-org" name="organizationName" type="text" autoComplete="organization" />
-          <p className="text-xs text-muted-foreground">{t.signUp.organizationHint}</p>
-        </div>
-      ) : null}
 
       <div className="space-y-1">
         <label htmlFor="sign-up-message" className="text-xs font-medium text-muted-foreground">

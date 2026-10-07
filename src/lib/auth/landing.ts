@@ -14,12 +14,17 @@ import { db } from "@/lib/db";
  * (the pending-approval landing) when none apply.
  */
 export async function resolveLandingPath(userId: string): Promise<string> {
-  const falakRole = await db.userRoleAssignment.findFirst({
-    where: { userId, role: { in: ["FALAK_ADMIN", "FALAK_OPERATIONS"] }, revokedAt: null },
-    select: { id: true },
+  const falakRoles = await db.userRoleAssignment.findMany({
+    where: { userId, role: { in: ["FALAK_ADMIN", "FALAK_MANAGEMENT", "FALAK_OPERATIONS"] }, revokedAt: null },
+    select: { role: true },
   });
-  if (falakRole) {
+  if (falakRoles.some((r) => r.role === "FALAK_ADMIN" || r.role === "FALAK_MANAGEMENT")) {
     return "/admin";
+  }
+  // The Portfolio Dashboard is Admin/Management-only; an Investment
+  // Professional starts on Company Reports instead.
+  if (falakRoles.length > 0) {
+    return "/company";
   }
 
   const investorMembership = await db.investorMembership.findFirst({

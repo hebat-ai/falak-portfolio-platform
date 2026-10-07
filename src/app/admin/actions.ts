@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-errors";
 import { hashInviteToken } from "@/lib/auth/invite-token";
 import { normalizeEmail, MAX_RAW_EMAIL_LENGTH } from "@/lib/auth/utils";
@@ -69,6 +70,32 @@ function readAmount(formData: FormData, field: string): string | null {
   return value === null ? null : value.replace(/,/g, "");
 }
 
+// Staff below Admin may only touch records in their own department.
+// departments === null means unscoped (Admin).
+const OUT_OF_DEPARTMENT = "You can only manage records in your own department.";
+
+function inDepartment(departments: Department[] | null, department: Department | null | undefined): boolean {
+  return departments === null || (department != null && departments.includes(department));
+}
+
+async function companyInDepartment(departments: Department[] | null, companyId: string): Promise<boolean> {
+  if (departments === null) return true;
+  const company = await db.company.findUnique({ where: { id: companyId }, select: { department: true } });
+  return inDepartment(departments, company?.department);
+}
+
+async function vehicleInDepartment(departments: Department[] | null, vehicleId: string): Promise<boolean> {
+  if (departments === null) return true;
+  const vehicle = await db.vehicle.findUnique({ where: { id: vehicleId }, select: { department: true } });
+  return inDepartment(departments, vehicle?.department);
+}
+
+async function investorInDepartment(departments: Department[] | null, investorId: string): Promise<boolean> {
+  if (departments === null) return true;
+  const investor = await db.investor.findUnique({ where: { id: investorId }, select: { department: true } });
+  return inDepartment(departments, investor?.department);
+}
+
 function isValidName(value: string | null): value is string {
   return value !== null && value.length > 0 && value.length <= MAX_NAME_LENGTH;
 }
@@ -83,8 +110,9 @@ function isValidSlug(value: string | null): value is string {
 
 export async function createCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -123,6 +151,9 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
     revenueModels.some((m) => !REVENUE_MODELS.includes(m as RevenueModel))
   ) {
     return { error: "Fill in every field with a valid value." };
+  }
+  if (!inDepartment(departments, department as Department)) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   const existing = await db.company.findUnique({ where: { slug } });
@@ -169,8 +200,9 @@ export async function createCompanyAction(_prevState: ActionState, formData: For
 // manual redirect or revalidatePath call.
 export async function archiveCompanyAction(formData: FormData): Promise<void> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
       redirect("/sign-in");
@@ -181,7 +213,7 @@ export async function archiveCompanyAction(formData: FormData): Promise<void> {
     throw error;
   }
   const companyId = readString(formData, "companyId");
-  if (!companyId) return;
+  if (!companyId || !(await companyInDepartment(departments, companyId))) return;
   await db.$transaction(async (tx) => {
     await tx.company.update({ where: { id: companyId }, data: { archivedAt: new Date() } });
     await writeAuditEvent(tx, { actorId: user.id, action: "company.archived", targetType: "Company", targetId: companyId });
@@ -194,8 +226,9 @@ export async function archiveCompanyAction(formData: FormData): Promise<void> {
 // edit form for the other (rarely-changing) company fields.
 export async function setCompanyDepartmentAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -207,6 +240,10 @@ export async function setCompanyDepartmentAction(_prevState: ActionState, formDa
   const department = readString(formData, "department");
   if (!companyId || !department || !DEPARTMENTS.includes(department as Department)) {
     return { error: "Fill in every field with a valid value." };
+  }
+  // A scoped user can neither move a company out of their department nor pull one in.
+  if (!inDepartment(departments, department as Department) || !(await companyInDepartment(departments, companyId))) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   try {
@@ -232,8 +269,9 @@ export async function setCompanyDepartmentAction(_prevState: ActionState, formDa
 
 export async function createVehicleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -267,11 +305,23 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
   if (existing) {
     return { error: "That slug is already in use by another vehicle." };
   }
+  // A scoped user's new vehicle belongs to their department; Admin keeps the schema default.
+  if (departments !== null && departments.length === 0) {
+    return { error: OUT_OF_DEPARTMENT };
+  }
 
   try {
     await db.$transaction(async (tx) => {
       const vehicle = await tx.vehicle.create({
-        data: { slug, nameEn, nameAr, type: type as VehicleType, currency: currency as Currency, vintageYear },
+        data: {
+          slug,
+          nameEn,
+          nameAr,
+          type: type as VehicleType,
+          currency: currency as Currency,
+          vintageYear,
+          department: departments?.[0],
+        },
       });
       await writeAuditEvent(tx, { actorId: user.id, action: "vehicle.created", targetType: "Vehicle", targetId: vehicle.id });
     });
@@ -287,8 +337,9 @@ export async function createVehicleAction(_prevState: ActionState, formData: For
 // setCompanyDepartmentAction above.
 export async function setVehicleVintageYearAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -307,6 +358,9 @@ export async function setVehicleVintageYearAction(_prevState: ActionState, formD
     vintageYear! > MAX_VINTAGE_YEAR
   ) {
     return { error: "Fill in every field with a valid value." };
+  }
+  if (!(await vehicleInDepartment(departments, vehicleId))) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   try {
@@ -328,8 +382,9 @@ export async function setVehicleVintageYearAction(_prevState: ActionState, formD
 
 export async function archiveVehicleAction(formData: FormData): Promise<void> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
       redirect("/sign-in");
@@ -340,7 +395,7 @@ export async function archiveVehicleAction(formData: FormData): Promise<void> {
     throw error;
   }
   const vehicleId = readString(formData, "vehicleId");
-  if (!vehicleId) return;
+  if (!vehicleId || !(await vehicleInDepartment(departments, vehicleId))) return;
   await db.$transaction(async (tx) => {
     await tx.vehicle.update({ where: { id: vehicleId }, data: { archivedAt: new Date() } });
     await writeAuditEvent(tx, { actorId: user.id, action: "vehicle.archived", targetType: "Vehicle", targetId: vehicleId });
@@ -353,8 +408,9 @@ export async function archiveVehicleAction(formData: FormData): Promise<void> {
 
 export async function createInvestorAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -369,10 +425,15 @@ export async function createInvestorAction(_prevState: ActionState, formData: Fo
   if (!isValidName(nameEn) || !isValidName(nameAr) || !type || !INVESTOR_TYPES.includes(type as InvestorType)) {
     return { error: "Fill in every field with a valid value." };
   }
+  if (departments !== null && departments.length === 0) {
+    return { error: OUT_OF_DEPARTMENT };
+  }
 
   try {
     await db.$transaction(async (tx) => {
-      const investor = await tx.investor.create({ data: { nameEn, nameAr, type: type as InvestorType } });
+      const investor = await tx.investor.create({
+        data: { nameEn, nameAr, type: type as InvestorType, department: departments?.[0] },
+      });
       await writeAuditEvent(tx, { actorId: user.id, action: "investor.created", targetType: "Investor", targetId: investor.id });
     });
   } catch {
@@ -384,8 +445,9 @@ export async function createInvestorAction(_prevState: ActionState, formData: Fo
 
 export async function archiveInvestorAction(formData: FormData): Promise<void> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
       redirect("/sign-in");
@@ -396,7 +458,7 @@ export async function archiveInvestorAction(formData: FormData): Promise<void> {
     throw error;
   }
   const investorId = readString(formData, "investorId");
-  if (!investorId) return;
+  if (!investorId || !(await investorInDepartment(departments, investorId))) return;
   await db.$transaction(async (tx) => {
     await tx.investor.update({ where: { id: investorId }, data: { archivedAt: new Date() } });
     await writeAuditEvent(tx, { actorId: user.id, action: "investor.archived", targetType: "Investor", targetId: investorId });
@@ -409,8 +471,9 @@ export async function archiveInvestorAction(formData: FormData): Promise<void> {
 
 export async function linkVehicleToCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -450,6 +513,9 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
   ]);
   if (!company || !vehicle) {
     return { error: GENERIC_ERROR };
+  }
+  if (!inDepartment(departments, company.department) || !inDepartment(departments, vehicle.department)) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   try {
@@ -506,8 +572,9 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
  */
 export async function linkInvestorToVehicleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -545,6 +612,9 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
   ]);
   if (!investor || !vehicle) {
     return { error: GENERIC_ERROR };
+  }
+  if (!inDepartment(departments, investor.department) || !inDepartment(departments, vehicle.department)) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   const existing = await db.investorVehiclePosition.findUnique({
@@ -634,8 +704,9 @@ export async function linkInvestorToVehicleAction(_prevState: ActionState, formD
 
 export async function unassignInvestorFromVehicleAction(formData: FormData): Promise<void> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
       redirect("/sign-in");
@@ -647,6 +718,15 @@ export async function unassignInvestorFromVehicleAction(formData: FormData): Pro
   }
   const positionId = readString(formData, "positionId");
   if (!positionId) return;
+  if (departments !== null) {
+    const position = await db.investorVehiclePosition.findUnique({
+      where: { id: positionId },
+      select: { investor: { select: { department: true } }, vehicle: { select: { department: true } } },
+    });
+    if (!position || !inDepartment(departments, position.investor.department) || !inDepartment(departments, position.vehicle.department)) {
+      return;
+    }
+  }
   await db.$transaction(async (tx) => {
     await tx.investorVehiclePosition.update({ where: { id: positionId }, data: { status: "Exited", effectiveTo: new Date() } });
     await writeAuditEvent(tx, {
@@ -731,8 +811,9 @@ export async function createReportingTemplateAction(_prevState: ActionState, for
 
 export async function createReportingCycleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -756,6 +837,14 @@ export async function createReportingCycleAction(_prevState: ActionState, formDa
   const deadline = new Date(deadlineRaw);
   if ([periodStart, periodEnd, deadline].some((d) => Number.isNaN(d.getTime())) || periodEnd < periodStart) {
     return { error: "Enter valid, consistent dates." };
+  }
+  if (departments !== null) {
+    const inScopeCount = await db.company.count({
+      where: { id: { in: companyIds }, department: { in: departments } },
+    });
+    if (inScopeCount !== new Set(companyIds).size) {
+      return { error: OUT_OF_DEPARTMENT };
+    }
   }
 
   // One reporting cycle (the "request" being logged) per selected
@@ -815,8 +904,9 @@ const INVITE_EXPIRY_DAYS = 7;
 
 export async function createCompanyInviteAction(_prevState: InviteActionState, formData: FormData): Promise<InviteActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -838,6 +928,9 @@ export async function createCompanyInviteAction(_prevState: InviteActionState, f
   const company = await db.company.findUnique({ where: { id: companyId } });
   if (!company) {
     return { error: GENERIC_ERROR };
+  }
+  if (!inDepartment(departments, company.department)) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   const rawToken = randomBytes(32).toString("hex");
@@ -873,8 +966,9 @@ export async function createCompanyInviteAction(_prevState: InviteActionState, f
 
 export async function createInvestorInviteAction(_prevState: InviteActionState, formData: FormData): Promise<InviteActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -896,6 +990,9 @@ export async function createInvestorInviteAction(_prevState: InviteActionState, 
   const investor = await db.investor.findUnique({ where: { id: investorId } });
   if (!investor || investor.archivedAt) {
     return { error: GENERIC_ERROR };
+  }
+  if (!inDepartment(departments, investor.department)) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   // Investors get exactly one user per account -- block a second invite
@@ -946,8 +1043,9 @@ export async function createInvestorInviteAction(_prevState: InviteActionState, 
 
 export async function createCompanyValuationAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -982,6 +1080,9 @@ export async function createCompanyValuationAction(_prevState: ActionState, form
   if (Number.isNaN(asOfDate.getTime())) {
     return { error: "Enter a valid date." };
   }
+  if (!(await companyInDepartment(departments, companyId))) {
+    return { error: OUT_OF_DEPARTMENT };
+  }
 
   try {
     await db.$transaction(async (tx) => {
@@ -1015,8 +1116,9 @@ export async function createCompanyValuationAction(_prevState: ActionState, form
 
 export async function createVehicleNavAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -1047,6 +1149,9 @@ export async function createVehicleNavAction(_prevState: ActionState, formData: 
   const asOfDate = new Date(asOfDateRaw);
   if (Number.isNaN(asOfDate.getTime())) {
     return { error: "Enter a valid date." };
+  }
+  if (!(await vehicleInDepartment(departments, vehicleId))) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   try {
@@ -1091,8 +1196,9 @@ const MAX_DESCRIPTION_LENGTH = 500;
 
 export async function recordInvestorCapitalTransactionAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
+  let departments: Department[] | null = null;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -1127,6 +1233,12 @@ export async function recordInvestorCapitalTransactionAction(_prevState: ActionS
   const transactionDate = new Date(transactionDateRaw);
   if (Number.isNaN(transactionDate.getTime())) {
     return { error: "Enter a valid date." };
+  }
+  if (
+    !(await investorInDepartment(departments, investorId)) ||
+    (vehicleIdInput && !(await vehicleInDepartment(departments, vehicleIdInput)))
+  ) {
+    return { error: OUT_OF_DEPARTMENT };
   }
 
   try {

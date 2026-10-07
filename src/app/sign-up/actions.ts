@@ -9,7 +9,21 @@ export interface SignUpState {
   sent: boolean;
 }
 
-const VALID_ROLES: AccessRequestedRole[] = ["MANAGEMENT", "INVESTMENT_PROFESSIONAL", "INVESTOR"];
+// Staff roles are by invite only (Manage Staff) -- public requests are investors.
+const VALID_ROLES: AccessRequestedRole[] = ["INVESTOR"];
+// A person takes longer than this to fill in the form; a bot posting it
+// straight away doesn't.
+const MIN_FILL_MS = 3000;
+const MAX_FORM_AGE_MS = 24 * 60 * 60 * 1000;
+
+function looksLikeBot(formData: FormData): boolean {
+  const honeypot = formData.get("website");
+  if (typeof honeypot === "string" && honeypot.trim() !== "") return true;
+  const startedAt = Number(formData.get("formStartedAt"));
+  if (!Number.isFinite(startedAt) || startedAt <= 0) return true;
+  const elapsed = Date.now() - startedAt;
+  return elapsed < MIN_FILL_MS || elapsed > MAX_FORM_AGE_MS;
+}
 const GENERIC_ENTER_EMAIL = "Enter your email.";
 const GENERIC_INFRA_ERROR = "Something went wrong. Try again in a moment.";
 const MAX_RAW_ORG_LENGTH = 200;
@@ -20,6 +34,11 @@ function isValidRole(value: FormDataEntryValue | null): value is AccessRequested
 }
 
 export async function submitAccessRequestAction(_prevState: SignUpState, formData: FormData): Promise<SignUpState> {
+  // Report success without saving anything, so a bot learns nothing.
+  if (looksLikeBot(formData)) {
+    return { error: null, sent: true };
+  }
+
   const emailInput = formData.get("email");
   const roleInput = formData.get("requestedRole");
   const orgInput = formData.get("organizationName");

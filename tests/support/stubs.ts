@@ -1929,12 +1929,14 @@ export function makeInvestorReturnsDbStub(options: {
 /** Backs getViewerNavFlags (src/lib/auth/viewer-roles.ts). */
 export function makeViewerNavFlagsDbStub(options: {
   hasFalakRole?: boolean;
+  falakRole?: string;
   hasCompanyMembership?: boolean;
   hasInvestorMembership?: boolean;
 }) {
   return {
     userRoleAssignment: {
-      findFirst: async () => (options.hasFalakRole ? { id: "role_1" } : null),
+      findMany: async () =>
+        options.hasFalakRole ? [{ role: options.falakRole ?? "FALAK_OPERATIONS" }] : [],
     },
     companyMembership: {
       findFirst: async () => (options.hasCompanyMembership ? { id: "cm_1" } : null),

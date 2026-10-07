@@ -4,11 +4,12 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 
 export interface ViewerNavFlags {
   isFalakStaff: boolean;
+  isManagementOrAdmin: boolean;
   isCompanyMember: boolean;
   isInvestorMember: boolean;
 }
 
-const NONE: ViewerNavFlags = { isFalakStaff: false, isCompanyMember: false, isInvestorMember: false };
+const NONE: ViewerNavFlags = { isFalakStaff: false, isManagementOrAdmin: false, isCompanyMember: false, isInvestorMember: false };
 
 /**
  * Cheap, existence-only checks ("does this user hold ANY active
@@ -24,10 +25,10 @@ export async function getViewerNavFlags(): Promise<ViewerNavFlags> {
   const user = await getCurrentUser();
   if (!user) return NONE;
 
-  const [falakRole, companyMembership, investorMembership] = await Promise.all([
-    db.userRoleAssignment.findFirst({
-      where: { userId: user.id, role: { in: ["FALAK_ADMIN", "FALAK_OPERATIONS"] }, revokedAt: null },
-      select: { id: true },
+  const [falakRoles, companyMembership, investorMembership] = await Promise.all([
+    db.userRoleAssignment.findMany({
+      where: { userId: user.id, role: { in: ["FALAK_ADMIN", "FALAK_MANAGEMENT", "FALAK_OPERATIONS"] }, revokedAt: null },
+      select: { role: true },
     }),
     db.companyMembership.findFirst({
       where: { userId: user.id, revokedAt: null, company: { archivedAt: null } },
@@ -40,7 +41,8 @@ export async function getViewerNavFlags(): Promise<ViewerNavFlags> {
   ]);
 
   return {
-    isFalakStaff: falakRole !== null,
+    isFalakStaff: falakRoles.length > 0,
+    isManagementOrAdmin: falakRoles.some((r) => r.role === "FALAK_ADMIN" || r.role === "FALAK_MANAGEMENT"),
     isCompanyMember: companyMembership !== null,
     isInvestorMember: investorMembership !== null,
   };

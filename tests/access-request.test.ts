@@ -83,6 +83,7 @@ function makeApproveStub(options: {
     created: { users: [] as Record<string, unknown>[], roles: [] as Record<string, unknown>[], investors: [] as Record<string, unknown>[] },
     upserts: [] as Record<string, unknown>[],
     updates: [] as { where: Record<string, unknown>; data: Record<string, unknown> }[],
+    userUpdates: [] as Record<string, unknown>[],
   };
   const db = makeAdminActionDbStub({
     falakRoles: ADMIN,
@@ -97,6 +98,10 @@ function makeApproveStub(options: {
       },
       user: {
         findUnique: async () => options.existingUser ?? null,
+        update: async ({ data }: { data: Record<string, unknown> }) => {
+          state.userUpdates.push(data);
+          return data;
+        },
         create: async ({ data }: { data: Record<string, unknown> }) => {
           const row = { id: "user_new", ...data };
           state.created.users.push(row);
@@ -133,16 +138,19 @@ function makeApproveStub(options: {
   return { db, state };
 }
 
-test("approve: FALAK_ADMIN grant creates a UserRoleAssignment and audits it", async () => {
+test("approve: a staff grant creates the role, sets the department, and audits it", async () => {
   setCurrentUser(REAL_USER);
   const { db, state } = makeApproveStub({});
   setDbStub(db);
   const emails = setSendAccessApprovedEmailSpy();
 
-  await approveAccessRequestAction(formWith({ requestId: "req_1", grant: "FALAK_ADMIN" }));
+  await approveAccessRequestAction(
+    formWith({ requestId: "req_1", grant: "FALAK_MANAGEMENT", department: "VentureBuilder" })
+  );
 
   assert.equal(state.created.users.length, 1);
-  assert.deepEqual(state.created.roles, [{ userId: "user_new", role: "FALAK_ADMIN" }]);
+  assert.deepEqual(state.created.roles, [{ userId: "user_new", role: "FALAK_MANAGEMENT" }]);
+  assert.deepEqual(state.userUpdates, [{ department: "VentureBuilder" }]);
   assert.equal(db.getAuditEvents()[0].action, "access_request.approved");
   assert.equal(emails.length, 1);
   assert.equal(emails[0], "req@example.com");
@@ -154,9 +162,26 @@ test("approve: an already-active role for that user is not duplicated", async ()
   setDbStub(db);
   setSendAccessApprovedEmailSpy();
 
-  await approveAccessRequestAction(formWith({ requestId: "req_1", grant: "FALAK_OPERATIONS" }));
+  await approveAccessRequestAction(
+    formWith({ requestId: "req_1", grant: "FALAK_OPERATIONS", department: "InvestmentDepartment" })
+  );
 
   assert.equal(state.created.roles.length, 0);
+});
+
+test("approve: a staff grant without a department, or an Admin grant, is refused before anything changes", async () => {
+  setCurrentUser(REAL_USER);
+  for (const fields of [
+    { requestId: "req_1", grant: "FALAK_OPERATIONS" },
+    { requestId: "req_1", grant: "FALAK_ADMIN", department: "VentureBuilder" },
+  ]) {
+    const { db, state } = makeApproveStub({});
+    setDbStub(db);
+    setSendAccessApprovedEmailSpy();
+    await approveAccessRequestAction(formWith(fields));
+    assert.equal(state.updates.length, 0, fields.grant);
+    assert.equal(state.created.roles.length, 0, fields.grant);
+  }
 });
 
 test("approve: INVESTOR grant matches an existing org case-insensitively instead of creating a duplicate", async () => {
@@ -191,7 +216,7 @@ test("approve: a lost claim race (already decided) creates nothing", async () =>
   setDbStub(db);
   setSendAccessApprovedEmailSpy();
 
-  await approveAccessRequestAction(formWith({ requestId: "req_1", grant: "FALAK_ADMIN" }));
+  await approveAccessRequestAction(formWith({ requestId: "req_1", grant: "FALAK_MANAGEMENT", department: "VentureBuilder" }));
 
   assert.equal(state.created.users.length, 0);
   assert.equal(state.created.roles.length, 0);
@@ -213,7 +238,7 @@ test("approve: FALAK_OPERATIONS caller is a silent no-op", async () => {
     },
   });
   setDbStub(db);
-  await assert.doesNotReject(() => approveAccessRequestAction(formWith({ requestId: "req_1", grant: "FALAK_ADMIN" })));
+  await assert.doesNotReject(() => approveAccessRequestAction(formWith({ requestId: "req_1", grant: "FALAK_MANAGEMENT", department: "VentureBuilder" })));
   assert.equal(updates.length, 0);
 });
 

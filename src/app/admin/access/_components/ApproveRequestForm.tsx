@@ -8,15 +8,12 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { approveAccessRequestAction } from "../actions";
 import type { AccessRequestedRole } from "@/generated/prisma/client";
 
-type Grant = "FALAK_ADMIN" | "FALAK_OPERATIONS" | "INVESTOR";
+type Grant = "FALAK_MANAGEMENT" | "FALAK_OPERATIONS" | "INVESTOR";
 
-// Suggests the natural mapping agreed for this feature (Management ->
-// FALAK_ADMIN, Investment Professional -> FALAK_OPERATIONS, Investor ->
-// INVESTOR) as the default, but the admin can still change it before
-// submitting -- the requested role is only ever a suggestion, never
-// auto-granted.
+// The requested role is only a suggestion, never auto-granted -- the
+// admin can change it before submitting.
 function defaultGrantFor(requestedRole: AccessRequestedRole): Grant {
-  if (requestedRole === "MANAGEMENT") return "FALAK_ADMIN";
+  if (requestedRole === "MANAGEMENT") return "FALAK_MANAGEMENT";
   if (requestedRole === "INVESTMENT_PROFESSIONAL") return "FALAK_OPERATIONS";
   return "INVESTOR";
 }
@@ -39,11 +36,26 @@ export function ApproveRequestForm({ requestId, requestedRole, organizationName 
           {t.access.approveGrantLabel}
         </label>
         <Select id={`grant-${requestId}`} name="grant" value={grant} onChange={(e) => setGrant(e.target.value as Grant)}>
-          <option value="FALAK_ADMIN">{t.signUp.roleOptions.MANAGEMENT}</option>
+          <option value="FALAK_MANAGEMENT">{t.signUp.roleOptions.MANAGEMENT}</option>
           <option value="FALAK_OPERATIONS">{t.signUp.roleOptions.INVESTMENT_PROFESSIONAL}</option>
           <option value="INVESTOR">{t.signUp.roleOptions.INVESTOR}</option>
         </Select>
       </div>
+
+      {grant !== "INVESTOR" ? (
+        <div className="flex flex-col gap-1">
+          <label htmlFor={`dept-${requestId}`} className="text-xs font-medium text-muted-foreground">
+            {t.admin.manage.departmentLabel}
+          </label>
+          <Select id={`dept-${requestId}`} name="department" required defaultValue="">
+            <option value="" disabled>
+              {t.admin.manage.selectPlaceholder}
+            </option>
+            <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
+            <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
+          </Select>
+        </div>
+      ) : null}
 
       {grant === "INVESTOR" ? (
         <div className="flex flex-col gap-1">
