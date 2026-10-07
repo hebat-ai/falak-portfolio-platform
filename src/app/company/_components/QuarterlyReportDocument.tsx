@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { BackButton } from "@/components/layout/BackButton";
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowRight, ArrowLeft, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Card } from "@/components/ui/Card";
 import { ReportAttachmentsPanel } from "./ReportAttachmentsPanel";
@@ -122,7 +122,6 @@ interface QuarterlyReportDocumentProps {
 
 export function QuarterlyReportDocument({ data, fromInvestorDashboard }: QuarterlyReportDocumentProps) {
   const { t, lang } = useLanguage();
-  const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
   const isPrinting = useIsPrinting();
   const { company, metrics, previousMetrics, revenue, previousRevenue, narratives } = data;
 
@@ -232,13 +231,10 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
       `}</style>
 
       <div className="no-print mb-6 flex items-center justify-between gap-3">
-        <Link
-          href={fromInvestorDashboard ? "/investor" : `/company/${company.slug}?period=${data.periodLabel}`}
-          className="chamfer-br-sm inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-link-foreground shadow-[inset_0_0_0_1px_var(--control-border)] hover:bg-surface-muted"
-        >
-          <BackIcon aria-hidden="true" className="h-4 w-4" />
-          {fromInvestorDashboard ? t.nav.investorDashboard : t.quarterlyReport.backToReport}
-        </Link>
+        {/* Previous page when there is one; otherwise this report's natural parent. */}
+        <BackButton
+          fallbackHref={fromInvestorDashboard ? "/investor" : `/company/${company.slug}?period=${data.periodLabel}`}
+        />
         <Button variant="outline" size="sm" onClick={() => window.print()}>
           <Printer aria-hidden="true" className="h-4 w-4" />
           {t.quarterlyReport.printAction}

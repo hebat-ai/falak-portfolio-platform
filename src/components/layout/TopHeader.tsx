@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { SignOutButton } from "./SignOutButton";
+import { BackButton } from "./BackButton";
 
 interface TopHeaderProps {
   title: string;
@@ -30,6 +31,7 @@ export function TopHeader({ title, subtitle, menuOpen, onOpenMenu, drawerId }: T
         >
           <Menu aria-hidden="true" className="h-5 w-5" />
         </button>
+        <BackButton />
         <div>
           <h1 className="font-heading text-lg font-semibold text-foreground">{title}</h1>
           {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}

@@ -26,6 +26,7 @@ export interface Dictionary {
     reviewWorkspace: string;
     access: string;
     openMenu: string;
+    back: string;
     closeMenu: string;
     signOut: string;
   };
@@ -574,6 +575,7 @@ export const en = {
     reviewWorkspace: "Reports Review and Approval",
     access: "Access Management",
     openMenu: "Open menu",
+    back: "Back",
     closeMenu: "Close menu",
     signOut: "Sign out",
   },
@@ -1186,6 +1188,7 @@ export const ar = {
     reviewWorkspace: "مراجعة التقارير واعتمادها",
     access: "إدارة الوصول",
     openMenu: "فتح القائمة",
+    back: "رجوع",
     closeMenu: "إغلاق القائمة",
     signOut: "تسجيل الخروج",
   },

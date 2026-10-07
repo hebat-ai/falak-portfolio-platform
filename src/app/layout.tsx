@@ -4,6 +4,8 @@ import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 import { ViewerNavFlagsProvider } from "@/lib/auth/ViewerNavFlagsProvider";
 import { getViewerNavFlags } from "@/lib/auth/viewer-roles";
+import { Suspense } from "react";
+import { NavigationTracker } from "@/components/layout/NavigationTracker";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -38,6 +40,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <LanguageProvider>
+            <Suspense fallback={null}>
+              <NavigationTracker />
+            </Suspense>
             <ViewerNavFlagsProvider value={navFlags}>{children}</ViewerNavFlagsProvider>
           </LanguageProvider>
         </ThemeProvider>
