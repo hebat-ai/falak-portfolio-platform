@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Pencil } from "lucide-react";
 import { useForm, type FormState } from "@/components/forms/useForm";
 import Link from "next/link";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
@@ -41,16 +41,11 @@ function ReportLogRow({
 }) {
   const { t } = useLanguage();
   const deadline = useForm(extendDeadlineAction, { error: null }, { resetOnSuccess: false });
-  const router = useRouter();
   // The form result current when the editor was opened; null when closed.
-  // A successful save arriving after that closes the editor.
+  // A successful save arriving after that closes the editor (useForm then
+  // reloads the table's data, so the new date shows).
   const [openedWith, setOpenedWith] = useState<FormState | null>(null);
   const isEditingDeadline = openedWith !== null && !(deadline.state.success && deadline.state !== openedWith);
-
-  // Reload the table's data after a save so the new date shows.
-  useEffect(() => {
-    if (deadline.state.success) router.refresh();
-  }, [deadline.state, router]);
   const resend = useForm(resendAction, { error: null });
 
   return (
@@ -73,23 +68,34 @@ function ReportLogRow({
           </div>
         )}
       </Td>
-      <Td>{row.periodLabel}</Td>
-      <Td>{formatDate(row.requestedAt, lang)}</Td>
+      <Td className="whitespace-nowrap">{row.periodLabel}</Td>
+      <Td className="whitespace-nowrap">{formatDate(row.requestedAt, lang)}</Td>
       <Td>
         {isEditingDeadline ? (
-          <form {...deadline.formProps} className="flex items-center gap-1.5">
+          <form {...deadline.formProps} className="flex flex-col gap-1">
             <input type="hidden" name="cycleId" value={row.cycleId} />
-            <Input type="date" name="newDeadline" defaultValue={row.currentDeadline} className="w-36" />
-            <Button type="submit" size="sm" disabled={deadline.isPending}>{t.reviewWorkspace.saveDeadlineAction}</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setOpenedWith(null)}>
-              {t.reviewWorkspace.cancelAction}
-            </Button>
+            <Input type="date" name="newDeadline" defaultValue={row.currentDeadline} aria-label={t.reviewWorkspace.editDeadlineAction} className="h-8 w-36 text-xs" />
+            <div className="flex gap-1">
+              <Button type="submit" size="xs" disabled={deadline.isPending}>
+                {t.reviewWorkspace.saveDeadlineAction}
+              </Button>
+              <Button type="button" variant="outline" size="xs" onClick={() => setOpenedWith(null)}>
+                {t.reviewWorkspace.cancelAction}
+              </Button>
+            </div>
           </form>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 whitespace-nowrap">
             <time dateTime={row.currentDeadline}>{formatDate(row.currentDeadline, lang)}</time>
-            <Button type="button" variant="outline" size="sm" onClick={() => setOpenedWith(deadline.state)}>
-              {t.reviewWorkspace.editDeadlineAction}
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => setOpenedWith(deadline.state)}
+              aria-label={t.reviewWorkspace.editDeadlineAction}
+              title={t.reviewWorkspace.editDeadlineAction}
+            >
+              <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
@@ -100,7 +106,7 @@ function ReportLogRow({
         {row.isPublished ? (
           <Link
             href={`/company/${row.companySlug}/report?period=${encodeURIComponent(row.periodLabel)}`}
-            className="text-link-foreground underline-offset-2 hover:underline"
+            className="whitespace-nowrap text-link-foreground underline-offset-2 hover:underline"
           >
             {t.reviewWorkspace.downloadReportAction}
           </Link>
@@ -110,7 +116,7 @@ function ReportLogRow({
       </Td>
       <Td>
         {row.distribution ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="whitespace-nowrap text-xs text-muted-foreground">
             <Num>{row.distribution.sent}</Num> {t.reviewWorkspace.sentCountLabel}
             {row.distribution.pending > 0 ? (
               <>
@@ -128,16 +134,16 @@ function ReportLogRow({
         )}
       </Td>
       <Td>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col items-stretch gap-1">
           {onSelectForReview ? (
-            <Button type="button" variant="outline" size="sm" onClick={() => onSelectForReview(row)}>
+            <Button type="button" variant="outline" size="xs" onClick={() => onSelectForReview(row)}>
               {t.reviewWorkspace.reviewAction}
             </Button>
           ) : null}
           {row.isPublished && row.reportVersionId ? (
-            <form {...resend.formProps}>
+            <form {...resend.formProps} className="flex">
               <input type="hidden" name="reportVersionId" value={row.reportVersionId} />
-              <Button type="submit" variant="outline" size="sm" disabled={resend.isPending}>
+              <Button type="submit" variant="outline" size="xs" block disabled={resend.isPending}>
                 {resend.isPending ? t.reviewWorkspace.resendPending : t.reviewWorkspace.resendToInvestorsAction}
               </Button>
             </form>

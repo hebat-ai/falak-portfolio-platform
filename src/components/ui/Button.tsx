@@ -47,7 +47,7 @@ export function Button({
     <button
       type="button"
       disabled={disabled}
-      className={`chamfer-br-sm inline-flex items-center justify-center font-bold tracking-[var(--ls-label)] transition-[background-color,color,transform] duration-120 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nebula-mint focus-visible:ring-offset-2 focus-visible:ring-offset-surface active:translate-y-px disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-muted-foreground ${
+      className={`chamfer-br-sm inline-flex shrink-0 items-center justify-center whitespace-nowrap font-bold tracking-[var(--ls-label)] transition-[background-color,color,transform] duration-120 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nebula-mint focus-visible:ring-offset-2 focus-visible:ring-offset-surface active:translate-y-px disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-muted-foreground ${
         block ? "flex w-full" : ""
       } ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
       {...rest}

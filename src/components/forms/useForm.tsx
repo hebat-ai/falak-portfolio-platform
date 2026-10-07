@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useEffect, useId, useRef, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 export type FieldErrors = Record<string, string>;
 
@@ -20,7 +21,9 @@ const MARK = "data-field-invalid";
  * rejected submit (the form is submitted without React's automatic reset),
  * the fields the server names in `fieldErrors` are highlighted, and a
  * successful submit clears the form (unless `resetOnSuccess` is false,
- * e.g. for forms editing saved data).
+ * e.g. for forms editing saved data). A submit that comes back without an
+ * error also reloads the page's server data, so lists, statuses and
+ * counts on screen show the change straight away.
  */
 export function useForm<S extends FormState>(
   action: (state: S, formData: FormData) => Promise<S>,
@@ -34,6 +37,7 @@ export function useForm<S extends FormState>(
   const formRef = useRef<HTMLFormElement>(null);
   const formId = useId();
   const submitted = useRef(false);
+  const router = useRouter();
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +74,8 @@ export function useForm<S extends FormState>(
     }
     (first as HTMLElement | null)?.focus();
     if ((state.success || state.sent) && options.resetOnSuccess !== false) form.reset();
-  }, [state, formId, options.resetOnSuccess]);
+    if (!state.error && !state.fieldErrors) router.refresh();
+  }, [state, formId, options.resetOnSuccess, router]);
 
   /** The message for one field, to place under it. */
   function errorFor(name: string): ReactNode {
