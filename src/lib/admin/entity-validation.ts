@@ -7,6 +7,8 @@ import type {
   RevenueModel,
   VehicleType,
 } from "@/generated/prisma/client";
+import { INDUSTRIES, OTHER_INDUSTRY } from "@/lib/industries";
+import { COUNTRY_CODES } from "@/lib/countries";
 
 // Pure validation for the company / vehicle / investor forms, shared by
 // their create and edit actions. Returns one message per bad field so the
@@ -26,9 +28,21 @@ const MIN_VINTAGE_YEAR = 1990;
 const MAX_VINTAGE_YEAR = 2100;
 
 const CURRENCIES: Currency[] = ["SAR", "USD"];
-const CUSTOMER_MODELS: CustomerModel[] = ["B2B", "B2C", "B2B_B2C"];
+const CUSTOMER_MODELS: CustomerModel[] = ["B2B", "B2C", "B2B_B2C", "B2B2C", "B2G", "C2C", "D2C"];
 const REVENUE_MODELS: RevenueModel[] = ["SaaS", "Marketplace", "ECommerce", "TransactionBased", "Subscription", "Other"];
-const FUNDING_STAGES: FundingStage[] = ["PreSeed", "Seed", "SeriesA", "SeriesB", "Later"];
+const FUNDING_STAGES: FundingStage[] = [
+  "PreSeed",
+  "BridgeToSeed",
+  "Seed",
+  "PreSeriesA",
+  "BridgeToSeriesA",
+  "SeriesA",
+  "SeriesB",
+  "Later",
+];
+// Loose on purpose: catches typos without rejecting unusual-but-real addresses/numbers.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\+?[0-9][0-9 ()-]{5,24}$/;
 const VEHICLE_TYPES: VehicleType[] = ["Fund", "SPV"];
 const INVESTOR_TYPES: InvestorType[] = ["Institutional", "FamilyOffice", "Individual"];
 const DEPARTMENTS: Department[] = ["VentureBuilder", "InvestmentDepartment"];
@@ -38,6 +52,9 @@ const MSG = {
   name: `Required, up to ${MAX_NAME_LENGTH} characters.`,
   choose: "Choose an option.",
   revenueModels: "Choose only from the listed options.",
+  email: "Enter a valid email address, e.g. name@company.com.",
+  phone: "Enter a valid phone number, e.g. +966 5X XXX XXXX.",
+  optionalText: `Up to ${MAX_NAME_LENGTH} characters.`,
   vintageYear: `Enter a year between ${MIN_VINTAGE_YEAR} and ${MAX_VINTAGE_YEAR}, or leave it empty.`,
 };
 
@@ -89,6 +106,11 @@ export interface CompanyInput {
   entryStage: FundingStage;
   currentStage: FundingStage;
   department: Department;
+  founderName: string | null;
+  founderEmail: string | null;
+  founderPhone: string | null;
+  hqCity: string | null;
+  hqCountry: string | null;
 }
 
 export function validateCompany(formData: FormData, scope: Department[] | null): Validated<CompanyInput> {
@@ -96,9 +118,15 @@ export function validateCompany(formData: FormData, scope: Department[] | null):
     slug: read(formData, "slug"),
     nameEn: read(formData, "nameEn"),
     nameAr: read(formData, "nameAr"),
+    industry: read(formData, "industry"),
     sectorEn: read(formData, "sectorEn"),
     sectorAr: read(formData, "sectorAr"),
     customerModel: read(formData, "customerModel"),
+    founderName: read(formData, "founderName"),
+    founderEmail: read(formData, "founderEmail"),
+    founderPhone: read(formData, "founderPhone"),
+    hqCity: read(formData, "hqCity"),
+    hqCountry: read(formData, "hqCountry"),
     currency: read(formData, "currency"),
     entryStage: read(formData, "entryStage"),
     currentStage: read(formData, "currentStage"),
@@ -108,9 +136,30 @@ export function validateCompany(formData: FormData, scope: Department[] | null):
   const errors: FieldErrors = {};
 
   if (!isSlug(v.slug)) errors.slug = MSG.slug;
-  for (const f of ["nameEn", "nameAr", "sectorEn", "sectorAr"] as const) {
+  for (const f of ["nameEn", "nameAr"] as const) {
     if (!isName(v[f])) errors[f] = MSG.name;
   }
+  // A listed industry supplies both labels; "Other" uses the typed ones.
+  const industry = INDUSTRIES.find((i) => i.key === v.industry);
+  let sectorEn = v.sectorEn;
+  let sectorAr = v.sectorAr;
+  if (!industry) {
+    errors.industry = MSG.choose;
+  } else if (industry.key === OTHER_INDUSTRY) {
+    if (!isName(sectorEn)) errors.sectorEn = MSG.name;
+    if (!isName(sectorAr)) errors.sectorAr = MSG.name;
+  } else {
+    sectorEn = industry.en;
+    sectorAr = industry.ar;
+  }
+  for (const f of ["founderName", "hqCity"] as const) {
+    if (v[f].length > MAX_NAME_LENGTH) errors[f] = MSG.optionalText;
+  }
+  if (v.founderEmail && (v.founderEmail.length > MAX_NAME_LENGTH || !EMAIL_PATTERN.test(v.founderEmail))) {
+    errors.founderEmail = MSG.email;
+  }
+  if (v.founderPhone && !PHONE_PATTERN.test(v.founderPhone)) errors.founderPhone = MSG.phone;
+  if (v.hqCountry && !oneOf(v.hqCountry, COUNTRY_CODES)) errors.hqCountry = MSG.choose;
   if (!oneOf(v.customerModel, CUSTOMER_MODELS)) errors.customerModel = MSG.choose;
   if (!oneOf(v.currency, CURRENCIES)) errors.currency = MSG.choose;
   if (!oneOf(v.entryStage, FUNDING_STAGES)) errors.entryStage = MSG.choose;
@@ -124,7 +173,16 @@ export function validateCompany(formData: FormData, scope: Department[] | null):
     values,
     errors,
     input: {
-      ...v,
+      slug: v.slug,
+      nameEn: v.nameEn,
+      nameAr: v.nameAr,
+      sectorEn,
+      sectorAr,
+      founderName: v.founderName || null,
+      founderEmail: v.founderEmail ? v.founderEmail.toLowerCase() : null,
+      founderPhone: v.founderPhone || null,
+      hqCity: v.hqCity || null,
+      hqCountry: v.hqCountry || null,
       customerModel: v.customerModel as CustomerModel,
       currency: v.currency as Currency,
       entryStage: v.entryStage as FundingStage,

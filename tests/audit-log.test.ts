@@ -151,6 +151,7 @@ test("createCompanyAction writes a company.created audit event", async () => {
   formData.set("slug", "acme");
   formData.set("nameEn", "Acme");
   formData.set("nameAr", "acme-ar");
+  formData.set("industry", "Other");
   formData.set("sectorEn", "Retail");
   formData.set("sectorAr", "retail-ar");
   formData.set("customerModel", "B2C");

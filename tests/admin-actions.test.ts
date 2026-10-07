@@ -463,6 +463,7 @@ function companyForm(department: string) {
     slug: "acme",
     nameEn: "Acme",
     nameAr: "أكمي",
+    industry: "Fintech",
     sectorEn: "Fintech",
     sectorAr: "تقنية مالية",
     customerModel: "B2B",

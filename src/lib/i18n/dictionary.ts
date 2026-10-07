@@ -245,6 +245,24 @@ export interface Dictionary {
       investorLabel: string;
       vehiclesListTitle: string;
       investorsListTitle: string;
+      industryLabel: string;
+      industryOtherEnLabel: string;
+      industryOtherArLabel: string;
+      founderNameLabel: string;
+      founderEmailLabel: string;
+      founderPhoneLabel: string;
+      hqCityLabel: string;
+      hqCountryLabel: string;
+      founderSectionTitle: string;
+      headquartersLabel: string;
+      founderLabel: string;
+      sentRequestsTitle: string;
+      sentRequestsHint: string;
+      addCompaniesAction: string;
+      alreadySentLabel: string;
+      cancelAction: string;
+      newRequestHint: string;
+      addingToRequestHint: string;
       companiesListTitle: string;
       editCompanyTitle: string;
       editVehicleTitle: string;
@@ -554,7 +572,10 @@ export const en = {
   },
   stages: {
     PreSeed: "Pre-Seed",
+    BridgeToSeed: "Bridge to Seed",
     Seed: "Seed",
+    PreSeriesA: "Pre-Series A",
+    BridgeToSeriesA: "Bridge to Series A",
     SeriesA: "Series A",
     SeriesB: "Series B",
     Later: "Later Stage",
@@ -563,6 +584,10 @@ export const en = {
     B2B: "Business-to-Business (B2B)",
     B2C: "Business-to-Consumer (B2C)",
     B2B_B2C: "B2B & B2C",
+    B2B2C: "Business-to-Business-to-Consumer (B2B2C)",
+    B2G: "Business-to-Government (B2G)",
+    C2C: "Consumer-to-Consumer (C2C)",
+    D2C: "Direct-to-Consumer (D2C)",
   },
   revenueModels: {
     SaaS: "SaaS",
@@ -802,6 +827,24 @@ export const en = {
       investorLabel: "Investor",
       vehiclesListTitle: "Vehicles",
       investorsListTitle: "Investors",
+      industryLabel: "Industry",
+      industryOtherEnLabel: "Industry (English)",
+      industryOtherArLabel: "Industry (Arabic)",
+      founderNameLabel: "Founder Name",
+      founderEmailLabel: "Founder Email",
+      founderPhoneLabel: "Founder Phone",
+      hqCityLabel: "HQ City",
+      hqCountryLabel: "HQ Country",
+      founderSectionTitle: "Founder & Headquarters",
+      headquartersLabel: "Headquarters",
+      founderLabel: "Founder",
+      sentRequestsTitle: "Requests Already Sent",
+      sentRequestsHint: "Use \"Add Companies\" to send the same template and period to more startups.",
+      addCompaniesAction: "Add Companies",
+      alreadySentLabel: "already sent",
+      cancelAction: "Cancel",
+      newRequestHint: "Choose the startups, template, period and deadline for a new reporting request.",
+      addingToRequestHint: "Adding startups to this request. Template, period and deadline are kept from the original.",
       companiesListTitle: "Startups",
       editCompanyTitle: "Edit Startup",
       editVehicleTitle: "Edit Vehicle",
@@ -1117,7 +1160,10 @@ export const ar = {
   },
   stages: {
     PreSeed: "مرحلة ما قبل البذرة",
+    BridgeToSeed: "تمويل جسري إلى المرحلة البذرية",
     Seed: "المرحلة البذرية",
+    PreSeriesA: "ما قبل السلسلة أ",
+    BridgeToSeriesA: "تمويل جسري إلى السلسلة أ",
     SeriesA: "السلسلة أ",
     SeriesB: "السلسلة ب",
     Later: "مرحلة لاحقة",
@@ -1126,6 +1172,10 @@ export const ar = {
     B2B: "أعمال إلى أعمال",
     B2C: "أعمال إلى مستهلك",
     B2B_B2C: "أعمال إلى أعمال ومستهلكين",
+    B2B2C: "أعمال إلى أعمال إلى مستهلك (B2B2C)",
+    B2G: "أعمال إلى حكومة (B2G)",
+    C2C: "مستهلك إلى مستهلك (C2C)",
+    D2C: "مباشر إلى المستهلك (D2C)",
   },
   revenueModels: {
     SaaS: "برمجيات كخدمة (SaaS)",
@@ -1365,6 +1415,24 @@ export const ar = {
       investorLabel: "المستثمر",
       vehiclesListTitle: "الأدوات الاستثمارية",
       investorsListTitle: "المستثمرون",
+      industryLabel: "القطاع",
+      industryOtherEnLabel: "القطاع (بالإنجليزية)",
+      industryOtherArLabel: "القطاع (بالعربية)",
+      founderNameLabel: "اسم المؤسس",
+      founderEmailLabel: "البريد الإلكتروني للمؤسس",
+      founderPhoneLabel: "هاتف المؤسس",
+      hqCityLabel: "مدينة المقر الرئيسي",
+      hqCountryLabel: "دولة المقر الرئيسي",
+      founderSectionTitle: "المؤسس والمقر الرئيسي",
+      headquartersLabel: "المقر الرئيسي",
+      founderLabel: "المؤسس",
+      sentRequestsTitle: "الطلبات المرسلة",
+      sentRequestsHint: "استخدم \"إضافة شركات\" لإرسال نفس القالب والفترة إلى شركات ناشئة أخرى.",
+      addCompaniesAction: "إضافة شركات",
+      alreadySentLabel: "أُرسل مسبقاً",
+      cancelAction: "إلغاء",
+      newRequestHint: "اختر الشركات الناشئة والقالب والفترة والموعد النهائي لطلب تقارير جديد.",
+      addingToRequestHint: "إضافة شركات ناشئة إلى هذا الطلب. يبقى القالب والفترة والموعد النهائي كما في الطلب الأصلي.",
       companiesListTitle: "الشركات الناشئة",
       editCompanyTitle: "تعديل الشركة الناشئة",
       editVehicleTitle: "تعديل الأداة الاستثمارية",

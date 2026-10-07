@@ -196,6 +196,10 @@ enum CustomerModel {
   B2B
   B2C
   B2B_B2C
+  B2B2C
+  B2G
+  C2C
+  D2C
 }
 
 enum RevenueModel {
@@ -207,9 +211,14 @@ enum RevenueModel {
   Other
 }
 
+// Declared in funding order; the migration inserts the newer stages in
+// position (ADD VALUE ... BEFORE) so Postgres enum ordering matches.
 enum FundingStage {
   PreSeed
+  BridgeToSeed
   Seed
+  PreSeriesA
+  BridgeToSeriesA
   SeriesA
   SeriesB
   Later
@@ -238,6 +247,14 @@ model Company {
   // capital, NAV, market cap all slice by this, separately from the
   // per-vehicle slice).
   department    Department     @default(InvestmentDepartment)
+  // Primary founder contact and headquarters -- optional, since startups
+  // created before these fields existed have none. hqCountry is an ISO
+  // 3166-1 alpha-2 code (e.g. "SA"), shown by name in the UI.
+  founderName   String?
+  founderEmail  String?
+  founderPhone  String?
+  hqCity        String?
+  hqCountry     String?
   archivedAt    DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

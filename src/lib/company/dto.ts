@@ -79,6 +79,11 @@ export interface CompanyReportDTO {
   currency: Currency;
   entryStage: FundingStage;
   currentStage: FundingStage;
+  founderName: string | null;
+  founderEmail: string | null;
+  founderPhone: string | null;
+  hqCity: string | null;
+  hqCountry: string | null;
   archivedAt: string | null;
   periods: Record<string, CompanyReportPeriodData>;
 }

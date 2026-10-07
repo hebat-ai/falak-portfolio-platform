@@ -18,15 +18,23 @@ import {
   useEntityForm,
 } from "./shared";
 import { slugify } from "@/lib/slugify";
+import { INDUSTRIES, OTHER_INDUSTRY } from "@/lib/industries";
+import { COUNTRY_CODES, PRIORITY_COUNTRIES, countryName } from "@/lib/countries";
 
 export interface CompanyFormValues {
   id: string;
   slug: string;
   nameEn: string;
   nameAr: string;
+  industry: string;
   sectorEn: string;
   sectorAr: string;
   customerModel: string;
+  founderName: string;
+  founderEmail: string;
+  founderPhone: string;
+  hqCity: string;
+  hqCountry: string;
   revenueModels: string[];
   currency: string;
   entryStage: string;
@@ -34,7 +42,8 @@ export interface CompanyFormValues {
   department: string;
 }
 
-const STAGES = ["PreSeed", "Seed", "SeriesA", "SeriesB", "Later"] as const;
+const STAGES = ["PreSeed", "BridgeToSeed", "Seed", "PreSeriesA", "BridgeToSeriesA", "SeriesA", "SeriesB", "Later"] as const;
+const CUSTOMER_MODELS = ["B2B", "B2C", "B2B_B2C", "B2B2C", "B2G", "C2C", "D2C"] as const;
 
 /** Create a startup, or edit an existing one when `company` is given. */
 export function CreateCompanyForm({ company }: { company?: CompanyFormValues }) {
@@ -68,7 +77,7 @@ function CompanyFields({
   isPending: boolean;
   submitLabel: string;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const saved = company as unknown as Record<string, string | string[]> | undefined;
   const value = (name: string) => prefill(state, saved, name);
   const [slug, setSlug] = useState(value("slug"));
@@ -76,6 +85,10 @@ function CompanyFields({
   // only until the slug is edited by hand.
   const [slugTouched, setSlugTouched] = useState(Boolean(company) || value("slug") !== "");
   const revenueModels = prefillList(state, saved, "revenueModels");
+  const [industry, setIndustry] = useState(value("industry"));
+  const otherCountries = COUNTRY_CODES.filter((c) => !PRIORITY_COUNTRIES.includes(c))
+    .map((code) => ({ code, name: countryName(code, lang) }))
+    .sort((a, b) => a.name.localeCompare(b.name, lang));
 
   const field = (id: string, name: string) => ({ id, name, ...fieldA11y(state, id, name), className: invalidClass });
 
@@ -113,22 +126,41 @@ function CompanyFields({
         <FieldError state={state} id="c-slug" name="slug" />
       </div>
       <div className={fieldClass}>
-        <label className={labelClass} htmlFor="c-sectorEn">{t.admin.manage.sectorEnLabel}</label>
-        <Input {...field("c-sectorEn", "sectorEn")} defaultValue={value("sectorEn")} required />
-        <FieldError state={state} id="c-sectorEn" name="sectorEn" />
+        <label className={labelClass} htmlFor="c-industry">{t.admin.manage.industryLabel}</label>
+        <Select
+          {...field("c-industry", "industry")}
+          required
+          value={industry}
+          onChange={(e) => setIndustry(e.target.value)}
+        >
+          <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
+          {INDUSTRIES.map((i) => (
+            <option key={i.key} value={i.key}>{lang === "ar" ? i.ar : i.en}</option>
+          ))}
+        </Select>
+        <FieldError state={state} id="c-industry" name="industry" />
       </div>
-      <div className={fieldClass}>
-        <label className={labelClass} htmlFor="c-sectorAr">{t.admin.manage.sectorArLabel}</label>
-        <Input {...field("c-sectorAr", "sectorAr")} defaultValue={value("sectorAr")} dir="rtl" required />
-        <FieldError state={state} id="c-sectorAr" name="sectorAr" />
-      </div>
+      {industry === OTHER_INDUSTRY ? (
+        <>
+          <div className={fieldClass}>
+            <label className={labelClass} htmlFor="c-sectorEn">{t.admin.manage.industryOtherEnLabel}</label>
+            <Input {...field("c-sectorEn", "sectorEn")} defaultValue={value("sectorEn")} required />
+            <FieldError state={state} id="c-sectorEn" name="sectorEn" />
+          </div>
+          <div className={fieldClass}>
+            <label className={labelClass} htmlFor="c-sectorAr">{t.admin.manage.industryOtherArLabel}</label>
+            <Input {...field("c-sectorAr", "sectorAr")} defaultValue={value("sectorAr")} dir="rtl" required />
+            <FieldError state={state} id="c-sectorAr" name="sectorAr" />
+          </div>
+        </>
+      ) : null}
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="c-customerModel">{t.admin.manage.customerModelLabel}</label>
         <Select {...field("c-customerModel", "customerModel")} required defaultValue={value("customerModel")}>
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
-          <option value="B2B">{t.customerModels.B2B}</option>
-          <option value="B2C">{t.customerModels.B2C}</option>
-          <option value="B2B_B2C">{t.customerModels.B2B_B2C}</option>
+          {CUSTOMER_MODELS.map((m) => (
+            <option key={m} value={m}>{t.customerModels[m]}</option>
+          ))}
         </Select>
         <FieldError state={state} id="c-customerModel" name="customerModel" />
       </div>
@@ -169,6 +201,41 @@ function CompanyFields({
           <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
         </Select>
         <FieldError state={state} id="c-department" name="department" />
+      </div>
+      <h4 className="mt-2 text-xs font-semibold text-muted-foreground sm:col-span-2">{t.admin.manage.founderSectionTitle}</h4>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="c-founderName">{t.admin.manage.founderNameLabel}</label>
+        <Input {...field("c-founderName", "founderName")} defaultValue={value("founderName")} autoComplete="off" />
+        <FieldError state={state} id="c-founderName" name="founderName" />
+      </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="c-founderEmail">{t.admin.manage.founderEmailLabel}</label>
+        <Input {...field("c-founderEmail", "founderEmail")} defaultValue={value("founderEmail")} type="email" autoComplete="off" />
+        <FieldError state={state} id="c-founderEmail" name="founderEmail" />
+      </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="c-founderPhone">{t.admin.manage.founderPhoneLabel}</label>
+        <Input {...field("c-founderPhone", "founderPhone")} defaultValue={value("founderPhone")} type="tel" dir="ltr" autoComplete="off" />
+        <FieldError state={state} id="c-founderPhone" name="founderPhone" />
+      </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="c-hqCity">{t.admin.manage.hqCityLabel}</label>
+        <Input {...field("c-hqCity", "hqCity")} defaultValue={value("hqCity")} />
+        <FieldError state={state} id="c-hqCity" name="hqCity" />
+      </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="c-hqCountry">{t.admin.manage.hqCountryLabel}</label>
+        <Select {...field("c-hqCountry", "hqCountry")} defaultValue={value("hqCountry")}>
+          <option value="">{t.admin.manage.selectPlaceholder}</option>
+          {PRIORITY_COUNTRIES.map((code) => (
+            <option key={code} value={code}>{countryName(code, lang)}</option>
+          ))}
+          <option disabled>──────────</option>
+          {otherCountries.map(({ code, name }) => (
+            <option key={code} value={code}>{name}</option>
+          ))}
+        </Select>
+        <FieldError state={state} id="c-hqCountry" name="hqCountry" />
       </div>
       <fieldset className="sm:col-span-2" aria-describedby={state.fieldErrors?.revenueModels ? "c-revenueModels-error" : undefined}>
         <legend className={labelClass}>{t.admin.manage.revenueModelsLabel}</legend>

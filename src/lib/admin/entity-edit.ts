@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
+import { industryKeyFor } from "@/lib/industries";
 import type { Department } from "@/generated/prisma/client";
 
 // Loads one active record for its edit form. Returns null when it doesn't
@@ -20,9 +21,15 @@ export async function getCompanyForEdit(id: string) {
     slug: c.slug,
     nameEn: c.nameEn,
     nameAr: c.nameAr,
+    industry: industryKeyFor(c.sectorEn),
     sectorEn: c.sectorEn,
     sectorAr: c.sectorAr,
     customerModel: c.customerModel,
+    founderName: c.founderName ?? "",
+    founderEmail: c.founderEmail ?? "",
+    founderPhone: c.founderPhone ?? "",
+    hqCity: c.hqCity ?? "",
+    hqCountry: c.hqCountry ?? "",
     revenueModels: c.revenueModels as string[],
     currency: c.currency,
     entryStage: c.entryStage,

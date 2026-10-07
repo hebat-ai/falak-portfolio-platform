@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/Select";
 import { CompanyKpis } from "./CompanyKpis";
 import { MetricsBreakdown } from "./MetricsBreakdown";
 import { CompanyMetricsTrendChart } from "./CompanyMetricsTrendChart";
+import { countryName } from "@/lib/countries";
 import { QuarterlyRevenueChart } from "./QuarterlyRevenueChart";
 import { computeAnnualRevenue, quarterOf } from "@/lib/reporting/annual-revenue";
 import { ReportingHistoryList } from "./ReportingHistoryList";
@@ -174,6 +175,32 @@ export function CompanyReportView({ data, initialPeriodKey, fromVehicleSlug, fro
                   {t.customerModels[company.customerModel]}
                 </dd>
               </div>
+              {company.hqCity || company.hqCountry ? (
+                <div className="flex justify-between gap-3">
+                  <dt className="shrink-0 text-muted-foreground">{t.admin.manage.headquartersLabel}</dt>
+                  <dd className="min-w-0 break-words text-end text-foreground">
+                    {[company.hqCity, company.hqCountry ? countryName(company.hqCountry, lang) : null].filter(Boolean).join(", ")}
+                  </dd>
+                </div>
+              ) : null}
+              {company.founderName || company.founderEmail || company.founderPhone ? (
+                <div className="flex justify-between gap-3">
+                  <dt className="shrink-0 text-muted-foreground">{t.admin.manage.founderLabel}</dt>
+                  <dd className="min-w-0 break-words text-end text-foreground">
+                    {company.founderName ? <span className="block">{company.founderName}</span> : null}
+                    {company.founderEmail ? (
+                      <a href={`mailto:${company.founderEmail}`} className="block text-link-foreground underline-offset-2 hover:underline">
+                        {company.founderEmail}
+                      </a>
+                    ) : null}
+                    {company.founderPhone ? (
+                      <a href={`tel:${company.founderPhone.replace(/[^+0-9]/g, "")}`} dir="ltr" className="block text-link-foreground underline-offset-2 hover:underline">
+                        {company.founderPhone}
+                      </a>
+                    ) : null}
+                  </dd>
+                </div>
+              ) : null}
               <div className="flex justify-between gap-3">
                 <dt className="shrink-0 text-muted-foreground">{t.admin.filters.currencyLabel}</dt>
                 <dd className="min-w-0 break-words text-end text-foreground">{t.currencyNames[company.currency]}</dd>

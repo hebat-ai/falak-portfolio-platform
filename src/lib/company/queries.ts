@@ -80,6 +80,11 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
       currency: true,
       entryStage: true,
       currentStage: true,
+      founderName: true,
+      founderEmail: true,
+      founderPhone: true,
+      hqCity: true,
+      hqCountry: true,
       archivedAt: true,
       department: true,
       cycles: {
@@ -193,6 +198,11 @@ export async function getCompanyReportData(slug: string): Promise<CompanyReportD
     currency: company.currency,
     entryStage: company.entryStage,
     currentStage: company.currentStage,
+    founderName: company.founderName ?? null,
+    founderEmail: company.founderEmail ?? null,
+    founderPhone: company.founderPhone ?? null,
+    hqCity: company.hqCity ?? null,
+    hqCountry: company.hqCountry ?? null,
     archivedAt: company.archivedAt?.toISOString() ?? null,
     periods: periodsData,
   };
