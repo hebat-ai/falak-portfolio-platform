@@ -24,6 +24,7 @@ import type { SubmissionMetricFieldDTO } from "@/lib/reporting/dto";
 export interface ReviewActionState {
   error: string | null;
   fieldErrors?: Record<string, string>;
+  success?: boolean;
 }
 
 export interface SaveMetricsActionState {
@@ -263,6 +264,8 @@ export async function extendReportingCycleDeadlineAction(
     await db.$transaction(async (tx) => {
       const cycle = await tx.reportingCycle.findUnique({ where: { id: cycleId }, select: { currentDeadline: true } });
       if (!cycle) throw new InvalidTransitionError();
+      // Saving the date that's already set changes nothing -- no history row.
+      if (cycle.currentDeadline.getTime() === newDeadline.getTime()) return;
 
       await tx.reportingCycleDeadlineExtension.create({
         data: { cycleId, previousDeadline: cycle.currentDeadline, newDeadline, extendedById: user.id },
@@ -282,7 +285,7 @@ export async function extendReportingCycleDeadlineAction(
     return { error: GENERIC_ERROR };
   }
 
-  return { error: null };
+  return { error: null, success: true };
 }
 
 /**

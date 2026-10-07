@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, type FormState } from "@/components/forms/useForm";
 import Link from "next/link";
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table";
@@ -39,8 +40,17 @@ function ReportLogRow({
   resendAction: ReportsLogTableProps["resendAction"];
 }) {
   const { t } = useLanguage();
-  const [isEditingDeadline, setIsEditingDeadline] = useState(false);
   const deadline = useForm(extendDeadlineAction, { error: null }, { resetOnSuccess: false });
+  const router = useRouter();
+  // The form result current when the editor was opened; null when closed.
+  // A successful save arriving after that closes the editor.
+  const [openedWith, setOpenedWith] = useState<FormState | null>(null);
+  const isEditingDeadline = openedWith !== null && !(deadline.state.success && deadline.state !== openedWith);
+
+  // Reload the table's data after a save so the new date shows.
+  useEffect(() => {
+    if (deadline.state.success) router.refresh();
+  }, [deadline.state, router]);
   const resend = useForm(resendAction, { error: null });
 
   return (
@@ -71,14 +81,14 @@ function ReportLogRow({
             <input type="hidden" name="cycleId" value={row.cycleId} />
             <Input type="date" name="newDeadline" defaultValue={row.currentDeadline} className="w-36" />
             <Button type="submit" size="sm" disabled={deadline.isPending}>{t.reviewWorkspace.saveDeadlineAction}</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsEditingDeadline(false)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setOpenedWith(null)}>
               {t.reviewWorkspace.cancelAction}
             </Button>
           </form>
         ) : (
           <div className="flex items-center gap-2">
             <time dateTime={row.currentDeadline}>{formatDate(row.currentDeadline, lang)}</time>
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsEditingDeadline(true)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setOpenedWith(deadline.state)}>
               {t.reviewWorkspace.editDeadlineAction}
             </Button>
           </div>
