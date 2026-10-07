@@ -1,6 +1,9 @@
 "use client";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { InviteStaffUserForm } from "@/app/admin/manage/_components/InviteStaffUserForm";
+import { StaffUsersTable } from "@/app/admin/manage/_components/StaffUsersTable";
+import type { StaffUserRow } from "@/lib/admin/staff";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatDate } from "@/lib/format";
 import { RevokeButton } from "./RevokeButton";
@@ -155,13 +158,36 @@ function PendingRequestsList({ requests, canRevoke }: { requests: AccessRequestD
   );
 }
 
-export function AccessClient({ companies, investors, pendingRequests, canRevoke }: AccessData) {
+export function AccessClient({
+  companies,
+  investors,
+  pendingRequests,
+  canRevoke,
+  staff,
+}: AccessData & { staff: StaffUserRow[] | null }) {
   const { t } = useLanguage();
 
   return (
     <AppShell title={t.nav.access} subtitle={t.access.subtitle}>
       <div className="space-y-6">
         {!canRevoke ? <p className="text-sm text-muted-foreground">{t.access.viewOnlyNote}</p> : null}
+
+        {staff ? (
+          <section aria-labelledby="access-staff" className="space-y-3">
+            <h2 id="access-staff" className="font-heading text-sm font-semibold text-foreground">
+              {t.admin.manage.manageStaffTitle}
+            </h2>
+            <div className="chamfer-br-md space-y-6 bg-surface p-5 shadow-[var(--inner-line)]">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground">{t.admin.manage.inviteStaffTitle}</h3>
+                <InviteStaffUserForm />
+              </div>
+              <div className="overflow-x-auto">
+                <StaffUsersTable rows={staff} />
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section aria-labelledby="access-pending-requests" className="space-y-3">
           <h2 id="access-pending-requests" className="font-heading text-sm font-semibold text-foreground">

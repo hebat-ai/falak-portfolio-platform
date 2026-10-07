@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { CompanyListFiltersBar, DEFAULT_COMPANY_LIST_FILTERS, type CompanyListFilterState } from "../_components/companylist/CompanyListFiltersBar";
 import { CompanyListTable } from "../_components/companylist/CompanyListTable";
 import { DistributionPieChart } from "../_components/companylist/DistributionPieChart";
@@ -81,6 +82,9 @@ export function CompanyListClient({ companies }: CompanyListClientProps) {
   return (
     <AppShell title={t.admin.companyListTitle} subtitle={t.admin.companyListSubtitle}>
       <div className="space-y-6">
+        <div className="flex justify-end">
+          <ExportButton href="/api/export/companies" label={t.admin.exportCompaniesLabel} />
+        </div>
         <CompanyListFiltersBar
           filters={filters}
           onChange={setFilters}

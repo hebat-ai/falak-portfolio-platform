@@ -22,7 +22,6 @@ const MANAGE_CARDS: { key: keyof Dictionary["admin"]["manage"]; href: string }[]
   { key: "setDepartmentTitle", href: "/admin/manage/set-company-department" },
   { key: "setVintageYearTitle", href: "/admin/manage/set-vehicle-vintage-year" },
   { key: "auditLogTitle", href: "/admin/manage/audit-log" },
-  { key: "manageStaffTitle", href: "/admin/manage/staff" },
 ];
 
 export function ManageIndexClient() {

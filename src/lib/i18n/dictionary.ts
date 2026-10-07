@@ -55,6 +55,8 @@ export interface Dictionary {
     subtitle: string;
     dashboardPeriodLabel: string;
     companyListTitle: string;
+    exportCompaniesLabel: string;
+    exportPortfolioLabel: string;
     companyListSubtitle: string;
     kpi: {
       companiesLabel: string;
@@ -643,6 +645,8 @@ export const en = {
     subtitle: "Org-wide visibility across all portfolio companies, vehicles, and reporting cycles.",
     dashboardPeriodLabel: "Reporting Period",
     companyListTitle: "Company List",
+    exportCompaniesLabel: "Export to Excel",
+    exportPortfolioLabel: "Export Portfolio to Excel",
     companyListSubtitle: "Every portfolio company, filterable by vehicle, period, currency, and status.",
     kpi: {
       companiesLabel: "Portfolio Companies",
@@ -1237,6 +1241,8 @@ export const ar = {
     subtitle: "رؤية شاملة على مستوى المؤسسة لجميع شركات المحفظة والأدوات الاستثمارية ودورات التقارير.",
     dashboardPeriodLabel: "فترة التقرير",
     companyListTitle: "قائمة الشركات",
+    exportCompaniesLabel: "تصدير إلى Excel",
+    exportPortfolioLabel: "تصدير المحفظة إلى Excel",
     companyListSubtitle: "جميع شركات المحفظة، قابلة للتصفية حسب الأداة الاستثمارية والفترة والعملة والحالة.",
     kpi: {
       companiesLabel: "شركات المحفظة",

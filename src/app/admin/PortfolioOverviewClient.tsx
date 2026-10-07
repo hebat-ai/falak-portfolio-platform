@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { TimeSeriesBreakdownChart } from "./_components/overview/TimeSeriesBreakdownChart";
 import { MarketCapBreakdownChart } from "./_components/overview/MarketCapBreakdownChart";
@@ -60,6 +61,7 @@ export function PortfolioOverviewClient({ raw }: PortfolioOverviewClientProps) {
               ]}
             />
           </div>
+          <ExportButton href="/api/export/portfolio" label={t.admin.exportPortfolioLabel} />
         </div>
 
         <TimeSeriesBreakdownChart
