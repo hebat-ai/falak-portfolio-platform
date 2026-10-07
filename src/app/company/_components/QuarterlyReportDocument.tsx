@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowRight, ArrowLeft, Printer } from "lucide-react";
 import { BrandMark } from "@/components/brand/BrandMark";
@@ -68,6 +70,51 @@ function comparisonFields(
   return [...byKey.values()];
 }
 
+// A4 content width (210mm - 2 x 12mm margins) minus the card's padding, in CSS px.
+const PRINT_CHART_WIDTH = 640;
+
+/** True while the browser is printing / saving as PDF. */
+// Cost-type metrics, where an increase is unfavourable (shown in red).
+const LOWER_IS_BETTER = new Set([
+  ...METRIC_ALIASES.cogs,
+  ...METRIC_ALIASES.expenses,
+  ...METRIC_ALIASES.burn,
+  ...METRIC_ALIASES.churn,
+  "cust_cac",
+]);
+
+// Colour goes on the value itself: the table cell sets its own text colour,
+// which would otherwise override a colour class on the cell.
+function GrowthValue({ growth, good, lang, naText }: { growth: number | null; good: boolean | null; lang: "en" | "ar"; naText: string }) {
+  if (growth === null) return <>{naText}</>;
+  return (
+    <span className={good === null ? "" : good ? "text-nebula-aqua" : "text-danger"}>
+      <Num>{signedPercent(growth, lang)}</Num>
+    </span>
+  );
+}
+
+function signedPercent(value: number, lang: "en" | "ar"): string {
+  const text = formatPercent(value, lang, 1);
+  return value > 0 ? `+${text}` : text;
+}
+
+function useIsPrinting(): boolean {
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    // flushSync so the print layout is rendered before the browser captures it.
+    const before = () => flushSync(() => setPrinting(true));
+    const after = () => setPrinting(false);
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+  return printing;
+}
+
 interface QuarterlyReportDocumentProps {
   data: QuarterlyReportData;
   fromInvestorDashboard: boolean;
@@ -76,6 +123,7 @@ interface QuarterlyReportDocumentProps {
 export function QuarterlyReportDocument({ data, fromInvestorDashboard }: QuarterlyReportDocumentProps) {
   const { t, lang } = useLanguage();
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
+  const isPrinting = useIsPrinting();
   const { company, metrics, previousMetrics, revenue, previousRevenue, narratives } = data;
 
   const narrativeByKind = new Map(narratives.map((n) => [n.kind, n]));
@@ -99,7 +147,6 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
   const netMargin = computeNetMargin(revenue, expenses);
   const revenueGrowth = percentChange(revenue, previousRevenue);
   const projection = computeRevenueProjection(revenue);
-  const runwayField = keyFor("runway") ? findMetric(metrics, keyFor("runway")!) : undefined;
 
   // Burn and runway, worked out from expenses / cash flow / cash balance
   // when a template doesn't ask for them directly.
@@ -131,14 +178,15 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
     const currentDisplay = field ? formatMetricValue(field, company.currency, lang) : null;
     const priorDisplay = prevField ? formatMetricValue(prevField, company.currency, lang) : null;
     const growth = percentChange(findNumericMetricValue(metrics, key), findNumericMetricValue(previousMetrics ?? [], key));
+    const good = growth === null || growth === 0 ? null : LOWER_IS_BETTER.has(key) ? growth < 0 : growth > 0;
 
     return (
       <Tr key={key}>
         <Td>{label}</Td>
         <Td>{currentDisplay === null ? t.companyReport.naValueDisplay : <Num>{currentDisplay}</Num>}</Td>
         <Td>{priorDisplay === null ? t.companyReport.naValueDisplay : <Num>{priorDisplay}</Num>}</Td>
-        <Td className={`font-medium ${growth === null ? "" : growth >= 0 ? "text-nebula-aqua" : "text-danger"}`}>
-          {growth === null ? t.companyReport.naValueDisplay : <Num>{formatPercent(growth, lang)}</Num>}
+        <Td className="font-medium">
+          <GrowthValue growth={growth} good={good} lang={lang} naText={t.companyReport.naValueDisplay} />
         </Td>
       </Tr>
     );
@@ -146,14 +194,14 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
 
   function derivedRow(key: string, label: string, current: number | null, previous: number | null, format: (v: number) => string, lowerIsBetter: boolean) {
     const growth = percentChange(current, previous);
-    const good = growth === null ? null : lowerIsBetter ? growth <= 0 : growth >= 0;
+    const good = growth === null || growth === 0 ? null : lowerIsBetter ? growth < 0 : growth > 0;
     return (
       <Tr key={key}>
         <Td>{label}</Td>
         <Td>{current === null ? t.companyReport.naValueDisplay : <Num>{format(current)}</Num>}</Td>
         <Td>{previous === null ? t.companyReport.naValueDisplay : <Num>{format(previous)}</Num>}</Td>
-        <Td className={`font-medium ${good === null ? "" : good ? "text-nebula-aqua" : "text-danger"}`}>
-          {growth === null ? t.companyReport.naValueDisplay : <Num>{formatPercent(growth, lang)}</Num>}
+        <Td className="font-medium">
+          <GrowthValue growth={growth} good={good} lang={lang} naText={t.companyReport.naValueDisplay} />
         </Td>
       </Tr>
     );
@@ -176,11 +224,10 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
   );
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 print:px-0 print:py-0">
+    <div className="report-print mx-auto max-w-4xl px-4 py-8 print:max-w-none print:px-0 print:py-0">
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
         }
       `}</style>
 
@@ -199,7 +246,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
       </div>
 
       <div className="space-y-6">
-        <Card className="min-w-0">
+        <Card className="report-card min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <BrandMark />
@@ -221,13 +268,15 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4 print:gap-2">
           <KpiCard
+            className="report-card"
             label={t.quarterlyReport.currentRevenueLabel}
             value={revenue === null ? t.companyReport.naValueDisplay : <Num>{formatCurrency(revenue, company.currency, lang)}</Num>}
-            hint={revenueGrowth === null ? undefined : `${t.companyReport.revenueGrowthLabel}: ${formatPercent(revenueGrowth, lang)}`}
+            hint={revenueGrowth === null ? undefined : `${t.companyReport.revenueGrowthLabel}: ${signedPercent(revenueGrowth, lang)}`}
           />
           <KpiCard
+            className="report-card"
             label={t.quarterlyReport.priorRevenueLabel}
             value={
               previousRevenue === null ? t.companyReport.naValueDisplay : <Num>{formatCurrency(previousRevenue, company.currency, lang)}</Num>
@@ -235,12 +284,14 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
             hint={data.previousPeriodLabel ?? undefined}
           />
           <KpiCard
+            className="report-card"
             label={t.quarterlyReport.projectionLabel}
             value={projection === null ? t.companyReport.naValueDisplay : <Num>{formatCurrency(projection, company.currency, lang)}</Num>}
             hint={t.quarterlyReport.projectionHint}
           />
           <KpiCard
-            label={runwayField ? (lang === "ar" ? runwayField.labelAr : runwayField.labelEn) : t.quarterlyReport.runwayLabel}
+            className="report-card"
+            label={t.quarterlyReport.runwayLabel}
             value={runway === null ? t.companyReport.naValueDisplay : <Num>{months(runway)}</Num>}
             hint={
               num(metrics, "cash") === null
@@ -251,23 +302,34 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
         </div>
 
         {chartData.length > 1 ? (
-          <Card className="min-w-0">
+          <Card className="report-card min-w-0">
             <h2 className="font-heading text-sm font-semibold text-foreground">{t.quarterlyReport.chartTitle}</h2>
             <div className="mt-3 h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-                  <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={12} />
+              {/* On paper the chart gets a fixed width that fits an A4 page --
+                  the on-screen width would run off the printed page. */}
+              <ResponsiveContainer width={isPrinting ? PRINT_CHART_WIDTH : "100%"} height="100%">
+                <LineChart data={chartData} margin={{ top: 16, right: 32, bottom: 4, left: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+                  <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={12} padding={{ left: 24, right: 24 }} />
                   <YAxis
                     stroke="var(--muted-foreground)"
                     fontSize={12}
+                    width={88}
                     tickFormatter={(value: number) => formatCurrency(value, company.currency, lang)}
                   />
                   <Tooltip
                     contentStyle={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--foreground)" }}
                     formatter={(value) => [formatCurrency(Number(value), company.currency, lang), t.companyReport.revenueLabel]}
                   />
-                  <Line type="monotone" dataKey="revenue" stroke="var(--chart-submitted)" strokeWidth={2} dot={{ r: 4 }} connectNulls />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="var(--chart-submitted)"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    connectNulls
+                    isAnimationActive={!isPrinting}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -275,7 +337,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
         ) : null}
 
         {operationalUpdate ? (
-          <Card className="min-w-0">
+          <Card className="report-card min-w-0">
             <h2 className="font-heading text-sm font-semibold text-foreground">{t.reviewWorkspace.narrativeKinds.operational_update}</h2>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {splitParagraphs(lang === "ar" ? operationalUpdate.textAr : operationalUpdate.textEn).map((para, i) => (
@@ -287,7 +349,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
           </Card>
         ) : null}
 
-        <Card className="min-w-0">
+        <Card className="report-card min-w-0">
           <h2 className="font-heading text-sm font-semibold text-foreground">{t.quarterlyReport.comparisonTitle}</h2>
           <div className="mt-3">
             <Table caption={t.quarterlyReport.comparisonCaption}>
@@ -306,8 +368,13 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
                   <Td>
                     {previousRevenue === null ? t.companyReport.naValueDisplay : <Num>{formatCurrency(previousRevenue, company.currency, lang)}</Num>}
                   </Td>
-                  <Td className={`font-medium ${revenueGrowth === null ? "" : revenueGrowth >= 0 ? "text-nebula-aqua" : "text-danger"}`}>
-                    {revenueGrowth === null ? t.companyReport.naValueDisplay : <Num>{formatPercent(revenueGrowth, lang)}</Num>}
+                  <Td className="font-medium">
+                    <GrowthValue
+                      growth={revenueGrowth}
+                      good={revenueGrowth === null || revenueGrowth === 0 ? null : revenueGrowth > 0}
+                      lang={lang}
+                      naText={t.companyReport.naValueDisplay}
+                    />
                   </Td>
                 </Tr>
                 {comparisonFields(metrics, previousMetrics ?? []).map(comparisonRow)}
@@ -322,7 +389,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
           </div>
         </Card>
 
-        <Card className="min-w-0">
+        <Card className="report-card min-w-0">
           <h2 className="font-heading text-sm font-semibold text-foreground">{t.quarterlyReport.growthIndicatorsTitle}</h2>
           <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex justify-between gap-3 border-b border-border-subtle py-1.5 text-sm">
@@ -353,7 +420,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
         </Card>
 
         {quarterHighlights ? (
-          <Card className="min-w-0">
+          <Card className="report-card min-w-0">
             <h2 className="font-heading text-sm font-semibold text-foreground">{t.reviewWorkspace.narrativeKinds.quarter_highlights}</h2>
             <ul className="mt-3 list-inside list-disc space-y-1.5 text-sm text-foreground">
               {splitParagraphs(lang === "ar" ? quarterHighlights.textAr : quarterHighlights.textEn).map((bullet, i) => (
@@ -364,7 +431,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
         ) : null}
 
         {customerTileKeys.length > 0 ? (
-        <Card className="min-w-0">
+        <Card className="report-card min-w-0">
           <h2 className="font-heading text-sm font-semibold text-foreground">{t.quarterlyReport.customerMetricsTitle}</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {customerTileKeys.map((key) => {
@@ -385,7 +452,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
         ) : null}
 
         {investmentReviewNotes ? (
-          <Card className="min-w-0">
+          <Card className="report-card min-w-0">
             <h2 className="font-heading text-sm font-semibold text-foreground">{t.reviewWorkspace.narrativeKinds.investment_review_notes}</h2>
             <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
               {lang === "ar" ? investmentReviewNotes.textAr : investmentReviewNotes.textEn}
@@ -394,7 +461,7 @@ export function QuarterlyReportDocument({ data, fromInvestorDashboard }: Quarter
         ) : null}
 
         {managementCommentary ? (
-          <Card className="min-w-0">
+          <Card className="report-card min-w-0">
             <h2 className="font-heading text-sm font-semibold text-foreground">{t.reviewWorkspace.narrativeKinds.management_commentary}</h2>
             <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
               {lang === "ar" ? managementCommentary.textAr : managementCommentary.textEn}

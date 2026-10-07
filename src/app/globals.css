@@ -246,3 +246,69 @@ body {
     0 var(--chamfer-md)
   );
 }
+
+/* ---- Printing / "Save as PDF" of the formatted quarterly report ---- */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  /* Always print the light palette, whatever theme is on screen --
+     otherwise dark-mode's light text lands on white paper. */
+  :root,
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --background: #ffffff;
+    --foreground: var(--brand-dark-nebula);
+    --muted-foreground: color-mix(in srgb, var(--brand-dark-nebula) 72%, #ffffff 28%);
+    --link-foreground: var(--brand-dark-nebula);
+    --surface: #ffffff;
+    --surface-muted: #f3f6f5;
+    --border-subtle: #d9e1df;
+    --control-border: #b9c6c3;
+    --danger: #b3261e;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  .report-print {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 12px;
+  }
+
+  /* Chamfer clip-paths and inset-shadow hairlines print unevenly; use a
+     plain thin border and small radius on paper. */
+  .report-print .chamfer-br-sm,
+  .report-print .chamfer-br-md,
+  .report-print .chamfer-br-lg {
+    clip-path: none !important;
+  }
+  .report-print .report-card {
+    box-shadow: none !important;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .report-print .report-card .report-card {
+    border-color: var(--border-subtle);
+  }
+  .report-print h2 {
+    break-after: avoid;
+  }
+  .report-print table {
+    font-size: 11px;
+  }
+  .report-print .report-card .text-2xl {
+    font-size: 19px;
+    line-height: 1.25;
+  }
+  .report-print tr {
+    break-inside: avoid;
+  }
+}
