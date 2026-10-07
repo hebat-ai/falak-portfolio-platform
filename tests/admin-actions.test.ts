@@ -17,7 +17,6 @@ const { GENERIC_ACCESS_DENIED } = await import("../src/lib/auth/action-error.ts"
 const { MockRedirectError } = (await import("next/navigation")) as unknown as { MockRedirectError: new (url: string) => Error & { url: string } };
 
 const NO_ROLE_STUB = makeAuthorizationDbStub({ falakRoles: [] });
-const OPERATIONS_ONLY_STUB = makeAuthorizationDbStub({ falakRoles: [{ role: "FALAK_OPERATIONS" }] });
 
 // Every mutation in this file requires FALAK_ADMIN specifically -- an
 // active FALAK_OPERATIONS-only role must NOT satisfy it (unlike
@@ -50,18 +49,6 @@ for (const { name, invoke } of STATE_ACTIONS) {
     const result = await invoke();
     assert.equal(result.error, GENERIC_ACCESS_DENIED);
   });
-
-  // Reporting templates are shared across departments, so they stay
-  // Admin-only; every other action here is open to department-scoped
-  // staff (see the department tests below).
-  if (name === "createReportingTemplateAction") {
-    test(`${name} resolves with the generic access-denied message for a FALAK_OPERATIONS-only caller (ADMIN-only gate)`, async () => {
-      setCurrentUser(REAL_USER);
-      setDbStub(OPERATIONS_ONLY_STUB);
-      const result = await invoke();
-      assert.equal(result.error, GENERIC_ACCESS_DENIED);
-    });
-  }
 }
 
 // The three archive actions have no {error} state channel (plain <form

@@ -271,6 +271,20 @@ export interface Dictionary {
       editInvestorTitle: string;
       editAction: string;
       saveChangesLabel: string;
+      editTemplateTitle: string;
+      templatesListTitle: string;
+      templateActiveLabel: string;
+      templateInactiveLabel: string;
+      templateInUseNote: string;
+      metricOrderLabel: string;
+      metricRequiredLabel: string;
+      metricActiveLabel: string;
+      metricLockedNote: string;
+      deleteSectionTitle: string;
+      deleteCompanyWarning: string;
+      deleteVehicleWarning: string;
+      deleteConfirmLabel: string;
+      deleteAction: string;
       successMessage: string;
       inviteCreatedMessage: string;
       auditLogTitle: string;
@@ -861,6 +875,20 @@ export const en = {
       editInvestorTitle: "Edit Investor",
       editAction: "Edit",
       saveChangesLabel: "Save Changes",
+      editTemplateTitle: "Edit Reporting Template",
+      templatesListTitle: "Templates",
+      templateActiveLabel: "Active (offered for new reporting cycles)",
+      templateInactiveLabel: "inactive",
+      templateInUseNote: "Used by {count} reporting cycle(s). Changes apply to those cycles too.",
+      metricOrderLabel: "Order",
+      metricRequiredLabel: "Required",
+      metricActiveLabel: "Shown on the form",
+      metricLockedNote: "Key and data type are locked because startups have entered values for this metric.",
+      deleteSectionTitle: "Delete permanently",
+      deleteCompanyWarning: "Permanently deletes this startup and everything linked to it: reporting cycles, submissions, published reports (including those investors can see), investments, valuations, logins and invites. This cannot be undone. To only hide it, use Archive instead.",
+      deleteVehicleWarning: "Permanently deletes this vehicle and everything linked to it: its holdings in startups (the startups themselves stay), investors' positions, capital transactions, NAV records and vehicle reports. This cannot be undone. To only hide it, use Archive instead.",
+      deleteConfirmLabel: "To confirm, type the English name:",
+      deleteAction: "Delete permanently",
       successMessage: "Saved.",
       inviteCreatedMessage: "Invite created. Copy this link and send it to the company yourself — email delivery isn't wired up yet.",
       auditLogTitle: "Audit Log",
@@ -1457,6 +1485,20 @@ export const ar = {
       editInvestorTitle: "تعديل المستثمر",
       editAction: "تعديل",
       saveChangesLabel: "حفظ التغييرات",
+      editTemplateTitle: "تعديل قالب التقارير",
+      templatesListTitle: "القوالب",
+      templateActiveLabel: "نشط (متاح لدورات التقارير الجديدة)",
+      templateInactiveLabel: "غير نشط",
+      templateInUseNote: "مستخدم في {count} من دورات التقارير. تنطبق التغييرات عليها أيضاً.",
+      metricOrderLabel: "الترتيب",
+      metricRequiredLabel: "إلزامي",
+      metricActiveLabel: "يظهر في النموذج",
+      metricLockedNote: "المفتاح ونوع البيانات مقفلان لأن الشركات الناشئة أدخلت قيماً لهذا المؤشر.",
+      deleteSectionTitle: "حذف نهائي",
+      deleteCompanyWarning: "يحذف هذه الشركة الناشئة نهائياً مع كل ما يرتبط بها: دورات التقارير والتقارير المقدمة والتقارير المنشورة (بما فيها ما يراه المستثمرون) والاستثمارات والتقييمات وحسابات الدخول والدعوات. لا يمكن التراجع عن ذلك. لإخفائها فقط استخدم الأرشفة.",
+      deleteVehicleWarning: "يحذف هذه الأداة الاستثمارية نهائياً مع كل ما يرتبط بها: حصصها في الشركات الناشئة (تبقى الشركات نفسها) ومراكز المستثمرين والمعاملات الرأسمالية وسجلات صافي قيمة الأصول وتقارير الأداة. لا يمكن التراجع عن ذلك. لإخفائها فقط استخدم الأرشفة.",
+      deleteConfirmLabel: "للتأكيد، اكتب الاسم بالإنجليزية:",
+      deleteAction: "حذف نهائي",
       successMessage: "تم الحفظ.",
       inviteCreatedMessage: "تم إنشاء الدعوة. انسخ هذا الرابط وأرسله إلى الشركة بنفسك — إرسال البريد الإلكتروني التلقائي غير مُفعّل بعد.",
       auditLogTitle: "سجل التدقيق",

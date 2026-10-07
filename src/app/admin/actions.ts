@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireFalakRole } from "@/lib/auth/authorization";
 import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
+import { deleteCompanyCascade, deleteVehicleCascade } from "@/lib/admin/entity-delete";
+import { deleteAttachment } from "@/lib/storage/blob";
 import {
   validateCompany,
   validateVehicle,
@@ -763,7 +765,7 @@ export async function unassignInvestorFromVehicleAction(formData: FormData): Pro
 export async function createReportingTemplateAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
   try {
-    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+    ({ user } = await requireFalakRole("FALAK_OPERATIONS"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -1485,4 +1487,238 @@ export async function revokeStaffRoleAction(formData: FormData): Promise<void> {
       targetId: userId,
     });
   });
+}
+
+// ============================================================
+// Permanent deletion
+// ============================================================
+
+const CONFIRM_NAME_MISMATCH = "Type the exact English name to confirm deletion.";
+
+async function removeStoredFiles(storageKeys: string[]) {
+  // After the database commit, best effort: a file left behind in storage
+  // is harmless, while failing here must not undo a completed deletion.
+  await Promise.allSettled(storageKeys.map((key) => deleteAttachment(key)));
+}
+
+/**
+ * Permanently deletes a startup and everything linked to it (reporting
+ * cycles, submissions, published reports, investments, valuations,
+ * logins and invites). Investment Professionals and Management may delete
+ * startups in their own department; Admin any.
+ */
+export async function deleteCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  let departments: Department[] | null = null;
+  try {
+    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const companyId = readString(formData, "companyId");
+  if (!companyId) return { error: GENERIC_ERROR };
+  const company = await db.company.findUnique({ where: { id: companyId }, select: { nameEn: true, slug: true, department: true } });
+  if (!company || !inDepartment(departments, company.department)) {
+    return { error: OUT_OF_DEPARTMENT };
+  }
+  if (readString(formData, "confirmName") !== company.nameEn.trim()) {
+    return { error: CONFIRM_NAME_MISMATCH, fieldErrors: { confirmName: CONFIRM_NAME_MISMATCH } };
+  }
+
+  let storageKeys: string[];
+  try {
+    storageKeys = await db.$transaction(
+      async (tx) => {
+        const keys = await deleteCompanyCascade(tx, companyId);
+        await writeAuditEvent(tx, {
+          actorId: user.id,
+          action: "company.deleted",
+          targetType: "Company",
+          targetId: companyId,
+          meta: { nameEn: company.nameEn, slug: company.slug },
+        });
+        return keys;
+      },
+      { timeout: 30000 }
+    );
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+  await removeStoredFiles(storageKeys);
+  redirect("/admin/manage/new-company");
+}
+
+/** Permanently deletes a vehicle and everything linked to it. Admin only. */
+export async function deleteVehicleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const vehicleId = readString(formData, "vehicleId");
+  if (!vehicleId) return { error: GENERIC_ERROR };
+  const vehicle = await db.vehicle.findUnique({ where: { id: vehicleId }, select: { nameEn: true, slug: true } });
+  if (!vehicle) return { error: GENERIC_ERROR };
+  if (readString(formData, "confirmName") !== vehicle.nameEn.trim()) {
+    return { error: CONFIRM_NAME_MISMATCH, fieldErrors: { confirmName: CONFIRM_NAME_MISMATCH } };
+  }
+
+  let storageKeys: string[];
+  try {
+    storageKeys = await db.$transaction(
+      async (tx) => {
+        const keys = await deleteVehicleCascade(tx, vehicleId);
+        await writeAuditEvent(tx, {
+          actorId: user.id,
+          action: "vehicle.deleted",
+          targetType: "Vehicle",
+          targetId: vehicleId,
+          meta: { nameEn: vehicle.nameEn, slug: vehicle.slug },
+        });
+        return keys;
+      },
+      { timeout: 30000 }
+    );
+  } catch {
+    return { error: GENERIC_ERROR };
+  }
+  await removeStoredFiles(storageKeys);
+  redirect("/admin/manage/new-vehicle");
+}
+
+// ============================================================
+// Editing a reporting template
+// ============================================================
+
+const METRIC_KEY_PATTERN = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * Safe edits to a template that may already be in use: name, on/off,
+ * and per metric its labels, order, required and on/off. A metric's key
+ * and data type change only while no startup has entered a value for it,
+ * so past reports keep reading correctly. New metrics can be added.
+ * Templates are shared by all departments; any Falak staff may edit.
+ */
+export async function updateReportingTemplateAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_OPERATIONS"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const values: FormValues = {};
+  for (const [k, v] of formData.entries()) if (typeof v === "string") values[k] = v;
+  const fail = (error: string): ActionState => ({ error, values });
+
+  const templateId = readString(formData, "templateId");
+  const nameEn = readString(formData, "nameEn");
+  const nameAr = readString(formData, "nameAr");
+  if (!templateId || !isValidName(nameEn) || !isValidName(nameAr)) {
+    return fail("Fill in the template name in both languages.");
+  }
+
+  const existing = await db.metricDefinition.findMany({
+    where: { templateId },
+    include: { _count: { select: { currentValues: true, snapshotValues: true } } },
+  });
+  if (existing.length === 0 && !(await db.reportingTemplate.findUnique({ where: { id: templateId } }))) {
+    return fail(GENERIC_ERROR);
+  }
+
+  const updates: { id: string; data: Record<string, unknown> }[] = [];
+  const keys = new Set<string>();
+  for (const m of existing) {
+    const locked = m._count.currentValues + m._count.snapshotValues > 0;
+    const labelEn = readString(formData, `labelEn_${m.id}`);
+    const labelAr = readString(formData, `labelAr_${m.id}`);
+    const sortOrder = Number(readString(formData, `sortOrder_${m.id}`));
+    const key = locked ? m.key : readString(formData, `key_${m.id}`);
+    const dataType = locked ? m.dataType : readString(formData, `dataType_${m.id}`);
+    if (
+      !isValidName(labelEn) ||
+      !isValidName(labelAr) ||
+      !Number.isInteger(sortOrder) ||
+      !key ||
+      !METRIC_KEY_PATTERN.test(key) ||
+      !dataType ||
+      !METRIC_DATA_TYPES.includes(dataType as MetricDataType)
+    ) {
+      return fail(`Check metric "${m.labelEn}": it needs both labels, a whole-number order, a key (lowercase letters, digits, _) and a data type.`);
+    }
+    if (keys.has(key)) return fail(`Metric key "${key}" is used twice.`);
+    keys.add(key);
+    updates.push({
+      id: m.id,
+      data: {
+        labelEn,
+        labelAr,
+        sortOrder,
+        required: formData.get(`required_${m.id}`) === "on",
+        isActive: formData.get(`isActive_${m.id}`) === "on",
+        ...(locked ? {} : { key, dataType: dataType as MetricDataType }),
+      },
+    });
+  }
+
+  const added: { key: string; labelEn: string; labelAr: string; dataType: MetricDataType; sortOrder: number }[] = [];
+  let nextOrder = Math.max(0, ...existing.map((m) => m.sortOrder)) + 1;
+  for (let i = 0; i < MAX_METRIC_ROWS; i++) {
+    const key = readString(formData, `newKey_${i}`);
+    if (!key) continue;
+    const labelEn = readString(formData, `newLabelEn_${i}`);
+    const labelAr = readString(formData, `newLabelAr_${i}`);
+    const dataType = readString(formData, `newDataType_${i}`);
+    if (
+      !METRIC_KEY_PATTERN.test(key) ||
+      !isValidName(labelEn) ||
+      !isValidName(labelAr) ||
+      !dataType ||
+      !METRIC_DATA_TYPES.includes(dataType as MetricDataType)
+    ) {
+      return fail("Every new metric needs a key (lowercase letters, digits, _), both labels and a data type.");
+    }
+    if (keys.has(key)) return fail(`Metric key "${key}" is used twice.`);
+    keys.add(key);
+    added.push({ key, labelEn, labelAr, dataType: dataType as MetricDataType, sortOrder: nextOrder++ });
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.reportingTemplate.update({
+        where: { id: templateId },
+        data: { nameEn, nameAr, isActive: formData.get("templateActive") === "on" },
+      });
+      // Free up keys first, so swapping two unlocked keys can't collide on the unique index.
+      for (const u of updates) {
+        if ("key" in u.data) await tx.metricDefinition.update({ where: { id: u.id }, data: { key: `__tmp_${u.id}` } });
+      }
+      for (const u of updates) await tx.metricDefinition.update({ where: { id: u.id }, data: u.data });
+      if (added.length > 0) {
+        await tx.metricDefinition.createMany({ data: added.map((m) => ({ ...m, templateId, required: true })) });
+      }
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "reporting_template.updated",
+        targetType: "ReportingTemplate",
+        targetId: templateId,
+      });
+    });
+  } catch {
+    return fail(GENERIC_ERROR);
+  }
+
+  return { error: null, success: true };
 }
