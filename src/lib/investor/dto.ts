@@ -91,9 +91,24 @@ export interface InvestorVehicleExposureDTO {
   navHistory: InvestorNavPoint[];
 }
 
+// The Investment Review Notes from a startup's latest report this org can
+// see -- one per (org, startup), shown as the dashboard's news feed.
+export interface InvestorNewsItemDTO {
+  investorOrgId: string;
+  companyId: string;
+  companySlug: string;
+  companyNameEn: string;
+  companyNameAr: string;
+  periodKey: string;
+  publishedAt: string | null;
+  textEn: string;
+  textAr: string;
+}
+
 export interface InvestorPortfolioData {
   orgs: InvestorOrgOption[];
   periods: InvestorPeriodOption[];
   companies: InvestorVisibleCompanyDTO[];
   vehicleExposures: InvestorVehicleExposureDTO[];
+  news: InvestorNewsItemDTO[];
 }

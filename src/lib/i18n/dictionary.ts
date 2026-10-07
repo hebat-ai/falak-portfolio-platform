@@ -441,6 +441,8 @@ export interface Dictionary {
     noApprovedReports: string;
     noOrgAccess: string;
     investedCapitalLabel: string;
+    latestNewsTitle: string;
+    noNewsMessage: string;
     sectorDistributionTitle: string;
     noSectorDataMessage: string;
     navChartTitle: string;
@@ -1029,6 +1031,8 @@ export const en = {
     noApprovedReports: "No published reports for this organization and period yet.",
     noOrgAccess: "You don't have access to any investor organization yet.",
     investedCapitalLabel: "Invested Capital",
+    latestNewsTitle: "Latest News",
+    noNewsMessage: "No updates yet. News appears here once a startup's latest report includes Investment Review Notes.",
     sectorDistributionTitle: "Startups by Sector",
     noSectorDataMessage: "No startups in your vehicles yet.",
     navChartTitle: "NAV",
@@ -1621,6 +1625,8 @@ export const ar = {
     noApprovedReports: "لا توجد تقارير منشورة لهذه المؤسسة والفترة بعد.",
     noOrgAccess: "ليس لديك وصول إلى أي مؤسسة استثمارية بعد.",
     investedCapitalLabel: "رأس المال المستثمر",
+    latestNewsTitle: "آخر الأخبار",
+    noNewsMessage: "لا توجد مستجدات بعد. تظهر الأخبار هنا عندما يتضمن أحدث تقرير لشركة ناشئة ملاحظات مراجعة الاستثمار.",
     sectorDistributionTitle: "توزيع الشركات الناشئة حسب القطاع",
     noSectorDataMessage: "لا توجد شركات ناشئة في أدواتك الاستثمارية بعد.",
     navChartTitle: "صافي قيمة الأصول",

@@ -10,6 +10,7 @@ import type {
   InvestorPeriodOption,
   InvestorVisibleCompanyDTO,
   InvestorVehicleExposureDTO,
+  InvestorNewsItemDTO,
 } from "./dto";
 
 function toDateOnly(date: Date): string {
@@ -37,7 +38,7 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
   });
 
   if (memberships.length === 0) {
-    return { orgs: [], periods: [], companies: [], vehicleExposures: [] };
+    return { orgs: [], periods: [], companies: [], vehicleExposures: [], news: [] };
   }
 
   const orgs: InvestorOrgOption[] = memberships.map((m) => ({
@@ -60,6 +61,10 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
           id: true,
           versionNo: true,
           publishedAt: true,
+          narratives: {
+            where: { kind: "investment_review_notes" },
+            select: { textEn: true, textAr: true },
+          },
           report: {
             select: {
               id: true,
@@ -117,6 +122,8 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
 
   const periodMap = new Map<string, InvestorPeriodOption>();
   const companies: InvestorVisibleCompanyDTO[] = [];
+  // Latest report per (org, startup), for the news feed.
+  const latestByOrgCompany = new Map<string, (typeof grants)[number]>();
 
   for (const grant of bestGrantByKey.values()) {
     const { report, submissions, publishedAt } = grant.reportVersion;
@@ -137,6 +144,12 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
     // but TS can't infer that from a runtime filter, and a future
     // scope-leakage bug should skip the row, not crash the dashboard.
     if (!company) continue;
+
+    const newsKey = `${grant.investorId}:${company.id}`;
+    const latest = latestByOrgCompany.get(newsKey);
+    if (!latest || report.periodStart > latest.reportVersion.report.periodStart) {
+      latestByOrgCompany.set(newsKey, grant);
+    }
 
     // A COMPANY-scope ReportVersion compiles exactly one submission (see
     // ReportVersionSubmission's schema comment) -- guarded defensively
@@ -165,6 +178,27 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
   }
 
   const periods = [...periodMap.values()].sort((a, b) => a.periodStart.localeCompare(b.periodStart));
+
+  // Only the latest report counts: a startup whose latest report has no
+  // Investment Review Notes has no news, rather than showing older notes.
+  const news: InvestorNewsItemDTO[] = [];
+  for (const grant of latestByOrgCompany.values()) {
+    const { report, publishedAt, narratives } = grant.reportVersion;
+    const note = narratives[0];
+    if (!report.company || !note || (!note.textEn.trim() && !note.textAr.trim())) continue;
+    news.push({
+      investorOrgId: grant.investorId,
+      companyId: report.company.id,
+      companySlug: report.company.slug,
+      companyNameEn: report.company.nameEn,
+      companyNameAr: report.company.nameAr,
+      periodKey: report.periodLabel,
+      publishedAt: publishedAt ? publishedAt.toISOString() : null,
+      textEn: note.textEn,
+      textAr: note.textAr,
+    });
+  }
+  news.sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
 
   // Vehicle exposure is independent of report-visibility -- it's the
   // investor's capital exposure structure, resolved the same way
@@ -272,5 +306,5 @@ export async function getInvestorPortfolioData(): Promise<InvestorPortfolioData>
     });
   }
 
-  return { orgs, periods, companies, vehicleExposures };
+  return { orgs, periods, companies, vehicleExposures, news };
 }

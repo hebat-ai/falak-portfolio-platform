@@ -49,7 +49,7 @@ test("zero memberships -> all-empty result, no throw", async () => {
   setCurrentUser(REAL_USER);
   setDbStub(makeInvestorQueriesDbStub({ memberships: [] }));
   const result = await getInvestorPortfolioData();
-  assert.deepEqual(result, { orgs: [], periods: [], companies: [], vehicleExposures: [] });
+  assert.deepEqual(result, { orgs: [], periods: [], companies: [], vehicleExposures: [], news: [] });
 });
 
 test("a revoked membership grants no org access", async () => {
@@ -272,4 +272,66 @@ test("vehicle exposure carries this org's contributions, its share of all contri
     ["2026-03-31", "2026-06-30"]
   );
   assert.equal(exposure.linkedCompanies[0].sectorEn, "Fintech");
+});
+
+test("news: each startup's Investment Review Notes from its latest visible report, newest first", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeInvestorQueriesDbStub({
+      memberships: [MEMBERSHIP],
+      reportAccessGrants: [
+        { ...BASE_GRANT, reviewNotes: { textEn: "Q1 notes", textAr: "ملاحظات" } },
+        {
+          ...BASE_GRANT,
+          reportId: "rep_2",
+          reportVersionId: "ver_2",
+          periodLabel: "Q2 2026",
+          periodStart: new Date("2026-04-01"),
+          periodEnd: new Date("2026-06-30"),
+          publishedAt: new Date("2026-07-15"),
+          reviewNotes: { textEn: "Q2 notes", textAr: "ملاحظات" },
+        },
+        {
+          ...BASE_GRANT,
+          reportId: "rep_3",
+          reportVersionId: "ver_3",
+          companyId: "co_2",
+          companySlug: "waslah",
+          companyNameEn: "Waslah",
+          publishedAt: new Date("2026-05-01"),
+          reviewNotes: { textEn: "Waslah notes", textAr: "" },
+        },
+      ],
+    })
+  );
+  const { news } = await getInvestorPortfolioData();
+  assert.deepEqual(
+    news.map((n) => [n.companyId, n.periodKey, n.textEn]),
+    [
+      ["co_1", "Q2 2026", "Q2 notes"],
+      ["co_2", "Q1 2026", "Waslah notes"],
+    ]
+  );
+});
+
+test("news: a startup whose latest report has no review notes shows no news, not older notes", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeInvestorQueriesDbStub({
+      memberships: [MEMBERSHIP],
+      reportAccessGrants: [
+        { ...BASE_GRANT, reviewNotes: { textEn: "Old Q1 notes", textAr: "" } },
+        {
+          ...BASE_GRANT,
+          reportId: "rep_2",
+          reportVersionId: "ver_2",
+          periodLabel: "Q2 2026",
+          periodStart: new Date("2026-04-01"),
+          periodEnd: new Date("2026-06-30"),
+        },
+      ],
+    })
+  );
+  const { news } = await getInvestorPortfolioData();
+  assert.equal(news.length, 0);
 });

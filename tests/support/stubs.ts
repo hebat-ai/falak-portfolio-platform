@@ -902,6 +902,7 @@ export interface InvestorMembershipFixture {
 
 export interface ReportAccessGrantFixture {
   investorId: string;
+  reviewNotes?: { textEn: string; textAr: string };
   revoked?: boolean;
   reportVersionId: string;
   versionNo: number;
@@ -1019,6 +1020,7 @@ export function makeInvestorQueriesDbStub(options: {
               id: g.reportVersionId,
               versionNo: g.versionNo,
               publishedAt: g.publishedAt,
+              narratives: g.reviewNotes ? [g.reviewNotes] : [],
               report: {
                 id: g.reportId,
                 periodLabel: g.periodLabel,

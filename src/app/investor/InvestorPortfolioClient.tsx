@@ -7,6 +7,7 @@ import { InvestorCompanyTable } from "./_components/InvestorCompanyTable";
 import { InvestorKpis } from "./_components/InvestorKpis";
 import { InvestorReturnsPanel } from "./_components/InvestorReturnsPanel";
 import { InvestorNavChart } from "./_components/InvestorNavChart";
+import { InvestorNewsCard } from "./_components/InvestorNewsCard";
 import { DistributionPieChart } from "@/app/admin/_components/companylist/DistributionPieChart";
 import { Num } from "@/components/ui/Num";
 import { Select } from "@/components/ui/Select";
@@ -31,6 +32,7 @@ export function InvestorPortfolioClient({
   periods,
   companies,
   vehicleExposures,
+  news,
   returnsByOrgId,
 }: InvestorPortfolioClientProps) {
   const { t, lang } = useLanguage();
@@ -168,59 +170,65 @@ export function InvestorPortfolioClient({
           displayCurrency={displayCurrency}
         />
 
-        <InvestorReturnsPanel returns={returnsByOrgId[orgId] ?? []} />
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-6">
+            <InvestorReturnsPanel returns={returnsByOrgId[orgId] ?? []} />
 
-        <section aria-labelledby="investor-vehicle-exposure-heading" className="space-y-3">
-          <h2 id="investor-vehicle-exposure-heading" className="font-heading text-sm font-semibold text-foreground">
-            {t.investorDashboard.vehicleExposureTitle}
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {scope.vehicleCards.map(({ vehicle, companies, visibleCount }) => (
-              <div key={vehicle.id} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
-                {/* Deliberately plain text, not a Link to /vehicle/[slug]
-                    -- that page is Falak-staff-only (getVehicleDashboardData
-                    requires FALAK_OPERATIONS) and shows other investors'
-                    exposure alongside internal figures; an investor-scoped
-                    vehicle view would need its own page and auth branch,
-                    which is out of scope here. Linking to a page this
-                    viewer would just be redirected away from is worse
-                    than no link at all. */}
-                <p className="font-heading text-sm font-semibold text-foreground">
-                  {lang === "ar" ? vehicle.nameAr : vehicle.nameEn}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t.vehicleTypes[vehicle.type]} · {t.currencyNames[vehicle.currency]}
-                </p>
-                <p className="mt-2 text-sm text-foreground">
-                  {t.investorDashboard.visibleCompaniesLabel}: <Num>{visibleCount}</Num>
-                </p>
-                {companies.length === 0 ? (
-                  <p className="mt-2 text-xs text-muted-foreground">{t.investorDashboard.noStartupsInVehicle}</p>
-                ) : (
-                  <ul className="mt-2 space-y-1">
-                    {companies.map((company) => (
-                      <li key={company.id} className="text-sm">
-                        {company.hasVisibleReport ? (
-                          <Link
-                            href={`/company/${company.slug}/report?period=${encodeURIComponent(periodKey)}&from=investor`}
-                            className="text-link-foreground underline-offset-2 hover:underline"
-                          >
-                            {lang === "ar" ? company.nameAr : company.nameEn}
-                          </Link>
-                        ) : (
-                          <span className="text-foreground">
-                            {lang === "ar" ? company.nameAr : company.nameEn}{" "}
-                            <span className="text-xs text-muted-foreground">({t.reviewWorkspace.notPublishedValue})</span>
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            <section aria-labelledby="investor-vehicle-exposure-heading" className="space-y-3">
+              <h2 id="investor-vehicle-exposure-heading" className="font-heading text-sm font-semibold text-foreground">
+                {t.investorDashboard.vehicleExposureTitle}
+              </h2>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {scope.vehicleCards.map(({ vehicle, companies, visibleCount }) => (
+                  <div key={vehicle.id} className="chamfer-br-md bg-surface p-4 shadow-[var(--inner-line)]">
+                    {/* Deliberately plain text, not a Link to /vehicle/[slug]
+                        -- that page is Falak-staff-only (getVehicleDashboardData
+                        requires FALAK_OPERATIONS) and shows other investors'
+                        exposure alongside internal figures; an investor-scoped
+                        vehicle view would need its own page and auth branch,
+                        which is out of scope here. Linking to a page this
+                        viewer would just be redirected away from is worse
+                        than no link at all. */}
+                    <p className="font-heading text-sm font-semibold text-foreground">
+                      {lang === "ar" ? vehicle.nameAr : vehicle.nameEn}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t.vehicleTypes[vehicle.type]} · {t.currencyNames[vehicle.currency]}
+                    </p>
+                    <p className="mt-2 text-sm text-foreground">
+                      {t.investorDashboard.visibleCompaniesLabel}: <Num>{visibleCount}</Num>
+                    </p>
+                    {companies.length === 0 ? (
+                      <p className="mt-2 text-xs text-muted-foreground">{t.investorDashboard.noStartupsInVehicle}</p>
+                    ) : (
+                      <ul className="mt-2 space-y-1">
+                        {companies.map((company) => (
+                          <li key={company.id} className="text-sm">
+                            {company.hasVisibleReport ? (
+                              <Link
+                                href={`/company/${company.slug}/report?period=${encodeURIComponent(periodKey)}&from=investor`}
+                                className="text-link-foreground underline-offset-2 hover:underline"
+                              >
+                                {lang === "ar" ? company.nameAr : company.nameEn}
+                              </Link>
+                            ) : (
+                              <span className="text-foreground">
+                                {lang === "ar" ? company.nameAr : company.nameEn}{" "}
+                                <span className="text-xs text-muted-foreground">({t.reviewWorkspace.notPublishedValue})</span>
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </section>
           </div>
-        </section>
+
+          <InvestorNewsCard items={news.filter((item) => item.investorOrgId === orgId)} />
+        </div>
 
         <section aria-labelledby="investor-companies-heading" className="space-y-3">
           <h2 id="investor-companies-heading" className="font-heading text-sm font-semibold text-foreground">
