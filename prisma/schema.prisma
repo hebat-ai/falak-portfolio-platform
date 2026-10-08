@@ -53,6 +53,9 @@ model User {
   // defined on Company (prisma/schema.prisma's own Department enum,
   // added for the portfolio dashboard) and reused here unchanged.
   department    Department?
+  // FALAK_MANAGEMENT only: covers every department (department is then
+  // null). Ignored for any other role -- see department-scope.ts.
+  allDepartments Boolean  @default(false)
   deactivatedAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

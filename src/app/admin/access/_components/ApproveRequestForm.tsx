@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { approveAccessRequestAction } from "../actions";
 import type { AccessRequestedRole } from "@/generated/prisma/client";
+import { ALL_DEPARTMENTS_VALUE } from "@/lib/auth/department-choice";
 
 type Grant = "FALAK_MANAGEMENT" | "FALAK_OPERATIONS" | "INVESTOR";
 
@@ -53,6 +54,7 @@ export function ApproveRequestForm({ requestId, requestedRole, organizationName 
             </option>
             <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
             <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
+            {grant === "FALAK_MANAGEMENT" ? <option value={ALL_DEPARTMENTS_VALUE}>{t.admin.manage.allDepartmentsOption}</option> : null}
           </Select>
         </div>
       ) : null}

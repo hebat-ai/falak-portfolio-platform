@@ -150,10 +150,22 @@ test("approve: a staff grant creates the role, sets the department, and audits i
 
   assert.equal(state.created.users.length, 1);
   assert.deepEqual(state.created.roles, [{ userId: "user_new", role: "FALAK_MANAGEMENT" }]);
-  assert.deepEqual(state.userUpdates, [{ department: "VentureBuilder" }]);
+  assert.deepEqual(state.userUpdates, [{ department: "VentureBuilder", allDepartments: false }]);
   assert.equal(db.getAuditEvents()[0].action, "access_request.approved");
   assert.equal(emails.length, 1);
   assert.equal(emails[0], "req@example.com");
+});
+
+test("approve: Management can be given both departments", async () => {
+  setCurrentUser(REAL_USER);
+  const { db, state } = makeApproveStub({});
+  setDbStub(db);
+  setSendAccessApprovedEmailSpy();
+
+  await approveAccessRequestAction(formWith({ requestId: "req_1", grant: "FALAK_MANAGEMENT", department: "all" }));
+
+  assert.deepEqual(state.userUpdates, [{ department: null, allDepartments: true }]);
+  assert.deepEqual(state.created.roles, [{ userId: "user_new", role: "FALAK_MANAGEMENT" }]);
 });
 
 test("approve: an already-active role for that user is not duplicated", async () => {
@@ -174,6 +186,7 @@ test("approve: a staff grant without a department, or an Admin grant, is refused
   for (const fields of [
     { requestId: "req_1", grant: "FALAK_OPERATIONS" },
     { requestId: "req_1", grant: "FALAK_ADMIN", department: "VentureBuilder" },
+    { requestId: "req_1", grant: "FALAK_OPERATIONS", department: "all" },
   ]) {
     const { db, state } = makeApproveStub({});
     setDbStub(db);

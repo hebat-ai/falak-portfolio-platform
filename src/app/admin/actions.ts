@@ -20,6 +20,7 @@ import { hashInviteToken } from "@/lib/auth/invite-token";
 import { normalizeEmail, MAX_RAW_EMAIL_LENGTH } from "@/lib/auth/utils";
 import { isAuthError, GENERIC_ACCESS_DENIED } from "@/lib/auth/action-error";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { ALL_DEPARTMENTS_VALUE, BOTH_DEPARTMENTS_MANAGEMENT_ONLY, parseDepartmentChoice } from "@/lib/auth/department-choice";
 import { convertToDisplay, type DisplayCurrency } from "@/lib/currency/convert";
 import { requestSignInLink } from "@/lib/auth/request-sign-in";
 import { hashPassword, MIN_PASSWORD_LENGTH, MAX_RAW_PASSWORD_LENGTH } from "@/lib/auth/password";
@@ -1389,17 +1390,23 @@ export async function inviteStaffUserAction(_prevState: ActionState, formData: F
   const invalid = checkFields([
     ["email", typeof emailInput === "string" && emailInput.trim() !== "" && emailInput.length <= MAX_RAW_EMAIL_LENGTH && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()), FIELD.email],
     ["role", role && (INVITABLE_STAFF_ROLES as readonly string[]).includes(role), FIELD.choose],
-    ["department", department && DEPARTMENTS.includes(department as Department), FIELD.choose],
+    ["department", department, FIELD.choose],
+    [
+      "department",
+      !department || parseDepartmentChoice(department, role === "FALAK_MANAGEMENT") !== null,
+      department === ALL_DEPARTMENTS_VALUE ? BOTH_DEPARTMENTS_MANAGEMENT_ONLY : FIELD.choose,
+    ],
   ]);
   if (invalid || typeof emailInput !== "string" || !role || !department) return invalid ?? { error: GENERIC_ERROR };
   const email = normalizeEmail(emailInput);
+  const departmentChoice = parseDepartmentChoice(department, role === "FALAK_MANAGEMENT")!;
 
   try {
     await db.$transaction(async (tx) => {
       const staffUser = await tx.user.upsert({
         where: { email },
-        update: { department: department as Department },
-        create: { email, department: department as Department },
+        update: departmentChoice,
+        create: { email, ...departmentChoice },
       });
 
       const existingActiveRole = await tx.userRoleAssignment.findFirst({
@@ -1445,12 +1452,21 @@ export async function adminSetStaffDepartmentAction(_prevState: ActionState, for
 
   const userId = readString(formData, "userId");
   const department = readString(formData, "department");
-  const invalid = checkFields([["department", department && DEPARTMENTS.includes(department as Department), FIELD.choose]]);
+  const invalid = checkFields([["department", department, FIELD.choose]]);
   if (invalid || !userId || !department) return invalid ?? { error: GENERIC_ERROR };
+
+  // "Both departments" only for someone who currently holds Management.
+  const isManagement =
+    (await db.userRoleAssignment.findFirst({ where: { userId, role: "FALAK_MANAGEMENT", revokedAt: null }, select: { id: true } })) !== null;
+  const departmentChoice = parseDepartmentChoice(department, isManagement);
+  if (!departmentChoice) {
+    const message = department === ALL_DEPARTMENTS_VALUE ? BOTH_DEPARTMENTS_MANAGEMENT_ONLY : FIELD.choose;
+    return { error: message, fieldErrors: { department: message } };
+  }
 
   try {
     await db.$transaction(async (tx) => {
-      await tx.user.update({ where: { id: userId }, data: { department: department as Department } });
+      await tx.user.update({ where: { id: userId }, data: departmentChoice });
       await writeAuditEvent(tx, {
         actorId: actor.id,
         action: "staff_user.department_changed",

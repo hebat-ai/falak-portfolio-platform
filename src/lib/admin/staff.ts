@@ -10,6 +10,7 @@ export interface StaffUserRow {
   email: string;
   role: StaffRole;
   department: Department | null;
+  allDepartments: boolean;
   hasPassword: boolean;
   deactivatedAt: string | null;
 }
@@ -29,7 +30,7 @@ export async function getStaffUsers(): Promise<StaffUserRow[]> {
     where: { revokedAt: null, role: { in: STAFF_ROLES } },
     select: {
       role: true,
-      user: { select: { id: true, email: true, department: true, passwordHash: true, deactivatedAt: true } },
+      user: { select: { id: true, email: true, department: true, allDepartments: true, passwordHash: true, deactivatedAt: true } },
     },
     orderBy: { user: { email: "asc" } },
   });
@@ -39,6 +40,7 @@ export async function getStaffUsers(): Promise<StaffUserRow[]> {
     email: r.user.email,
     role: r.role as StaffRole,
     department: r.user.department,
+    allDepartments: r.user.allDepartments,
     hasPassword: Boolean(r.user.passwordHash),
     deactivatedAt: r.user.deactivatedAt?.toISOString() ?? null,
   }));

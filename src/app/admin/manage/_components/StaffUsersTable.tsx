@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useListView, byText } from "@/components/lists/useListView";
+import { ALL_DEPARTMENTS_VALUE } from "@/lib/auth/department-choice";
 import type { StaffUserRow } from "@/lib/admin/staff";
 import {
   adminSetStaffDepartmentAction,
@@ -27,10 +28,11 @@ function StaffUserRowItem({ row }: { row: StaffUserRow }) {
         <form {...dept.formProps} className="flex flex-col gap-1">
           <input type="hidden" name="userId" value={row.id} />
           <div className="flex items-center gap-2">
-            <Select name="department" defaultValue={row.department ?? ""} className="w-40">
+            <Select name="department" defaultValue={row.allDepartments ? ALL_DEPARTMENTS_VALUE : (row.department ?? "")} className="w-40">
               <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
               <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
               <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
+              {row.role === "FALAK_MANAGEMENT" ? <option value={ALL_DEPARTMENTS_VALUE}>{t.admin.manage.allDepartmentsOption}</option> : null}
             </Select>
             <Button type="submit" size="xs" disabled={dept.isPending}>
               {t.admin.manage.submitLabel}
@@ -73,7 +75,7 @@ export function StaffUsersTable({ rows }: { rows: StaffUserRow[] }) {
   const { t } = useLanguage();
   const { visible, controls, empty } = useListView(rows, {
     id: "staff-users",
-    searchText: (r) => `${r.email} ${t.staffRoleNames[r.role]} ${r.department ? t.departments[r.department] : ""}`,
+    searchText: (r) => `${r.email} ${t.staffRoleNames[r.role]} ${r.allDepartments ? t.admin.manage.allDepartmentsOption : r.department ? t.departments[r.department] : ""}`,
     sorts: [
       byText("emailAsc", t.lists.emailAsc, (r) => r.email),
       byText("roleAsc", t.lists.roleAsc, (r) => t.staffRoleNames[r.role]),

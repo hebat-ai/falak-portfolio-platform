@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "@/components/forms/useForm";
+import { ALL_DEPARTMENTS_VALUE } from "@/lib/auth/department-choice";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -14,6 +16,7 @@ import { labelClass, fieldClass, initialActionState, FormMessage } from "./share
 export function InviteStaffUserForm() {
   const { t } = useLanguage();
   const { state, isPending, errorFor, formProps } = useForm(inviteStaffUserAction, initialActionState);
+  const [role, setRole] = useState("");
 
   return (
     <form {...formProps} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -24,7 +27,7 @@ export function InviteStaffUserForm() {
       </div>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor="staff-role">{t.admin.manage.roleLabel}</label>
-        <Select id="staff-role" name="role" required defaultValue="">
+        <Select id="staff-role" name="role" required defaultValue="" onChange={(e) => setRole(e.target.value)}>
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="FALAK_MANAGEMENT">{t.staffRoleNames.FALAK_MANAGEMENT}</option>
           <option value="FALAK_OPERATIONS">{t.staffRoleNames.FALAK_OPERATIONS}</option>
@@ -37,6 +40,7 @@ export function InviteStaffUserForm() {
           <option value="" disabled>{t.admin.manage.selectPlaceholder}</option>
           <option value="VentureBuilder">{t.departments.VentureBuilder}</option>
           <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
+          {role === "FALAK_MANAGEMENT" ? <option value={ALL_DEPARTMENTS_VALUE}>{t.admin.manage.allDepartmentsOption}</option> : null}
         </Select>
         {errorFor("department")}
       </div>

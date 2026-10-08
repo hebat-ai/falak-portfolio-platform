@@ -4,9 +4,9 @@ import { setCurrentUser, setDbStub, makeVehicleDbStub, REAL_USER } from "./suppo
 
 const { requireFalakRoleWithDepartmentScope } = await import("../src/lib/auth/department-scope.ts");
 
-function stubWith(role: string, department: string | null) {
+function stubWith(role: string, department: string | null, allDepartments = false) {
   const stub = makeVehicleDbStub({ falakRoles: [{ role }] }) as Record<string, unknown>;
-  stub.user = { findUnique: async () => ({ department }) };
+  stub.user = { findUnique: async () => ({ department, allDepartments }) };
   return stub;
 }
 
@@ -30,4 +30,18 @@ test("Management with no department assigned gets an empty scope (sees nothing),
   setDbStub(stubWith("FALAK_MANAGEMENT", null));
   const scope = await requireFalakRoleWithDepartmentScope("FALAK_MANAGEMENT");
   assert.deepEqual(scope.departments, []);
+});
+
+test("Management set to both departments is scoped to both", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(stubWith("FALAK_MANAGEMENT", null, true));
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_MANAGEMENT");
+  assert.deepEqual(scope.departments, ["VentureBuilder", "InvestmentDepartment"]);
+});
+
+test("the both-departments flag never widens an Investment Professional", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(stubWith("FALAK_OPERATIONS", "VentureBuilder", true));
+  const scope = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS");
+  assert.deepEqual(scope.departments, ["VentureBuilder"]);
 });

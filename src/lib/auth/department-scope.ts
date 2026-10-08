@@ -3,6 +3,7 @@ import type { Department } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireFalakRole, type FalakRole } from "@/lib/auth/authorization";
 import type { CurrentUser } from "@/lib/auth/current-user";
+import { ALL_DEPARTMENTS } from "@/lib/auth/department-choice";
 
 export interface DepartmentScope {
   user: CurrentUser;
@@ -12,7 +13,8 @@ export interface DepartmentScope {
   // a department literally named null." A non-null array is always
   // meant to be passed straight to Prisma as `department: { in: ... }`:
   // one real Department value for a configured FALAK_MANAGEMENT/
-  // FALAK_OPERATIONS user, or an EMPTY array for one with no department
+  // FALAK_OPERATIONS user (both, for Management set to "Both
+  // departments"), or an EMPTY array for one with no department
   // assigned yet -- `{ in: [] }` safely matches zero rows (a valid,
   // well-defined Prisma query), so a not-yet-configured staff account
   // sees nothing instead of crashing or silently seeing everything.
@@ -33,6 +35,11 @@ export async function requireFalakRoleWithDepartmentScope(requiredRole: FalakRol
     return { user, role, departments: null };
   }
 
-  const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { department: true } });
+  const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { department: true, allDepartments: true } });
+  // "Both departments" is a Management setting; it never widens an
+  // Investment Professional's access.
+  if (role === "FALAK_MANAGEMENT" && dbUser?.allDepartments) {
+    return { user, role, departments: [...ALL_DEPARTMENTS] };
+  }
   return { user, role, departments: dbUser?.department ? [dbUser.department] : [] };
 }

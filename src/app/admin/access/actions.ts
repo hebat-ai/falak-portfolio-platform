@@ -6,7 +6,8 @@ import { requireFalakRole } from "@/lib/auth/authorization";
 import { UnauthenticatedError, ForbiddenError } from "@/lib/auth/authorization-errors";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { sendAccessApprovedEmail } from "@/lib/email/send-email";
-import type { Department, PlatformRole } from "@/generated/prisma/client";
+import { parseDepartmentChoice } from "@/lib/auth/department-choice";
+import type { PlatformRole } from "@/generated/prisma/client";
 
 // Plain (formData) => void actions posted by per-row <form>s, same shape as
 // the archive actions in ../actions.ts: an unauthenticated caller is sent
@@ -120,7 +121,6 @@ export async function revokeInvestorInviteAction(formData: FormData): Promise<vo
 // FALAK_ADMIN is never grantable from a sign-up request -- the
 // platform-owner tier stays a manual, out-of-band grant.
 const GRANTABLE_ROLES: PlatformRole[] = ["FALAK_MANAGEMENT", "FALAK_OPERATIONS"];
-const DEPARTMENTS: Department[] = ["VentureBuilder", "InvestmentDepartment"];
 
 function isGrantableFalakRole(value: string): value is "FALAK_MANAGEMENT" | "FALAK_OPERATIONS" {
   return (GRANTABLE_ROLES as string[]).includes(value);
@@ -145,10 +145,11 @@ export async function approveAccessRequestAction(formData: FormData): Promise<vo
   const grant = typeof grantInput === "string" ? grantInput : null;
   if (grant !== "FALAK_MANAGEMENT" && grant !== "FALAK_OPERATIONS" && grant !== "INVESTOR") return;
 
-  // Staff without a department see no data, so a staff grant requires one.
+  // Staff without a department see no data, so a staff grant requires one
+  // ("Both departments" for Management only).
   const departmentInput = formData.get("department");
-  const department = DEPARTMENTS.find((d) => d === departmentInput) ?? null;
-  if (grant !== "INVESTOR" && !department) return;
+  const departmentChoice = parseDepartmentChoice(typeof departmentInput === "string" ? departmentInput : null, grant === "FALAK_MANAGEMENT");
+  if (grant !== "INVESTOR" && !departmentChoice) return;
 
   const orgNameInput = formData.get("organizationName");
   const organizationName = typeof orgNameInput === "string" ? orgNameInput.trim() : "";
@@ -174,7 +175,7 @@ export async function approveAccessRequestAction(formData: FormData): Promise<vo
     }
 
     if (isGrantableFalakRole(grant)) {
-      await tx.user.update({ where: { id: user.id }, data: { department } });
+      await tx.user.update({ where: { id: user.id }, data: departmentChoice! });
       // No flat @@unique(userId, role) exists on UserRoleAssignment (see
       // its schema comment: a re-grant after revocation would collide
       // with the old revoked row) -- check-then-create is the correct

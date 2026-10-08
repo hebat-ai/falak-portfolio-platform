@@ -277,6 +277,7 @@ export interface Dictionary {
       editAction: string;
       saveChangesLabel: string;
       emailAgainAction: string;
+      allDepartmentsOption: string;
       requestDetailTitle: string;
       requestEntryTitle: string;
       requestDetailIntro: string;
@@ -957,6 +958,7 @@ export const en = {
       editAction: "Edit",
       saveChangesLabel: "Save Changes",
       emailAgainAction: "Email again",
+      allDepartmentsOption: "Both departments",
       requestDetailTitle: "Report request",
       requestEntryTitle: "Enter report data",
       requestDetailIntro: "Every startup this request went to, every email sent about it, and where each report stands. Use Enter data when figures reach you another way (by email or in a meeting): they go into the startup's report exactly as if the startup had filled in the form.",
@@ -1643,6 +1645,7 @@ export const ar = {
       editAction: "تعديل",
       saveChangesLabel: "حفظ التغييرات",
       emailAgainAction: "إرسال البريد مجدداً",
+      allDepartmentsOption: "كلا القسمين",
       requestDetailTitle: "طلب التقرير",
       requestEntryTitle: "إدخال بيانات التقرير",
       requestDetailIntro: "جميع الشركات الناشئة التي أُرسل إليها هذا الطلب، وكل رسالة بريد أُرسلت بشأنه، وحالة كل تقرير. استخدم «إدخال البيانات» عندما تصلك الأرقام بطريقة أخرى (بالبريد أو في اجتماع): تُحفظ في تقرير الشركة تماماً كما لو أن الشركة عبّأت النموذج.",
