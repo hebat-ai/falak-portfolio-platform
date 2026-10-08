@@ -5,6 +5,7 @@ import { ForbiddenError, UnauthenticatedError } from "@/lib/auth/authorization-e
 import { ManageSubsectionShell } from "../../_components/ManageSubsectionShell";
 import { CreateCompanyForm } from "../../_components/CreateCompanyForm";
 import { DeleteEntityForm } from "../../_components/DeleteEntityForm";
+import { requireFalakRoleWithDepartmentScope } from "@/lib/auth/department-scope";
 
 export default async function EditCompanyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,8 +15,11 @@ export default async function EditCompanyPage({ params }: { params: Promise<{ id
   }
 
   let record;
+  let isAdmin = false;
   try {
     record = await getCompanyForEdit(id);
+    // Only Admin may delete a startup.
+    isAdmin = (await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS")).role === "FALAK_ADMIN";
   } catch (error) {
     if (error instanceof ForbiddenError || error instanceof UnauthenticatedError) {
       redirect("/account");
@@ -30,7 +34,7 @@ export default async function EditCompanyPage({ params }: { params: Promise<{ id
     <ManageSubsectionShell titleKey="editCompanyTitle">
       <div className="flex flex-col gap-8">
         <CreateCompanyForm company={record} />
-        <DeleteEntityForm kind="company" id={record.id} nameEn={record.nameEn} />
+        {isAdmin ? <DeleteEntityForm kind="company" id={record.id} nameEn={record.nameEn} /> : null}
       </div>
     </ManageSubsectionShell>
   );

@@ -38,7 +38,7 @@ export async function getAdminPortfolioData(): Promise<AdminPortfolioData> {
   const [companies, vehicles, investors, ownershipPositions, cycles, templates] = await Promise.all([
     db.company.findMany({ where: liveWhere, orderBy: { nameEn: "asc" } }),
     db.vehicle.findMany({ where: liveWhere, orderBy: { nameEn: "asc" } }),
-    db.investor.findMany({ where: deptWhere, orderBy: { nameEn: "asc" } }),
+    db.investor.findMany({ where: liveWhere, orderBy: { nameEn: "asc" } }),
     db.ownershipPosition.findMany({
       where: { holderType: "VEHICLE", company: liveWhere, vehicle: liveWhere },
       select: { companyId: true, vehicleId: true },

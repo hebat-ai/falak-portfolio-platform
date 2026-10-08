@@ -47,7 +47,7 @@ const isRedirectTo = (url: string) => (e: unknown) => e instanceof MockRedirectE
 test("delete startup: hides it (deleted + archived, slug freed), ends its access, removes no rows", async () => {
   setCurrentUser(REAL_USER);
   const updates: { data: Record<string, unknown> }[] = [];
-  const { db, calls } = recordingDb(OPS, {
+  const { db, calls } = recordingDb(ADMIN, {
     company: {
       findUnique: async () => ({ nameEn: "Startup X", slug: "startup-x", department: "InvestmentDepartment", archivedAt: null, deletedAt: null }),
       update: async (args: { data: Record<string, unknown> }) => {
@@ -71,20 +71,64 @@ test("delete startup: hides it (deleted + archived, slug freed), ends its access
   assert.ok(!calls.some((c) => c.endsWith(".delete") || c.endsWith(".deleteMany")), "no rows removed");
 });
 
-test("delete startup: refused for another department, or when the typed name does not match", async () => {
+test("delete startup: Admin only -- refused for other staff, even in their own department", async () => {
   setCurrentUser(REAL_USER);
-  for (const [department, confirmName] of [
-    ["VentureBuilder", "Startup X"],
-    ["InvestmentDepartment", "startup x"],
-  ]) {
-    const { db, calls } = recordingDb(OPS, {
-      company: { findUnique: async () => ({ nameEn: "Startup X", slug: "startup-x", department, archivedAt: null, deletedAt: null }) },
-    });
-    setDbStub(db);
-    const result = await actions.deleteCompanyAction({ error: null }, form({ companyId: "co_1", confirmName }));
-    assert.ok(result.error, `${department} / ${confirmName}`);
-    assert.ok(!calls.some((c) => c.endsWith(".update") || c.endsWith(".updateMany")), "nothing changed");
-  }
+  const { db, calls } = recordingDb(OPS, {
+    company: { findUnique: async () => ({ nameEn: "Startup X", slug: "startup-x", department: "InvestmentDepartment", archivedAt: null, deletedAt: null }) },
+  });
+  setDbStub(db);
+  const result = await actions.deleteCompanyAction({ error: null }, form({ companyId: "co_1", confirmName: "Startup X" }));
+  assert.equal(result.error, GENERIC_ACCESS_DENIED);
+  assert.ok(!calls.some((c) => c.endsWith(".update") || c.endsWith(".updateMany")), "nothing changed");
+});
+
+test("delete startup: refused when the typed name does not match", async () => {
+  setCurrentUser(REAL_USER);
+  const { db, calls } = recordingDb(ADMIN, {
+    company: { findUnique: async () => ({ nameEn: "Startup X", slug: "startup-x", department: "InvestmentDepartment", archivedAt: null, deletedAt: null }) },
+  });
+  setDbStub(db);
+  const result = await actions.deleteCompanyAction({ error: null }, form({ companyId: "co_1", confirmName: "startup x" }));
+  assert.ok(result.fieldErrors?.confirmName);
+  assert.ok(!calls.some((c) => c.endsWith(".update") || c.endsWith(".updateMany")), "nothing changed");
+});
+
+test("delete investor: Admin only; hides it, ends its access and positions, removes no rows", async () => {
+  setCurrentUser(REAL_USER);
+  const ops = recordingDb(OPS);
+  setDbStub(ops.db);
+  const denied = await actions.deleteInvestorAction({ error: null }, form({ investorId: "inv_1", confirmName: "Investor A" }));
+  assert.equal(denied.error, GENERIC_ACCESS_DENIED);
+
+  const updates: { data: Record<string, unknown> }[] = [];
+  const positionUpdates: { where: Record<string, unknown>; data: Record<string, unknown> }[] = [];
+  const admin = recordingDb(ADMIN, {
+    investor: {
+      findUnique: async () => ({ nameEn: "Investor A", archivedAt: null, deletedAt: null }),
+      update: async (args: { data: Record<string, unknown> }) => {
+        updates.push(args);
+        return {};
+      },
+    },
+    investorVehiclePosition: {
+      updateMany: async (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+        positionUpdates.push(args);
+        return { count: 1 };
+      },
+    },
+  });
+  setDbStub(admin.db);
+  await assert.rejects(
+    () => actions.deleteInvestorAction({ error: null }, form({ investorId: "inv_1", confirmName: "Investor A" })),
+    isRedirectTo("/admin/manage/new-investor")
+  );
+  assert.ok(updates[0].data.deletedAt instanceof Date);
+  assert.ok(updates[0].data.archivedAt instanceof Date);
+  assert.ok(admin.calls.includes("investorMembership.updateMany"), "logins revoked");
+  assert.ok(admin.calls.includes("investorInvite.updateMany"), "pending invites revoked");
+  assert.equal(positionUpdates[0].data.status, "Exited");
+  assert.ok(admin.calls.includes("auditEvent.create"));
+  assert.ok(!admin.calls.some((c) => c.endsWith(".delete") || c.endsWith(".deleteMany")), "no rows removed");
 });
 
 test("delete vehicle: Admin only; hides it without removing rows", async () => {

@@ -329,6 +329,7 @@ export interface Dictionary {
       deleteSectionTitle: string;
       deleteCompanyWarning: string;
       deleteVehicleWarning: string;
+      deleteInvestorWarning: string;
       deleteConfirmLabel: string;
       deleteAction: string;
       successMessage: string;
@@ -1017,6 +1018,7 @@ export const en = {
       deleteSectionTitle: "Delete",
       deleteCompanyWarning: "Removes this startup from every list, dashboard and portal, ends its users' access and cancels its pending invites. Its name can be reused for a new startup. Its history is kept in the database for the audit trail, but it cannot be restored from the platform.",
       deleteVehicleWarning: "Removes this vehicle from every list, dashboard and portal (the startups it holds stay). Its name can be reused. Its history is kept in the database for the audit trail, but it cannot be restored from the platform.",
+      deleteInvestorWarning: "Removes this investor from every list and dashboard, ends its users' access to the investor portal, cancels its pending invites and closes its vehicle positions, so it receives no further reports. Its history is kept in the database for the audit trail, but it cannot be restored from the platform.",
       deleteConfirmLabel: "To confirm, type the English name:",
       deleteAction: "Delete",
       successMessage: "Saved.",
@@ -1711,6 +1713,7 @@ export const ar = {
       deleteSectionTitle: "حذف",
       deleteCompanyWarning: "يزيل هذه الشركة الناشئة من جميع القوائم ولوحات المعلومات والبوابات، وينهي وصول مستخدميها ويلغي دعواتها المعلقة. يمكن استخدام اسمها لشركة جديدة. يُحتفظ بسجلها في قاعدة البيانات لأغراض التدقيق، ولا يمكن استعادتها من المنصة.",
       deleteVehicleWarning: "يزيل هذه الأداة الاستثمارية من جميع القوائم ولوحات المعلومات والبوابات (تبقى الشركات التي تملكها). يمكن استخدام اسمها مجدداً. يُحتفظ بسجلها في قاعدة البيانات لأغراض التدقيق، ولا يمكن استعادتها من المنصة.",
+      deleteInvestorWarning: "يزيل هذا المستثمر من جميع القوائم ولوحات المعلومات، وينهي وصول مستخدميه إلى بوابة المستثمرين، ويلغي دعواته المعلقة ويغلق مراكزه في الأدوات الاستثمارية، فلا يتلقى تقارير أخرى. يُحتفظ بسجله في قاعدة البيانات لأغراض التدقيق، ولا يمكن استعادته من المنصة.",
       deleteConfirmLabel: "للتأكيد، اكتب الاسم بالإنجليزية:",
       deleteAction: "حذف",
       successMessage: "تم الحفظ.",

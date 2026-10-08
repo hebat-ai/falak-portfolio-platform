@@ -5,16 +5,24 @@ import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { deleteCompanyAction, deleteVehicleAction } from "../../actions";
+import { deleteCompanyAction, deleteInvestorAction, deleteVehicleAction } from "../../actions";
 import { labelClass, initialActionState, FormMessage } from "./shared";
 
-/** Permanent delete, confirmed by typing the record's exact English name. */
-export function DeleteEntityForm({ kind, id, nameEn }: { kind: "company" | "vehicle"; id: string; nameEn: string }) {
+const DELETE = {
+  company: { action: deleteCompanyAction, idField: "companyId" },
+  vehicle: { action: deleteVehicleAction, idField: "vehicleId" },
+  investor: { action: deleteInvestorAction, idField: "investorId" },
+} as const;
+
+/** Admin-only delete, confirmed by typing the record's exact English name. */
+export function DeleteEntityForm({ kind, id, nameEn }: { kind: keyof typeof DELETE; id: string; nameEn: string }) {
   const { t } = useLanguage();
-  const { state, isPending, errorFor, formProps } = useForm(
-    kind === "company" ? deleteCompanyAction : deleteVehicleAction,
-    initialActionState
-  );
+  const { state, isPending, errorFor, formProps } = useForm(DELETE[kind].action, initialActionState);
+  const warning = {
+    company: t.admin.manage.deleteCompanyWarning,
+    vehicle: t.admin.manage.deleteVehicleWarning,
+    investor: t.admin.manage.deleteInvestorWarning,
+  }[kind];
   const [typed, setTyped] = useState("");
   const matches = typed.trim() === nameEn.trim();
 
@@ -24,10 +32,10 @@ export function DeleteEntityForm({ kind, id, nameEn }: { kind: "company" | "vehi
         {t.admin.manage.deleteSectionTitle}
       </h2>
       <p className="text-sm text-foreground">
-        {kind === "company" ? t.admin.manage.deleteCompanyWarning : t.admin.manage.deleteVehicleWarning}
+        {warning}
       </p>
       <form {...formProps} className="flex flex-col gap-3">
-        <input type="hidden" name={kind === "company" ? "companyId" : "vehicleId"} value={id} />
+        <input type="hidden" name={DELETE[kind].idField} value={id} />
         <div className="flex flex-col gap-1">
           <label className={labelClass} htmlFor="delete-confirm">
             {t.admin.manage.deleteConfirmLabel} <span className="font-semibold text-foreground">{nameEn}</span>

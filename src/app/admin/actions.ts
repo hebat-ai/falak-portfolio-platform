@@ -1576,15 +1576,11 @@ const CONFIRM_NAME_MISMATCH = "Type the exact English name to confirm deletion."
 // excludes archived/deleted records; the history stays for audit.
 const deletedSlug = (slug: string) => `${slug}-deleted-${Date.now().toString(36)}`.slice(0, 120);
 
-/**
- * Deletes a startup from the platform. Investment Professionals and
- * Management may delete startups in their own department; Admin any.
- */
+/** Deletes a startup from the platform. Admin only. */
 export async function deleteCompanyAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   let user;
-  let departments: Department[] | null = null;
   try {
-    ({ user, departments } = await requireFalakRoleWithDepartmentScope("FALAK_OPERATIONS"));
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
   } catch (error) {
     if (isAuthError(error)) {
       return { error: GENERIC_ACCESS_DENIED };
@@ -1596,12 +1592,9 @@ export async function deleteCompanyAction(_prevState: ActionState, formData: For
   if (!companyId) return { error: GENERIC_ERROR };
   const company = await db.company.findUnique({
     where: { id: companyId },
-    select: { nameEn: true, slug: true, department: true, archivedAt: true, deletedAt: true },
+    select: { nameEn: true, slug: true, archivedAt: true, deletedAt: true },
   });
   if (!company || company.deletedAt) return { error: GENERIC_ERROR };
-  if (!inDepartment(departments, company.department)) {
-    return { error: OUT_OF_DEPARTMENT };
-  }
   if (readString(formData, "confirmName") !== company.nameEn.trim()) {
     return { error: CONFIRM_NAME_MISMATCH, fieldErrors: { confirmName: CONFIRM_NAME_MISMATCH } };
   }
@@ -1674,6 +1667,61 @@ export async function deleteVehicleAction(_prevState: ActionState, formData: For
     return { error: GENERIC_ERROR };
   }
   redirect("/admin/manage/new-vehicle");
+}
+
+/**
+ * Deletes an investor from the platform. Admin only. Its logins and
+ * pending invites end, and its open vehicle positions are closed, so it
+ * receives no further reports.
+ */
+export async function deleteInvestorAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  let user;
+  try {
+    ({ user } = await requireFalakRole("FALAK_ADMIN"));
+  } catch (error) {
+    if (isAuthError(error)) {
+      return { error: GENERIC_ACCESS_DENIED };
+    }
+    throw error;
+  }
+
+  const investorId = readString(formData, "investorId");
+  if (!investorId) return { error: GENERIC_ERROR };
+  const investor = await db.investor.findUnique({
+    where: { id: investorId },
+    select: { nameEn: true, archivedAt: true, deletedAt: true },
+  });
+  if (!investor || investor.deletedAt) return { error: GENERIC_ERROR };
+  if (readString(formData, "confirmName") !== investor.nameEn.trim()) {
+    return { error: CONFIRM_NAME_MISMATCH, fieldErrors: { confirmName: CONFIRM_NAME_MISMATCH } };
+  }
+
+  const now = new Date();
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.investor.update({
+        where: { id: investorId },
+        data: { deletedAt: now, archivedAt: investor.archivedAt ?? now },
+      });
+      await tx.investorMembership.updateMany({ where: { investorId, revokedAt: null }, data: { revokedAt: now } });
+      await tx.investorInvite.updateMany({ where: { investorId, acceptedAt: null, revokedAt: null }, data: { revokedAt: now } });
+      await tx.investorVehiclePosition.updateMany({
+        where: { investorId, status: "Active" },
+        data: { status: "Exited", effectiveTo: now },
+      });
+      await writeAuditEvent(tx, {
+        actorId: user.id,
+        action: "investor.deleted",
+        targetType: "Investor",
+        targetId: investorId,
+        meta: { nameEn: investor.nameEn },
+      });
+    });
+  } catch (error) {
+    console.error("deleteInvestorAction failed", error);
+    return { error: GENERIC_ERROR };
+  }
+  redirect("/admin/manage/new-investor");
 }
 
 // ============================================================
