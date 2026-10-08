@@ -34,6 +34,8 @@ export async function getVehicleDirectoryData(): Promise<VehicleDirectoryEntryDT
       nameAr: true,
       type: true,
       currency: true,
+      descriptionEn: true,
+      descriptionAr: true,
       ownershipPositions: {
         where: { holderType: "VEHICLE", company: { archivedAt: null } },
         select: { companyId: true },
@@ -55,6 +57,8 @@ export async function getVehicleDirectoryData(): Promise<VehicleDirectoryEntryDT
     nameAr: v.nameAr,
     type: v.type,
     currency: v.currency,
+    descriptionEn: v.descriptionEn,
+    descriptionAr: v.descriptionAr,
     companyCount: new Set(v.ownershipPositions.map((p) => p.companyId)).size,
     investorCount: new Set(v.positions.map((p) => p.investorId)).size,
   }));
@@ -79,6 +83,8 @@ export async function getVehicleDashboardData(slug: string): Promise<VehicleDash
       nameAr: true,
       type: true,
       currency: true,
+      descriptionEn: true,
+      descriptionAr: true,
       department: true,
       ownershipPositions: {
         where: { holderType: "VEHICLE", company: { archivedAt: null } },
@@ -205,6 +211,8 @@ export async function getVehicleDashboardData(slug: string): Promise<VehicleDash
       nameAr: vehicle.nameAr,
       type: vehicle.type,
       currency: vehicle.currency,
+      descriptionEn: vehicle.descriptionEn,
+      descriptionAr: vehicle.descriptionAr,
     },
     periods,
     companies,

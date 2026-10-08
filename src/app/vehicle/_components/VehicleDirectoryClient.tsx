@@ -12,7 +12,7 @@ export function VehicleDirectoryClient({ vehicles }: { vehicles: VehicleDirector
   const name = (v: VehicleDirectoryEntryDTO) => (lang === "ar" ? v.nameAr : v.nameEn);
   const { visible, controls, empty } = useListView(vehicles, {
     id: "vehicle-directory",
-    searchText: (v) => `${v.nameEn} ${v.nameAr} ${t.vehicleTypes[v.type]} ${v.currency}`,
+    searchText: (v) => `${v.nameEn} ${v.nameAr} ${t.vehicleTypes[v.type]} ${v.currency} ${v.descriptionEn ?? ""} ${v.descriptionAr ?? ""}`,
     sorts: [
       byText("nameAsc", t.lists.nameAsc, name),
       byText("nameDesc", t.lists.nameDesc, name, true),
@@ -43,6 +43,11 @@ export function VehicleDirectoryClient({ vehicles }: { vehicles: VehicleDirector
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t.vehicleTypes[vehicle.type]} · {t.currencyNames[vehicle.currency]}
                   </p>
+                  {vehicle.descriptionEn || vehicle.descriptionAr ? (
+                    <p className="mt-2 line-clamp-2 text-xs text-foreground">
+                      {lang === "ar" ? vehicle.descriptionAr || vehicle.descriptionEn : vehicle.descriptionEn || vehicle.descriptionAr}
+                    </p>
+                  ) : null}
                 </div>
                 <dl className="mt-auto grid grid-cols-2 gap-3 text-sm">
                   <div>

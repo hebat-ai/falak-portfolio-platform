@@ -140,7 +140,7 @@ test("templates: editing keeps a locked metric's key and data type, and applies 
       falakRoles: OPS,
       models: {
         metricDefinition: {
-          findMany: async () => [
+          findMany: async (args?: { where?: { deletedAt?: unknown } }) => args?.where?.deletedAt ? [] : [
             { id: "m1", key: "revenue_b2b", dataType: "Currency", sortOrder: 1, labelEn: "Revenue", _count: { currentValues: 3, snapshotValues: 0 } },
             { id: "m2", key: "old_key", dataType: "Number", sortOrder: 2, labelEn: "Old", _count: { currentValues: 0, snapshotValues: 0 } },
           ],
@@ -200,7 +200,7 @@ test("templates: a duplicate metric key is refused and the submitted values come
       falakRoles: OPS,
       models: {
         metricDefinition: {
-          findMany: async () => [
+          findMany: async (args?: { where?: { deletedAt?: unknown } }) => args?.where?.deletedAt ? [] : [
             { id: "m1", key: "revenue_b2b", dataType: "Currency", sortOrder: 1, labelEn: "Revenue", _count: { currentValues: 1, snapshotValues: 0 } },
           ],
         },
@@ -224,4 +224,83 @@ test("templates: a duplicate metric key is refused and the submitted values come
   );
   assert.match(result.fieldErrors?.newKey_0 ?? "", /used by another metric/);
   assert.equal(result.values?.newLabelEn_0, "Dup");
+});
+
+test("templates: deleting metrics hides them; an unused one frees its key, a used one keeps it", async () => {
+  setCurrentUser(REAL_USER);
+  const updates: { where: { id: string }; data: Record<string, unknown> }[] = [];
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: OPS,
+      models: {
+        metricDefinition: {
+          findMany: async (args?: { where?: { deletedAt?: unknown } }) => args?.where?.deletedAt ? [] : [
+            { id: "m1", key: "revenue_b2b", dataType: "Currency", sortOrder: 1, labelEn: "Revenue", _count: { currentValues: 2, snapshotValues: 0 } },
+            { id: "m2", key: "", dataType: "Number", sortOrder: 0, labelEn: "", _count: { currentValues: 0, snapshotValues: 0 } },
+            { id: "m3", key: "burn_rate", dataType: "Percent", sortOrder: 2, labelEn: "Burn", _count: { currentValues: 0, snapshotValues: 0 } },
+          ],
+          update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+            updates.push(args);
+            return {};
+          },
+        },
+        reportingTemplate: { update: async () => ({}) },
+      },
+    })
+  );
+  const result = await actions.updateReportingTemplateAction(
+    { error: null },
+    form({
+      templateId: "t1",
+      nameEn: "BookHospi",
+      nameAr: "بوك هوسبي",
+      // m1 (has values) and m2 (blank, never answered) are deleted;
+      // their other fields are not validated.
+      delete_m1: "on",
+      delete_m2: "on",
+      key_m3: "burn_rate",
+      dataType_m3: "Percent",
+      labelEn_m3: "Burn",
+      labelAr_m3: "الحرق",
+      sortOrder_m3: "2",
+      isActive_m3: "on",
+    })
+  );
+  assert.equal(result.error, null);
+  const last = (id: string) => updates.filter((u) => u.where.id === id).at(-1)!.data;
+  assert.ok(last("m1").deletedAt instanceof Date);
+  assert.equal(last("m1").isActive, false);
+  assert.equal("key" in last("m1"), false, "a used metric keeps its key");
+  assert.ok(last("m2").deletedAt instanceof Date);
+  assert.match(String(last("m2").key), /__deleted_/, "an unused metric frees its key");
+  assert.equal(last("m3").deletedAt, undefined);
+});
+
+test("templates: a key belonging to a deleted metric can't be reused", async () => {
+  setCurrentUser(REAL_USER);
+  setDbStub(
+    makeAdminActionDbStub({
+      falakRoles: OPS,
+      models: {
+        metricDefinition: {
+          findMany: async (args?: { where?: { deletedAt?: unknown } }) =>
+            args?.where?.deletedAt ? [{ key: "revenue_b2b" }] : [],
+        },
+        reportingTemplate: { findUnique: async () => ({ id: "t1" }), update: async () => ({}) },
+      },
+    })
+  );
+  const result = await actions.updateReportingTemplateAction(
+    { error: null },
+    form({
+      templateId: "t1",
+      nameEn: "Quarterly",
+      nameAr: "ربع سنوي",
+      newKey_0: "revenue_b2b",
+      newLabelEn_0: "Revenue",
+      newLabelAr_0: "الإيرادات",
+      newDataType_0: "Currency",
+    })
+  );
+  assert.match(result.fieldErrors?.newKey_0 ?? "", /deleted metric/);
 });

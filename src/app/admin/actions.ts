@@ -543,10 +543,11 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
     ["vehicleId", vehicleId, FIELD.choose],
     ["investedAmount", investedAmount && AMOUNT_PATTERN.test(investedAmount), FIELD.amount],
     ["currency", currency && CURRENCIES.includes(currency as Currency), FIELD.choose],
-    ["ownershipPct", ownershipPct && AMOUNT_PATTERN.test(ownershipPct), "Enter a percentage, e.g. 12.5."],
+    // Optional: often not known when the investment is recorded.
+    ["ownershipPct", !ownershipPct || AMOUNT_PATTERN.test(ownershipPct), "Enter a decimal share, e.g. 0.10 for 10%, or leave it empty."],
     ["signedDate", isDateInput(signedDateRaw), FIELD.date],
   ]);
-  if (invalid || !companyId || !vehicleId || !investedAmount || !currency || !ownershipPct || !signedDateRaw) {
+  if (invalid || !companyId || !vehicleId || !investedAmount || !currency || !signedDateRaw) {
     return invalid ?? { error: GENERIC_ERROR };
   }
   const signedDate = new Date(signedDateRaw);
@@ -576,14 +577,17 @@ export async function linkVehicleToCompanyAction(_prevState: ActionState, formDa
           effectiveFrom: signedDate,
           investedAmount,
           currency: currency as Currency,
-          ownershipPct,
+          ownershipPct: ownershipPct || null,
           status: "Active",
         },
       });
 
-      await tx.ownershipSnapshot.create({
-        data: { ownershipPositionId: position.id, asOfDate: signedDate, ownershipPct, source: "admin" },
-      });
+      // A snapshot records a known ownership share; none when it wasn't given.
+      if (ownershipPct) {
+        await tx.ownershipSnapshot.create({
+          data: { ownershipPositionId: position.id, asOfDate: signedDate, ownershipPct, source: "admin" },
+        });
+      }
 
       await writeAuditEvent(tx, {
         actorId: user.id,
@@ -1712,17 +1716,37 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
   flag("nameAr", isValidName(nameAr), FIELD.required);
 
   const existing = await db.metricDefinition.findMany({
-    where: { templateId },
+    where: { templateId, deletedAt: null },
     include: { _count: { select: { currentValues: true, snapshotValues: true } } },
   });
   if (existing.length === 0 && !(await db.reportingTemplate.findUnique({ where: { id: templateId } }))) {
     return fail(GENERIC_ERROR);
   }
+  // Deleted metrics that already had values keep their key, so it stays taken.
+  const deletedKeys = new Set(
+    (await db.metricDefinition.findMany({ where: { templateId, deletedAt: { not: null } }, select: { key: true } })).map((m) => m.key)
+  );
 
   const updates: { id: string; data: Record<string, unknown> }[] = [];
-  const keys = new Set<string>();
+  const keys = new Set<string>(deletedKeys);
+  const now = new Date();
   for (const m of existing) {
     const locked = m._count.currentValues + m._count.snapshotValues > 0;
+    // Delete: no row is removed (values already reported keep their
+    // history); the metric leaves the template and every form. One that was
+    // never answered also frees its key for reuse.
+    if (formData.get(`delete_${m.id}`) === "on") {
+      updates.push({
+        id: m.id,
+        data: {
+          deletedAt: now,
+          isActive: false,
+          required: false,
+          ...(locked ? {} : { key: `${m.key}__deleted_${now.getTime().toString(36)}`.slice(0, 120) }),
+        },
+      });
+      continue;
+    }
     const labelEn = readString(formData, `labelEn_${m.id}`);
     const labelAr = readString(formData, `labelAr_${m.id}`);
     const sortOrder = Number(readString(formData, `sortOrder_${m.id}`));
@@ -1733,7 +1757,7 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
     flag(`sortOrder_${m.id}`, Number.isInteger(sortOrder), "Enter a whole number.");
     flag(`key_${m.id}`, key && METRIC_KEY_PATTERN.test(key), "Enter a key, e.g. revenue_b2b.");
     flag(`dataType_${m.id}`, dataType && METRIC_DATA_TYPES.includes(dataType as MetricDataType), FIELD.choose);
-    flag(`key_${m.id}`, !keys.has(key), `"${key}" is used by another metric.`);
+    flag(`key_${m.id}`, !keys.has(key), deletedKeys.has(key) ? `"${key}" belongs to a deleted metric; choose another key.` : `"${key}" is used by another metric.`);
     keys.add(key);
     updates.push({
       id: m.id,
@@ -1762,7 +1786,7 @@ export async function updateReportingTemplateAction(_prevState: ActionState, for
     flag(`newLabelEn_${i}`, isValidName(labelEn), FIELD.required);
     flag(`newLabelAr_${i}`, isValidName(labelAr), FIELD.required);
     flag(`newDataType_${i}`, dataType && METRIC_DATA_TYPES.includes(dataType as MetricDataType), FIELD.choose);
-    flag(`newKey_${i}`, !keys.has(key), `"${key}" is used by another metric.`);
+    flag(`newKey_${i}`, !keys.has(key), deletedKeys.has(key) ? `"${key}" belongs to a deleted metric; choose another key.` : `"${key}" is used by another metric.`);
     keys.add(key);
     added.push({ key, labelEn: labelEn ?? "", labelAr: labelAr ?? "", dataType: dataType as MetricDataType, sortOrder: nextOrder++ });
   }

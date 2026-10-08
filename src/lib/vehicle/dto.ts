@@ -15,6 +15,8 @@ export interface VehicleDirectoryEntryDTO {
   nameAr: string;
   type: VehicleType;
   currency: Currency;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
   companyCount: number;
   investorCount: number;
 }
@@ -70,6 +72,8 @@ export interface VehicleDashboardData {
     nameAr: string;
     type: VehicleType;
     currency: Currency;
+    descriptionEn: string | null;
+    descriptionAr: string | null;
   };
   periods: VehicleDashboardPeriodOption[];
   companies: VehicleCompanyDTO[];

@@ -50,8 +50,8 @@ export function LinkVehicleToCompanyForm({ companies, vehicles }: { companies: A
         {errorFor("currency")}
       </div>
       <div className={fieldClass}>
-        <label className={labelClass} htmlFor="l-pct">{t.admin.manage.ownershipPctLabel}</label>
-        <Input id="l-pct" name="ownershipPct" inputMode="decimal" pattern="\d+(\.\d{1,4})?" required />
+        <label className={labelClass} htmlFor="l-pct">{t.admin.manage.ownershipPctOptionalLabel}</label>
+        <Input id="l-pct" name="ownershipPct" inputMode="decimal" pattern="\d+(\.\d{1,4})?" />
         {errorFor("ownershipPct")}
       </div>
       <div className={fieldClass}>

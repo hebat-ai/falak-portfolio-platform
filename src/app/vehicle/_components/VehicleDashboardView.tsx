@@ -47,6 +47,8 @@ export function VehicleDashboardView({
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
   const capTable = useMemo(() => computeVehicleCapTable(capitalOverview, displayCurrency), [capitalOverview, displayCurrency]);
+  // The viewer's language, falling back to the other when only one was written.
+  const description = (lang === "ar" ? vehicle.descriptionAr || vehicle.descriptionEn : vehicle.descriptionEn || vehicle.descriptionAr) ?? "";
 
   return (
     <AppShell title={lang === "ar" ? vehicle.nameAr : vehicle.nameEn} subtitle={t.vehicleTypes[vehicle.type]}>
@@ -58,6 +60,12 @@ export function VehicleDashboardView({
           <BackIcon aria-hidden="true" className="h-4 w-4" />
           {t.vehicleReport.backToDirectory}
         </Link>
+
+        {description ? (
+          <p className="chamfer-br-md max-w-3xl whitespace-pre-line bg-surface p-4 text-sm text-foreground shadow-[var(--inner-line)]">
+            {description}
+          </p>
+        ) : null}
 
         <div className="flex flex-col gap-3 sm:flex-row">
           {periods.length > 0 ? (

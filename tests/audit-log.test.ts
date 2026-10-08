@@ -839,3 +839,47 @@ test("completeExistingMemberAction reactivates a previously revoked company memb
   assert.deepEqual(upsertArgs!.update, { revokedAt: null });
   assert.deepEqual(upsertArgs!.create, { userId: "user_existing", companyId: "co_1", role: "MEMBER" });
 });
+
+test("linkVehicleToCompanyAction: ownership % is optional; without it no ownership snapshot is recorded", async () => {
+  const actions = await import("../src/app/admin/actions.ts");
+  setCurrentUser(REAL_USER);
+  let agreement: Record<string, unknown> | undefined;
+  let snapshots = 0;
+  const db = makeAdminActionDbStub({
+    falakRoles: ADMIN_ROLE,
+    models: {
+      company: { findUnique: async () => ({ id: "co_1", slug: "acme" }) },
+      vehicle: { findUnique: async () => ({ id: "veh_1", slug: "fund-one" }) },
+      ownershipPosition: {
+        findFirst: async () => null,
+        create: async ({ data }: { data: Record<string, unknown> }) => ({ id: "pos_new", ...data }),
+      },
+      investmentAgreement: {
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          agreement = data;
+          return { id: "agr_new", ...data };
+        },
+      },
+      ownershipSnapshot: {
+        create: async () => {
+          snapshots += 1;
+          return {};
+        },
+      },
+    },
+  });
+  setDbStub(db);
+
+  const formData = new FormData();
+  formData.set("companyId", "co_1");
+  formData.set("vehicleId", "veh_1");
+  formData.set("investedAmount", "126000");
+  formData.set("currency", "USD");
+  formData.set("ownershipPct", "");
+  formData.set("signedDate", "2024-05-01");
+
+  const result = await actions.linkVehicleToCompanyAction({ error: null }, formData);
+  assert.equal(result.error, null);
+  assert.equal(agreement?.ownershipPct, null);
+  assert.equal(snapshots, 0);
+});

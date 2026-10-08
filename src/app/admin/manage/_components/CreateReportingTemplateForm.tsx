@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -9,11 +10,15 @@ import { createReportingTemplateAction, type ActionState } from "../../actions";
 import { labelClass, fieldClass, FormMessage, FieldError, fieldA11y, invalidClass, prefill, useEntityForm } from "./shared";
 
 const METRIC_DATA_TYPES = ["Currency", "Percent", "Number", "Text", "Boolean"] as const;
+// Matches MAX_METRIC_ROWS in the template actions.
+const MAX_ROWS = 40;
 
 export function CreateReportingTemplateForm() {
   const { state, formAction, isPending, formRef, formKey } = useEntityForm(createReportingTemplateAction);
   // Outside the remounting form, so the rows shown survive a rejected save.
-  const [rowCount, setRowCount] = useState(3);
+  // Rows are form indexes; removing one leaves a gap the server skips.
+  const [rows, setRows] = useState<number[]>([0, 1, 2]);
+  const [nextRow, setNextRow] = useState(3);
   return (
     <TemplateFields
       key={formKey}
@@ -21,8 +26,13 @@ export function CreateReportingTemplateForm() {
       formAction={formAction}
       formRef={formRef}
       isPending={isPending}
-      rowCount={rowCount}
-      addRow={() => setRowCount((n) => n + 1)}
+      rows={rows}
+      canAdd={nextRow < MAX_ROWS}
+      addRow={() => {
+        setRows((r) => [...r, nextRow]);
+        setNextRow((n) => n + 1);
+      }}
+      removeRow={(i) => setRows((r) => r.filter((x) => x !== i))}
     />
   );
 }
@@ -32,15 +42,19 @@ function TemplateFields({
   formAction,
   formRef,
   isPending,
-  rowCount,
+  rows,
+  canAdd,
   addRow,
+  removeRow,
 }: {
   state: ActionState;
   formAction: (formData: FormData) => void;
   formRef: React.RefObject<HTMLFormElement | null>;
   isPending: boolean;
-  rowCount: number;
+  rows: number[];
+  canAdd: boolean;
   addRow: () => void;
+  removeRow: (index: number) => void;
 }) {
   const { t } = useLanguage();
   const value = (name: string) => prefill(state, undefined, name);
@@ -63,8 +77,8 @@ function TemplateFields({
 
       <p className="text-xs text-muted-foreground">{t.admin.manage.metricKeyHint}</p>
       <div className="flex flex-col gap-3">
-        {Array.from({ length: rowCount }, (_, i) => (
-          <div key={i} className="chamfer-br-sm grid grid-cols-1 gap-2 p-3 shadow-[var(--inner-line)] sm:grid-cols-4">
+        {rows.map((i) => (
+          <div key={i} className="chamfer-br-sm grid grid-cols-1 gap-2 p-3 shadow-[var(--inner-line)] sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
             {(
               [
                 ["metricKey", t.admin.manage.metricKeyOptionalLabel, undefined],
@@ -96,10 +110,22 @@ function TemplateFields({
               </Select>
               <FieldError state={state} id={`tpl-metricDataType-${i}`} name={`metricDataType_${i}`} />
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="self-start text-danger"
+              aria-label={t.admin.manage.removeRowAction}
+              title={t.admin.manage.removeRowAction}
+              disabled={rows.length <= 1}
+              onClick={() => removeRow(i)}
+            >
+              <X aria-hidden="true" className="h-4 w-4" />
+            </Button>
           </div>
         ))}
       </div>
-      <Button type="button" variant="outline" className="w-fit" onClick={addRow}>
+      <Button type="button" variant="outline" className="w-fit" disabled={!canAdd} onClick={addRow}>
         {t.admin.manage.addMetricAction}
       </Button>
 

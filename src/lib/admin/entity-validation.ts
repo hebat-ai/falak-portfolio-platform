@@ -24,6 +24,7 @@ export const OUT_OF_DEPARTMENT_FIELD = "You can only use your own department.";
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_NAME_LENGTH = 200;
 const MAX_SLUG_LENGTH = 80;
+const MAX_DESCRIPTION_LENGTH = 2000;
 const MIN_VINTAGE_YEAR = 1990;
 const MAX_VINTAGE_YEAR = 2100;
 
@@ -55,6 +56,7 @@ const MSG = {
   email: "Enter a valid email address, e.g. name@company.com.",
   phone: "Enter a valid phone number, e.g. +966 5X XXX XXXX.",
   optionalText: `Up to ${MAX_NAME_LENGTH} characters.`,
+  description: `Up to ${MAX_DESCRIPTION_LENGTH} characters.`,
   vintageYear: `Enter a year between ${MIN_VINTAGE_YEAR} and ${MAX_VINTAGE_YEAR}, or leave it empty.`,
 };
 
@@ -201,6 +203,8 @@ export interface VehicleInput {
   currency: Currency;
   vintageYear: number | null;
   department: Department;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
 }
 
 export function validateVehicle(formData: FormData, scope: Department[] | null): Validated<VehicleInput> {
@@ -212,10 +216,14 @@ export function validateVehicle(formData: FormData, scope: Department[] | null):
     currency: read(formData, "currency"),
     vintageYear: read(formData, "vintageYear"),
     department: read(formData, "department"),
+    descriptionEn: read(formData, "descriptionEn"),
+    descriptionAr: read(formData, "descriptionAr"),
   };
   const errors: FieldErrors = {};
 
   if (!isSlug(v.slug)) errors.slug = MSG.slug;
+  if (v.descriptionEn.length > MAX_DESCRIPTION_LENGTH) errors.descriptionEn = MSG.description;
+  if (v.descriptionAr.length > MAX_DESCRIPTION_LENGTH) errors.descriptionAr = MSG.description;
   if (!isName(v.nameEn)) errors.nameEn = MSG.name;
   if (!isName(v.nameAr)) errors.nameAr = MSG.name;
   if (!oneOf(v.type, VEHICLE_TYPES)) errors.type = MSG.choose;
@@ -230,7 +238,15 @@ export function validateVehicle(formData: FormData, scope: Department[] | null):
   return {
     values: v,
     errors,
-    input: { ...v, type: v.type as VehicleType, currency: v.currency as Currency, vintageYear, department },
+    input: {
+      ...v,
+      type: v.type as VehicleType,
+      currency: v.currency as Currency,
+      vintageYear,
+      department,
+      descriptionEn: v.descriptionEn || null,
+      descriptionAr: v.descriptionAr || null,
+    },
   };
 }
 

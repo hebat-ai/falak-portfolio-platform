@@ -51,6 +51,8 @@ export async function getVehicleForEdit(id: string) {
     currency: v.currency,
     vintageYear: v.vintageYear === null ? "" : String(v.vintageYear),
     department: v.department,
+    descriptionEn: v.descriptionEn ?? "",
+    descriptionAr: v.descriptionAr ?? "",
   };
 }
 

@@ -32,6 +32,7 @@ export async function getReportingTemplateForEdit(id: string): Promise<TemplateF
     include: {
       _count: { select: { cycles: true } },
       metrics: {
+        where: { deletedAt: null },
         orderBy: { sortOrder: "asc" },
         include: { _count: { select: { currentValues: true, snapshotValues: true } } },
       },

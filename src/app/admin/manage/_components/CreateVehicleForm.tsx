@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Textarea";
 import { createVehicleAction, updateVehicleAction, type ActionState } from "../../actions";
 import { labelClass, fieldClass, FormMessage, FieldError, fieldA11y, invalidClass, prefill, useEntityForm } from "./shared";
 import { slugify } from "@/lib/slugify";
@@ -18,6 +19,8 @@ export interface VehicleFormValues {
   currency: string;
   vintageYear: string;
   department: string;
+  descriptionEn: string;
+  descriptionAr: string;
 }
 
 /** Create a vehicle, or edit an existing one when `vehicle` is given. */
@@ -131,6 +134,16 @@ function VehicleFields({
           <option value="InvestmentDepartment">{t.departments.InvestmentDepartment}</option>
         </Select>
         <FieldError state={state} id="v-department" name="department" />
+      </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="v-descriptionEn">{t.admin.manage.vehicleDescriptionEnLabel}</label>
+        <Textarea {...field("v-descriptionEn", "descriptionEn")} defaultValue={value("descriptionEn")} rows={4} maxLength={2000} />
+        <FieldError state={state} id="v-descriptionEn" name="descriptionEn" />
+      </div>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor="v-descriptionAr">{t.admin.manage.vehicleDescriptionArLabel}</label>
+        <Textarea {...field("v-descriptionAr", "descriptionAr")} defaultValue={value("descriptionAr")} rows={4} maxLength={2000} dir="rtl" />
+        <FieldError state={state} id="v-descriptionAr" name="descriptionAr" />
       </div>
       <div className="sm:col-span-2">
         <FormMessage state={state} />

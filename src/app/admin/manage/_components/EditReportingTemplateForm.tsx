@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Trash2, X } from "lucide-react";
 import { useForm } from "@/components/forms/useForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Input } from "@/components/ui/Input";
@@ -11,13 +12,27 @@ import { labelClass, fieldClass, initialActionState, FormMessage } from "./share
 import type { TemplateForEdit } from "@/lib/admin/template-edit";
 
 const METRIC_DATA_TYPES = ["Currency", "Percent", "Number", "Text", "Boolean"] as const;
+// Matches MAX_METRIC_ROWS in the template actions.
+const MAX_NEW_ROWS = 40;
 
 export function EditReportingTemplateForm({ template }: { template: TemplateForEdit }) {
   const { t } = useLanguage();
   const { state, isPending, errorFor, formProps } = useForm(updateReportingTemplateAction, initialActionState, {
     resetOnSuccess: false,
   });
-  const [newRows, setNewRows] = useState(0);
+  // New, unsaved rows by their form index; removing one leaves a gap the
+  // server simply skips.
+  const [newRows, setNewRows] = useState<number[]>([]);
+  const [nextRow, setNextRow] = useState(0);
+  // Saved metrics marked for deletion; removed when the form is saved.
+  const [deleting, setDeleting] = useState<Set<string>>(new Set());
+  const toggleDelete = (id: string) =>
+    setDeleting((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   return (
     <form {...formProps} className="flex flex-col gap-4">
@@ -45,7 +60,18 @@ export function EditReportingTemplateForm({ template }: { template: TemplateForE
       </label>
 
       <div className="flex flex-col gap-3">
-        {template.metrics.map((m) => (
+        {template.metrics.map((m) =>
+          deleting.has(m.id) ? (
+            <div key={m.id} className="chamfer-br-sm flex flex-wrap items-center justify-between gap-2 bg-surface-muted p-3 shadow-[var(--inner-line)]">
+              <input type="hidden" name={`delete_${m.id}`} value="on" />
+              <p className="text-xs text-muted-foreground">
+                {t.admin.manage.metricDeletePendingNote.replace("{name}", m.labelEn || m.key || "—")}
+              </p>
+              <Button type="button" variant="outline" size="xs" onClick={() => toggleDelete(m.id)}>
+                {t.admin.manage.undoAction}
+              </Button>
+            </div>
+          ) : (
           <div key={m.id} className="chamfer-br-sm flex flex-col gap-2 p-3 shadow-[var(--inner-line)]">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_10rem_5rem]">
               <div className="flex flex-col gap-1">
@@ -94,12 +120,17 @@ export function EditReportingTemplateForm({ template }: { template: TemplateForE
                 {t.admin.manage.metricActiveLabel}
               </label>
               {m.hasValues ? <span>{t.admin.manage.metricLockedNote}</span> : null}
+              <Button type="button" variant="ghost" size="xs" className="ms-auto text-danger" onClick={() => toggleDelete(m.id)}>
+                <Trash2 aria-hidden="true" className="me-1 h-3.5 w-3.5" />
+                {t.admin.manage.deleteMetricAction}
+              </Button>
             </div>
           </div>
-        ))}
+          )
+        )}
 
-        {Array.from({ length: newRows }, (_, i) => (
-          <div key={`new-${i}`} className="chamfer-br-sm grid grid-cols-1 gap-2 p-3 shadow-[var(--inner-line)] sm:grid-cols-4">
+        {newRows.map((i) => (
+          <div key={`new-${i}`} className="chamfer-br-sm grid grid-cols-1 gap-2 p-3 shadow-[var(--inner-line)] sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
             <div className="flex flex-col gap-1">
               <Input name={`newKey_${i}`} placeholder={t.admin.manage.metricKeyOptionalLabel} />
               {errorFor(`newKey_${i}`)}
@@ -121,10 +152,30 @@ export function EditReportingTemplateForm({ template }: { template: TemplateForE
               </Select>
               {errorFor(`newDataType_${i}`)}
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="self-start text-danger"
+              aria-label={t.admin.manage.removeRowAction}
+              title={t.admin.manage.removeRowAction}
+              onClick={() => setNewRows((rows) => rows.filter((r) => r !== i))}
+            >
+              <X aria-hidden="true" className="h-4 w-4" />
+            </Button>
           </div>
         ))}
       </div>
-      <Button type="button" variant="outline" className="w-fit" onClick={() => setNewRows((n) => n + 1)}>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-fit"
+        disabled={nextRow >= MAX_NEW_ROWS}
+        onClick={() => {
+          setNewRows((rows) => [...rows, nextRow]);
+          setNextRow((n) => n + 1);
+        }}
+      >
         {t.admin.manage.addMetricAction}
       </Button>
 

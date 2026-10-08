@@ -27,7 +27,9 @@ export default async function EditReportingTemplatePage({ params }: { params: Pr
 
   return (
     <ManageSubsectionShell titleKey="editTemplateTitle">
-      <EditReportingTemplateForm template={template} />
+      {/* Remounts once saved metrics are added or deleted, clearing the
+          form's new rows and pending deletions. */}
+      <EditReportingTemplateForm key={template.metrics.map((m) => m.id).join(",")} template={template} />
     </ManageSubsectionShell>
   );
 }

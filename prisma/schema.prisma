@@ -334,6 +334,9 @@ model Vehicle {
   nameAr      String
   type        VehicleType
   currency    Currency
+  // Optional free-text description of the vehicle (purpose, structure, ...).
+  descriptionEn String?
+  descriptionAr String?
   // Falak-entered, once per vehicle -- the fund/SPV's formation year,
   // shown against each startup's own investment year on the portfolio
   // dashboard's vintage-vs-investment-year timeline. Optional: not every
@@ -628,6 +631,9 @@ model MetricDefinition {
   required   Boolean           @default(true)
   sortOrder  Int               @default(0)
   isActive   Boolean           @default(true)
+  // Set by Delete in the template editor: the metric leaves the template
+  // and every form; rows stay (values already reported keep their history).
+  deletedAt  DateTime?
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 

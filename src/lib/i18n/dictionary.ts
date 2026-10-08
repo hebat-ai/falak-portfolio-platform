@@ -216,6 +216,9 @@ export interface Dictionary {
       vehicleLabel: string;
       investedAmountLabel: string;
       ownershipPctLabel: string;
+      ownershipPctOptionalLabel: string;
+      vehicleDescriptionEnLabel: string;
+      vehicleDescriptionArLabel: string;
       signedDateLabel: string;
       templateLabel: string;
       periodLabelLabel: string;
@@ -234,6 +237,10 @@ export interface Dictionary {
       setPasswordAction: string;
       revokeAction: string;
       addMetricAction: string;
+      deleteMetricAction: string;
+      removeRowAction: string;
+      metricDeletePendingNote: string;
+      undoAction: string;
       metricKeyLabel: string;
       metricKeyOptionalLabel: string;
       metricKeyHint: string;
@@ -897,6 +904,9 @@ export const en = {
       vehicleLabel: "Vehicle",
       investedAmountLabel: "Invested Amount",
       ownershipPctLabel: "Ownership % (e.g. 0.10 for 10%)",
+      ownershipPctOptionalLabel: "Ownership % (optional, e.g. 0.10 for 10%)",
+      vehicleDescriptionEnLabel: "Description (English, optional)",
+      vehicleDescriptionArLabel: "Description (Arabic, optional)",
       signedDateLabel: "Signed Date",
       templateLabel: "Reporting Template",
       periodLabelLabel: "Period Label (e.g. Q3 2026)",
@@ -915,6 +925,10 @@ export const en = {
       setPasswordAction: "Set Password",
       revokeAction: "Revoke",
       addMetricAction: "Add another metric",
+      deleteMetricAction: "Delete metric",
+      removeRowAction: "Remove",
+      metricDeletePendingNote: "{name} will be deleted when you save. Values already reported for it stay in past reports.",
+      undoAction: "Undo",
       metricKeyLabel: "Metric Key (e.g. revenue_b2b)",
       metricKeyOptionalLabel: "Metric Key (optional)",
       metricKeyHint: "Leave the key empty to create it from the English label (\"Revenue B2B\" becomes revenue_b2b). Any spelling you type is converted the same way. Empty rows are ignored.",
@@ -1584,6 +1598,9 @@ export const ar = {
       vehicleLabel: "الأداة الاستثمارية",
       investedAmountLabel: "المبلغ المستثمر",
       ownershipPctLabel: "نسبة الملكية (مثال: 0.10 لنسبة 10%)",
+      ownershipPctOptionalLabel: "نسبة الملكية (اختياري، مثال: 0.10 لنسبة 10%)",
+      vehicleDescriptionEnLabel: "الوصف (بالإنجليزية، اختياري)",
+      vehicleDescriptionArLabel: "الوصف (بالعربية، اختياري)",
       signedDateLabel: "تاريخ التوقيع",
       templateLabel: "قالب التقارير",
       periodLabelLabel: "اسم الفترة (مثال: الربع الثالث 2026)",
@@ -1602,6 +1619,10 @@ export const ar = {
       setPasswordAction: "تعيين كلمة المرور",
       revokeAction: "إلغاء الصلاحية",
       addMetricAction: "إضافة مؤشر آخر",
+      deleteMetricAction: "حذف المؤشر",
+      removeRowAction: "إزالة",
+      metricDeletePendingNote: "سيُحذف {name} عند الحفظ. تبقى القيم المبلغ عنها سابقاً في التقارير السابقة.",
+      undoAction: "تراجع",
       metricKeyLabel: "معرّف المؤشر (مثال: revenue_b2b)",
       metricKeyOptionalLabel: "معرّف المؤشر (اختياري)",
       metricKeyHint: "اترك المعرّف فارغاً ليُنشأ تلقائياً من التسمية الإنجليزية (\"Revenue B2B\" يصبح revenue_b2b). يُحوَّل أي معرّف تكتبه بالطريقة نفسها. يتم تجاهل الصفوف الفارغة.",
